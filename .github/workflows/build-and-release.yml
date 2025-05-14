@@ -116,23 +116,20 @@ jobs:
       id: get_pr_data
       with:
         script: |
-            const prData = (
+            return (
               await github.rest.repos.listPullRequestsAssociatedWithCommit({
                 commit_sha: context.sha,
                 owner: context.repo.owner,
                 repo: context.repo.repo,
               })
             ).data[0];
-            core.setOutput("title", prData?.title || "No title");
-            core.setOutput("body", prData?.body || "No description");
-            core.setOutput("html_url", prData?.html_url || "No URL");
     - name: Discord Webhook Action
       uses: tsickert/discord-webhook@v7.0.0
       with:
         webhook-url: ${{ secrets.DISCORD_WEBHOOK_URL }}
         embed-title: |
-          🎉 New update on `master` branch: ${{ steps.get_pr_data.outputs.title }}
+          🎉 New update on `master` branch: ${{ fromJson(steps.get_pr_data.outputs.result).title }}
         embed-description: |
-          ${{ steps.get_pr_data.outputs.body }}
-        embed-url: ${{ steps.get_pr_data.outputs.html_url}}
+          ${{ fromJson(steps.get_pr_data.outputs.result).body }}
+        embed-url: ${{ fromJson(steps.get_pr_data.outputs.result).html_url }}
 
