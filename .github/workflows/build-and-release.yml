@@ -54,19 +54,19 @@ jobs:
         run: cp -r _datafiles bin/
 
       - name: Build windows amd64
-        run: env GOOS=windows GOARCH=amd64 go build -v -o bin/go-mud-windows_x64.exe .
+        run: env GOOS=windows GOARCH=amd64 go build -v -ldflags "-X main.version=${{ env.RELEASE_VERSION }}" -o bin/go-mud-windows_x64.exe .
 
       - name: Build darwin/arm64
-        run: env GOOS=darwin GOARCH=arm64 go build -v -o bin/go-mud-darwin_arm64 .
+        run: env GOOS=darwin GOARCH=arm64 go build -v -ldflags "-X main.version=${{ env.RELEASE_VERSION }}" -o bin/go-mud-darwin_arm64 .
 
       - name: Build darwin/amd64
-        run: env GOOS=darwin GOARCH=amd64 go build -v -o bin/go-mud-darwin_x64 .
+        run: env GOOS=darwin GOARCH=amd64 go build -v -ldflags "-X main.version=${{ env.RELEASE_VERSION }}" -o bin/go-mud-darwin_x64 .
 
       - name: Build linux/amd64
-        run: env GOOS=linux GOARCH=amd64 go build -v -o bin/go-mud-linux_x64 .
+        run: env GOOS=linux GOARCH=amd64 go build -v -ldflags "-X main.version=${{ env.RELEASE_VERSION }}" -o bin/go-mud-linux_x64 .
 
       - name: Build linux/arm5
-        run: env GOOS=linux GOARCH=arm GOARM=5 go build -v -o bin/go-mud-linux_arm5 .
+        run: env GOOS=linux GOARCH=arm GOARM=5 go build -v -ldflags "-X main.version=${{ env.RELEASE_VERSION }}" -o bin/go-mud-linux_arm5 .
 
       - name: Upload bin
         uses: actions/upload-artifact@v4
@@ -98,13 +98,13 @@ jobs:
         with:
           type: zip
           directory: bin
-          filename: ${{ env.RELEASE_FILENAME }}-${{ env.COMMIT_SHORT_SHA }}.zip
+          filename: ${{ env.RELEASE_FILENAME }}-${{ env.RELEASE_VERSION }}.zip
 
       - name: Release with notes
         uses: softprops/action-gh-release@v1
         with:
-          files: bin/${{ env.RELEASE_FILENAME }}-${{ env.COMMIT_SHORT_SHA }}.zip
-          tag_name: release-${{ env.COMMIT_SHORT_SHA }}
+          files: bin/${{ env.RELEASE_FILENAME }}-${{ env.RELEASE_VERSION }}.zip
+          tag_name: ${{ env.RELEASE_VERSION }}
           fail_on_unmatched_files: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
