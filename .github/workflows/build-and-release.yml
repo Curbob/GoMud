@@ -93,12 +93,7 @@ jobs:
           echo "COMMIT_SHORT_SHA=$calculatedSha" >> $GITHUB_ENV
 
       - name: Archive release
-        uses: thedoctor0/zip-release@master
-        id: zip-binaries
-        with:
-          type: zip
-          directory: bin
-          filename: ${{ env.RELEASE_FILENAME }}-${{ env.RELEASE_VERSION }}.zip
+        run: zip -r bin/${{ env.RELEASE_FILENAME }}-${{ env.RELEASE_VERSION }}.zip bin/
 
       - name: Release with notes
         uses: softprops/action-gh-release@v1
@@ -127,7 +122,7 @@ jobs:
       uses: tsickert/discord-webhook@v7.0.0
       with:
         webhook-url: ${{ secrets.DISCORD_WEBHOOK_URL }}
-        embed-title: '🎉 New update on `master` branch: ${{ fromJson(steps.get_pr_data.outputs.result).title }}'
-        embed-description: ${{ fromJson(steps.get_pr_data.outputs.result).body }}
-        embed-url: ${{ fromJson(steps.get_pr_data.outputs.result).html_url }}
+        embed-title: ${{ steps.get_pr_data.outputs.result && fromJson(steps.get_pr_data.outputs.result).title || '🎉 New update on `master` branch' }}
+        embed-description: ${{ steps.get_pr_data.outputs.result && fromJson(steps.get_pr_data.outputs.result).body || 'No description provided.' }}
+        embed-url: ${{ steps.get_pr_data.outputs.result && fromJson(steps.get_pr_data.outputs.result).html_url || github.event.compare }}
 
