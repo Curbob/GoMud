@@ -25,6 +25,7 @@ jobs:
       attestations: write
       id-token: write
     steps:
+      - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-go
 
       - name: Log in to the Container registry ${{ env.REGISTRY }}
