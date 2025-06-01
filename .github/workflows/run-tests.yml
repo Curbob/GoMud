@@ -9,15 +9,32 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-go
+      - uses: ./.github/actions/codegen-and-test
 
-      - name: Set up Go
-        uses: actions/setup-go@v5
+  pr-notification:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Extract PR Metadata
+        uses: actions/github-script@v6
+        id: get_pr_data
         with:
-          go-version-file: 'go.mod'
+          script: |
+            const pr = context.payload.pull_request;
+            core.setOutput('title', pr.title);
+            core.setOutput('body', pr.body);
+            core.setOutput('url', pr.html_url);
 
-      - name: Run code generation
-        run: go generate ./...
+      - name: Debug PR Data Outputs
+        run: |
+          echo "Title: ${{ steps.get_pr_data.outputs.title }}"
+          echo "Body: ${{ steps.get_pr_data.outputs.body }}"
+          echo "URL: ${{ steps.get_pr_data.outputs.url }}"
 
-      - name: Run tests
-        run: make test
+      - uses: ./.github/actions/discord-webhook
+        with:
+          webhook-url: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          pr-title: ${{ steps.get_pr_data.outputs.title }}
+          pr-body: ${{ steps.get_pr_data.outputs.body }}
+          pr-url: ${{ steps.get_pr_data.outputs.url }}

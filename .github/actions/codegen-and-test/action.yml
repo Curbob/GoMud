@@ -1,0 +1,9 @@
+name: "Codegen and Test"
+description: "Run go generate and go test"
+runs:
+  using: "composite"
+  steps:
+    - run: go generate ./...
+      shell: bash
+    - run: go test ./...
+      shell: bash

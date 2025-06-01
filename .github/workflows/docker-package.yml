@@ -1,5 +1,3 @@
-# https://docs.github.com/en/actions/use-cases-and-examples/publishing-packages/publishing-docker-images
-
 name: Docker Package
 
 on:
@@ -14,54 +12,40 @@ on:
       - master
 
 env:
-  # Use docker.io for Docker Hub if empty
   REGISTRY: ghcr.io
-  # github.repository as <account>/<repo>
   IMAGE_NAME: ${{ github.repository }}
   RELEASE_VERSION: ${{ github.ref_name }}
 
 jobs:
   package:
     runs-on: ubuntu-latest
-
-    # Sets the permissions granted to the GITHUB_TOKEN for the actions in this job.
     permissions:
       contents: read
       packages: write
       attestations: write
       id-token: write
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-go
 
-      # https://github.com/docker/login-action
       - name: Log in to the Container registry ${{ env.REGISTRY }}
         if: github.event_name != 'pull_request'
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
-          # https://docs.github.com/en/actions/security-for-github-actions/security-guides/automatic-token-authentication
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # https://github.com/docker/metadata-action
       - name: Extract metadata (tags, labels) for Docker
         id: meta
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          # generate Docker tags based on the following events/attributes
           tags: |
-            # set latest tag for master branch
             type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', 'master') }}
             type=ref,event=tag
             type=ref,event=pr
             type=sha
 
-      # https://github.com/docker/build-push-action
-      # For pull request, only ensures that the docker build succeeds, does not push the image.
-      # See: https://github.com/docker/build-push-action/issues/751
       - name: Build and push Docker image
         id: push
         uses: docker/build-push-action@v6
@@ -72,12 +56,10 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
-      # https://github.com/actions/attest-build-provenance
       - name: Generate artifact attestation
         if: github.event_name != 'pull_request'
         uses: actions/attest-build-provenance@v2
         with:
-          subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME}}
+          subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           subject-digest: ${{ steps.push.outputs.digest }}
-          # https://github.com/actions/attest-build-provenance/issues/71#issuecomment-2108140285
           push-to-registry: false

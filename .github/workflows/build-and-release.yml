@@ -1,6 +1,3 @@
-# This workflow will: build gomud for multiple os/architectures
-# archive the binaries and create a new release for users to easily download
-
 name: Build and release
 
 on:
@@ -18,33 +15,14 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Show version
-        run: echo 'Releasing version $RELEASE_VERSION'
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version-file: 'go.mod'
-
-      - name: Run code generation
-        run: go generate ./...
-
-      - name: Run tests
-        run: go test ./...
+      - uses: ./.github/actions/setup-go
+      - uses: ./.github/actions/codegen-and-test
 
   build:
     runs-on: ubuntu-latest
-    needs: 'test'
+    needs: test
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version-file: 'go.mod'
+      - uses: ./.github/actions/setup-go
 
       - name: Create bin directory
         run: mkdir -p bin/
@@ -75,7 +53,7 @@ jobs:
 
   release:
     runs-on: ubuntu-latest
-    needs: "build"
+    needs: build
     steps:
       - uses: actions/checkout@v4
 
@@ -88,8 +66,7 @@ jobs:
       - name: Set short git commit SHA
         id: vars
         run: |
-          calculatedSha=$(git rev-parse --short ${{ github.sha }})
-          echo "COMMIT_SHORT_SHA=$calculatedSha" >> $GITHUB_ENV
+          echo "COMMIT_SHORT_SHA=$(git rev-parse --short ${{ github.sha }})" >> $GITHUB_ENV
 
       - name: Archive release
         run: zip -r bin/${{ env.RELEASE_FILENAME }}-${{ env.RELEASE_VERSION }}.zip bin/
@@ -102,26 +79,3 @@ jobs:
           fail_on_unmatched_files: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  message:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/github-script@v6
-      id: get_pr_data
-      with:
-        script: |
-            return (
-              await github.rest.repos.listPullRequestsAssociatedWithCommit({
-                commit_sha: context.sha,
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-              })
-            ).data[0];
-    - name: Discord Webhook Action
-      uses: tsickert/discord-webhook@v7.0.0
-      with:
-        webhook-url: ${{ secrets.DISCORD_WEBHOOK_URL }}
-        embed-title: ${{ steps.get_pr_data.outputs.result && fromJson(steps.get_pr_data.outputs.result).title || '🎉 New update on `master` branch' }}
-        embed-description: ${{ steps.get_pr_data.outputs.result && fromJson(steps.get_pr_data.outputs.result).body || 'No description provided.' }}
-        embed-url: ${{ steps.get_pr_data.outputs.result && fromJson(steps.get_pr_data.outputs.result).html_url || github.event.compare }}
-

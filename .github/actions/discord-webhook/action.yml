@@ -1,0 +1,24 @@
+name: "Discord Webhook"
+description: "Send PR info to Discord"
+inputs:
+  webhook-url:
+    description: "Discord webhook URL"
+    required: true
+  pr-title:
+    description: "Title of the pull request"
+    required: false
+  pr-body:
+    description: "Body of the pull request"
+    required: false
+  pr-url:
+    description: "URL of the pull request"
+    required: false
+runs:
+  using: "composite"
+  steps:
+    - uses: tsickert/discord-webhook@v7.0.0
+      with:
+        webhook-url: ${{ inputs.webhook-url }}
+        embed-title: ${{ inputs.pr-title }}
+        embed-description: ${{ inputs.pr-body }}
+        embed-url: ${{ inputs.pr-url }}

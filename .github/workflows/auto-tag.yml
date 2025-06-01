@@ -1,0 +1,26 @@
+name: Auto Tag
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Needed to access all tags
+
+      - name: Create tag using commit message
+        id: tagger
+        uses: mathieudutour/github-tag-action@v6.1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Print new tag
+        run: |
+          echo "Tagged version: ${{ steps.tagger.outputs.new_tag }}"
