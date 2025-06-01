@@ -21,6 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
     steps:
+      - uses: actions/checkout@v4
       - name: Extract PR Metadata
         uses: actions/github-script@v6
         id: get_pr_data
