@@ -1,9 +1,9 @@
 name: Auto Tag
 
 on:
+  workflow_dispatch:
   push:
     branches: [main]
-  workflow_dispatch:
 
 permissions:
   contents: write
@@ -21,6 +21,8 @@ jobs:
         uses: mathieudutour/github-tag-action@v6.1
         with:
           tag_prefix: 'v'
+          default_bump: 'patch'
+          default_prerelease_bump: 'prerelease'
           dry_run: true  # Set to true for testing, change to false for actual tagging
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
