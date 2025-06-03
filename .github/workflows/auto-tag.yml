@@ -3,6 +3,7 @@ name: Auto Tag
 on:
   push:
     branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -19,6 +20,8 @@ jobs:
         id: tagger
         uses: mathieudutour/github-tag-action@v6.1
         with:
+          tag_prefix: 'v'
+          dry_run: true  # Set to true for testing, change to false for actual tagging
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Print new tag
