@@ -24,6 +24,6 @@ jobs:
           tag_prefix: 'v'
           default_bump: 'patch'
           default_prerelease_bump: 'prerelease'
-          dry_run: true  # Set to true for testing, change to false for actual tagging
+          dry_run: false  # Set to false for actual tagging in production
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
