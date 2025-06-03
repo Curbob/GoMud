@@ -27,6 +27,3 @@ jobs:
           dry_run: true  # Set to true for testing, change to false for actual tagging
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Print new tag
-        run: |
-          echo "Tagged version: ${{ steps.tagger.outputs.new_tag }}"
