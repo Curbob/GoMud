@@ -1,11 +1,9 @@
 name: Auto Tag
 
 on:
-  workflow_dispatch:
   push:
     branches:
       - master
-      - github_actions_rework
 
 permissions:
   contents: write

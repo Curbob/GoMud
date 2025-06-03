@@ -2,9 +2,11 @@ name: Notify Discord
 
 on:
   pull_request:
-    types: [opened]
+    types:
+      - opened
   release:
-    types: [published]
+    types:
+      - published
 
 permissions:
   contents: read
