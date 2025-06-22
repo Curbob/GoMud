@@ -111,12 +111,13 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err = migration.Run(lastKnownVersion); err != nil {
+	currentVersion, _ := version.Parse(VERSION)
+
+	if err = migration.Run(lastKnownVersion, currentVersion); err != nil {
 		mudlog.Error("migration.Run()", "error", err)
 		os.Exit(1)
 	}
 
-	return
 	// Default i18n localize folders
 	if len(c.Translation.LanguagePaths) == 0 {
 		c.Translation.LanguagePaths = []string{
@@ -127,12 +128,19 @@ func main() {
 
 	mudlog.Info(`========================`)
 	//
-	mudlog.Info(`  ___  ____   _______   `)
-	mudlog.Info(`  |  \/  | | | |  _  \  `)
-	mudlog.Info(`  | .  . | | | | | | |  `)
-	mudlog.Info(`  | |\/| | | | | | | |  `)
-	mudlog.Info(`  | |  | | |_| | |/ /   `)
-	mudlog.Info(`  \_|  |_/\___/|___/    `)
+	mudlog.Info(`  _____             `)
+	mudlog.Info(` / ____|            `)
+	mudlog.Info(`| |  __  ___        `)
+	mudlog.Info(`| | |_ |/ _ \       `)
+	mudlog.Info(`| |__| | (_) |      `)
+	mudlog.Info(` \_____|\___/       `)
+	mudlog.Info(` __  __           _ `)
+	mudlog.Info(`|  \/  |         | |`)
+	mudlog.Info(`| \  / |_   _  __| |`)
+	mudlog.Info(`| |\/| | | | |/ _' |`)
+	mudlog.Info(`| |  | | |_| | (_| |`)
+	mudlog.Info(`|_|  |_|\__,_|\__,_|`)
+
 	//
 	mudlog.Info(`========================`)
 	//

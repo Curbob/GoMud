@@ -400,28 +400,6 @@ func loadAllRoomZones() error {
 
 	for _, loadedRoom := range loadedRooms {
 
-		//
-		// This code migrates old format data to the new format (separate zone file)
-		//
-		if loadedRoom.ZoneConfig != nil {
-			if loadedRoom.ZoneConfig.RoomId == loadedRoom.RoomId {
-				if _, ok := roomManager.zones[loadedRoom.Zone]; !ok {
-					newZone := NewZoneConfig(loadedRoom.Zone)
-					newZone.DefaultBiome = loadedRoom.Biome
-					newZone.IdleMessages = loadedRoom.ZoneConfig.IdleMessages
-					newZone.MusicFile = loadedRoom.ZoneConfig.MusicFile
-					newZone.MobAutoScale = loadedRoom.ZoneConfig.MobAutoScale
-					newZone.Mutators = loadedRoom.ZoneConfig.Mutators
-					newZone.RoomId = loadedRoom.ZoneConfig.RoomId
-					if err := SaveZoneConfig(newZone); err != nil {
-						return err
-					}
-					loadedRoom.ZoneConfig = nil // if successfully saved, blank out the ZoneConfig for the room
-					SaveRoomTemplate(*loadedRoom)
-				}
-			}
-		}
-
 		// configs.GetConfig().DeathRecoveryRoom is the death/shadow realm and gets a pass
 		if loadedRoom.RoomId == int(configs.GetSpecialRoomsConfig().DeathRecoveryRoom) {
 			continue
