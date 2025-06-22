@@ -1,4 +1,5 @@
 
+
 .DEFAULT_GOAL := build
 
 VERSION ?= $(shell git rev-parse HEAD)
@@ -120,7 +121,7 @@ coverage:
 	rm -rf bin
 
 .PHONY: js-lint
-js-lint:
+js-lint:  ### Run Javascript linter
 #   Grep filtering it to remove errors reported by docker image around npm packages
 #   if "### errors" is found in the output, exits with an error code of 1
 #   This should allow us to use it in CI/CD

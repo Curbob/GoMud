@@ -2,6 +2,7 @@ package configs
 
 type Server struct {
 	MudName         ConfigString      `yaml:"MudName"`         // Name of the MUD
+	CurrentVersion  ConfigString      `yaml:"CurrentVersion"`  // Current version this mud has been updated to
 	Seed            ConfigSecret      `yaml:"Seed"`            // Seed that may be used for generating content
 	MaxCPUCores     ConfigInt         `yaml:"MaxCPUCores"`     // How many cores to allow for multi-core operations
 	OnLoginCommands ConfigSliceString `yaml:"OnLoginCommands"` // Commands to run when a user logs in
@@ -24,6 +25,10 @@ func (s *Server) Validate() {
 
 	if s.MaxCPUCores < 0 {
 		s.MaxCPUCores = 0 // default
+	}
+
+	if s.CurrentVersion == `` {
+		s.CurrentVersion = `0.9.0` // If no version found, failover to a known version
 	}
 
 }

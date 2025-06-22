@@ -32,7 +32,9 @@ import (
 	"github.com/GoMudEngine/GoMud/internal/items"
 	"github.com/GoMudEngine/GoMud/internal/keywords"
 	"github.com/GoMudEngine/GoMud/internal/language"
+	"github.com/GoMudEngine/GoMud/internal/migration"
 	"github.com/GoMudEngine/GoMud/internal/usercommands"
+	"github.com/GoMudEngine/GoMud/internal/version"
 	"github.com/gorilla/websocket"
 
 	"github.com/GoMudEngine/GoMud/internal/mapper"
@@ -55,6 +57,13 @@ import (
 	_ "github.com/GoMudEngine/GoMud/modules"
 	textLang "golang.org/x/text/language"
 )
+
+// Version of the binary
+// Should be kept in lockstep with github releases
+// When updating this version:
+// 1. Expect to update the github release version
+// 2. Consider whether any migration code is needed for breaking changes, particularly in datafiles (see internal/migration)
+const VERSION = "1.0.0"
 
 var (
 	sigChan            = make(chan os.Signal, 1)
@@ -96,6 +105,18 @@ func main() {
 	configs.ReloadConfig()
 	c := configs.GetConfig()
 
+	lastKnownVersion, err := version.Parse(string(configs.GetServerConfig().CurrentVersion))
+	if err != nil {
+		mudlog.Error("Versioning", "error", err)
+		os.Exit(1)
+	}
+
+	if err = migration.Run(lastKnownVersion); err != nil {
+		mudlog.Error("migration.Run()", "error", err)
+		os.Exit(1)
+	}
+
+	return
 	// Default i18n localize folders
 	if len(c.Translation.LanguagePaths) == 0 {
 		c.Translation.LanguagePaths = []string{

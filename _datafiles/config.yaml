@@ -78,6 +78,7 @@ Server:
   #   accidental changes that could break the game.
   Locked:
   - FilePaths
+  - Server.CurrentVersion
   - Server.NextRoomId
   - Server.Seed
   - Server.OnLoginCommands
