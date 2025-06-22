@@ -7,7 +7,9 @@ import (
 	"regexp"
 
 	"github.com/GoMudEngine/GoMud/internal/configs"
+	"github.com/GoMudEngine/GoMud/internal/fileloader"
 	"github.com/GoMudEngine/GoMud/internal/mudlog"
+	"github.com/GoMudEngine/GoMud/internal/rooms"
 	"gopkg.in/yaml.v2"
 )
 
@@ -64,6 +66,12 @@ func migrate_RoomZoneConfig() error {
 			return err
 		}
 
+		roomPtr, err := fileloader.LoadFlatFile[*rooms.Room](path)
+		if err != nil {
+			return err
+		}
+
+		rooms.SaveRoomTemplate(*roomPtr)
 	}
 
 	return nil
