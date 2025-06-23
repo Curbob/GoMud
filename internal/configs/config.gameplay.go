@@ -20,7 +20,8 @@ type GamePlay struct {
 	// Alt chars
 	MaxAltCharacters ConfigInt `yaml:"MaxAltCharacters"` // How many characters beyond the default character can they create?
 	// Combat
-	ConsistentAttackMessages ConfigBool `yaml:"ConsistentAttackMessages"` // Whether each weapon has consistent attack messages
+	ConsistentAttackMessages ConfigBool   `yaml:"ConsistentAttackMessages"`            // Whether each weapon has consistent attack messages
+	CombatStyle              ConfigString `yaml:"CombatStyle" default:"combat-rounds"` // Which combat module to use
 
 	// PVP Restrictions
 	PVP             ConfigString `yaml:"PVP"`
@@ -46,6 +47,11 @@ func (g *GamePlay) Validate() {
 	// Ignore OnDeathAlwaysDropBackpack
 	// Ignore ConsistentAttackMessages
 	// Ignore CorpsesEnabled
+
+	// Default combat style if not specified
+	if g.CombatStyle == "" {
+		g.CombatStyle = "combat-rounds"
+	}
 
 	if g.Death.EquipmentDropChance < 0.0 || g.Death.EquipmentDropChance > 1.0 {
 		g.Death.EquipmentDropChance = 0.0 // default

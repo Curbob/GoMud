@@ -94,3 +94,8 @@ func Warn(msg string, args ...any) {
 func Error(msg string, args ...any) {
 	slogInstance.Log(context.Background(), slog.LevelError, msg, args...)
 }
+
+// IsInitialized returns true if the logger has been set up
+func IsInitialized() bool {
+	return slogInstance != nil
+}
