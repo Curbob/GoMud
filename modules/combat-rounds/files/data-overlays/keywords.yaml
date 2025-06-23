@@ -1,0 +1,18 @@
+# Combat-rounds module keywords
+# Additional keywords for combat commands
+
+attack:
+  - assault
+  - strike
+  - hit
+  - fight
+
+flee:
+  - run
+  - escape
+  - retreat
+
+consider:
+  - evaluate
+  - assess
+  - size up

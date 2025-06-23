@@ -1,0 +1,12 @@
+# Combat-twitch module keywords
+# Additional keywords for twitch combat commands
+
+cooldowns:
+  - bal
+  - balance
+  - timers
+
+attack:
+  - strike
+  - hit
+  - swing

@@ -9,7 +9,17 @@ import (
 	"github.com/GoMudEngine/GoMud/internal/users"
 )
 
+// PowerRanking delegates to the active combat system's calculator or uses default
 func PowerRanking(atkChar characters.Character, defChar characters.Character) float64 {
+	system := GetActiveCombatSystem()
+	if system != nil && system.GetCalculator() != nil {
+		return system.GetCalculator().PowerRanking(&atkChar, &defChar)
+	}
+	return powerRankingDefault(atkChar, defChar)
+}
+
+// powerRankingDefault is the original implementation
+func powerRankingDefault(atkChar characters.Character, defChar characters.Character) float64 {
 
 	attacks, dCount, dSides, dBonus, _ := atkChar.Equipment.Weapon.GetDiceRoll()
 	atkDmg := attacks * (dCount*dSides + dBonus)
