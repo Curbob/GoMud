@@ -25,6 +25,13 @@ func DoCombat(e events.Event) events.ListenerReturn {
 
 	evt := e.(events.NewRound)
 
+	// Check if we have an active combat system that wants to handle rounds
+	if system := combat.GetActiveCombatSystem(); system != nil {
+		system.ProcessCombatRound()
+		// For now, still run the existing combat logic
+		// In the future, the combat system will handle everything
+	}
+
 	//
 	// Combat rounds
 	//

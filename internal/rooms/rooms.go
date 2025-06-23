@@ -30,7 +30,6 @@ var (
 		"*": defaultMapSymbol,
 		//"•": "*",
 	}
-
 )
 
 type FindFlag uint16

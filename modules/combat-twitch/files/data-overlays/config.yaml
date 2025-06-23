@@ -1,0 +1,9 @@
+# Combat-twitch module configuration overlay
+# These values will be available via the plugin config
+
+# Twitch combat specific settings
+TickIntervalMs: 100         # How often to check cooldowns
+MinCooldownMs: 500         # Minimum cooldown for any action
+MaxCooldownMs: 10000       # Maximum cooldown for any action
+SpeedStatWeight: 0.5       # How much speed stat affects cooldowns
+WeaponSpeedMultiplier: 1.0 # Global weapon speed modifier
