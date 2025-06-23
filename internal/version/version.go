@@ -52,6 +52,10 @@ func (v Version) IsOlderThan(other Version) bool {
 	return v.Compare(other) == Older
 }
 
+func (v Version) IsEqualTo(other Version) bool {
+	return v.Compare(other) == Equal
+}
+
 func New(major int, minor int, patch int) Version {
 	return Version{major, minor, patch}
 }
