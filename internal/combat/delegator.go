@@ -42,7 +42,7 @@ func AttackPlayerVsMob(user *users.UserRecord, mob *mobs.Mob) AttackResult {
 	return performAttack(user.Character, &mob.Character, User, Mob, system.GetCalculator(),
 		func(result *AttackResult) {
 			if result.DamageToSource != 0 {
-				user.Character.ApplyHealthChange(result.DamageToSource * -1)
+				user.Character.ApplyHealthChange(result.DamageToSource * -1, user.UserId)
 				user.WimpyCheck()
 			}
 
@@ -85,12 +85,12 @@ func AttackPlayerVsPlayer(userAtk *users.UserRecord, userDef *users.UserRecord) 
 	return performAttack(userAtk.Character, userDef.Character, User, User, system.GetCalculator(),
 		func(result *AttackResult) {
 			if result.DamageToSource != 0 {
-				userAtk.Character.ApplyHealthChange(result.DamageToSource * -1)
+				userAtk.Character.ApplyHealthChange(result.DamageToSource * -1, userAtk.UserId)
 				userAtk.WimpyCheck()
 			}
 
 			if result.DamageToTarget != 0 {
-				userDef.Character.ApplyHealthChange(result.DamageToTarget * -1)
+				userDef.Character.ApplyHealthChange(result.DamageToTarget * -1, userDef.UserId)
 				userDef.WimpyCheck()
 			}
 
@@ -131,7 +131,7 @@ func AttackMobVsPlayer(mob *mobs.Mob, user *users.UserRecord) AttackResult {
 			mob.Character.ApplyHealthChange(result.DamageToSource * -1)
 
 			if result.DamageToTarget != 0 {
-				user.Character.ApplyHealthChange(result.DamageToTarget * -1)
+				user.Character.ApplyHealthChange(result.DamageToTarget * -1, user.UserId)
 				user.WimpyCheck()
 			}
 

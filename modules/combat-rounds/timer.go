@@ -103,6 +103,18 @@ func (rt *RoundBasedTimer) handleNewTurn(e events.Event) events.ListenerReturn {
 			// If player no longer has aggro, remove from combat tracking
 			if user.Character.Aggro == nil {
 				rt.RemovePlayer(userId)
+				
+				// Send final GMCP update showing combat has ended
+				events.AddToQueue(gmcp.GMCPCombatStatusUpdate{
+					UserId:          userId,
+					CooldownSeconds: 0,
+					MaxSeconds:      float64(rt.roundDuration) / float64(time.Second),
+					NameActive:      "Combat Round",
+					NameIdle:        "Ready",
+					InCombat:        false,
+					CombatStyle:     combat.GetActiveCombatSystemName(),
+					RoundNumber:     rt.roundNumber,
+				})
 			}
 		} else {
 			// User no longer exists, remove from tracking
@@ -143,8 +155,8 @@ func (rt *RoundBasedTimer) updatePlayers() {
 				UserId:          userId,
 				CooldownSeconds: remainingSeconds,
 				MaxSeconds:      maxSeconds,
-				NameActive:      "",
-				NameIdle:        "",
+				NameActive:      "Combat Round",
+				NameIdle:        "Ready",
 				InCombat:        user.Character.Aggro != nil,
 				CombatStyle:     combat.GetActiveCombatSystemName(),
 				RoundNumber:     roundNumber,

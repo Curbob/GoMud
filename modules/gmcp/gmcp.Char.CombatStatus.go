@@ -3,6 +3,7 @@ package gmcp
 import (
 	"math"
 
+	"github.com/GoMudEngine/GoMud/internal/combat"
 	"github.com/GoMudEngine/GoMud/internal/events"
 	"github.com/GoMudEngine/GoMud/internal/users"
 )
@@ -24,6 +25,8 @@ func (g GMCPCombatStatusUpdate) Type() string { return `GMCPCombatStatusUpdate` 
 func init() {
 	// Register listener for combat status updates
 	events.RegisterListener(GMCPCombatStatusUpdate{}, handleCombatStatusUpdate)
+	// Register listener for player spawn to send initial status
+	events.RegisterListener(events.PlayerSpawn{}, handlePlayerSpawn)
 }
 
 func handleCombatStatusUpdate(e events.Event) events.ListenerReturn {
@@ -70,6 +73,59 @@ func handleCombatStatusUpdate(e events.Event) events.ListenerReturn {
 		UserId:  evt.UserId,
 		Module:  "Char.CombatStatus",
 		Payload: payload,
+	})
+
+	return events.Continue
+}
+
+// handlePlayerSpawn sends initial combat status on login
+func handlePlayerSpawn(e events.Event) events.ListenerReturn {
+	evt, typeOk := e.(events.PlayerSpawn)
+	if !typeOk {
+		return events.Continue
+	}
+
+	if evt.UserId < 1 {
+		return events.Continue
+	}
+
+	// Check if user has aggro
+	inCombat := false
+	if user := users.GetByUserId(evt.UserId); user != nil {
+		inCombat = user.Character.Aggro != nil
+	}
+
+	// Get active combat system name and set appropriate names
+	combatStyle := combat.GetActiveCombatSystemName()
+	if combatStyle == "" {
+		combatStyle = "default"
+	}
+	
+	// Set names based on combat system
+	var nameActive, nameIdle string
+	switch combatStyle {
+	case "combat-twitch":
+		nameActive = "Unbalanced"
+		nameIdle = "Balanced"
+	case "combat-rounds":
+		nameActive = "Combat Round"
+		nameIdle = "Ready"
+	default:
+		// For default or unknown systems
+		nameActive = "In Combat"
+		nameIdle = "Ready"
+	}
+
+	// Send initial combat status
+	events.AddToQueue(GMCPCombatStatusUpdate{
+		UserId:          evt.UserId,
+		CooldownSeconds: 0,
+		MaxSeconds:      0,
+		NameActive:      nameActive,
+		NameIdle:        nameIdle,
+		InCombat:        inCombat,
+		CombatStyle:     combatStyle,
+		RoundNumber:     0,
 	})
 
 	return events.Continue

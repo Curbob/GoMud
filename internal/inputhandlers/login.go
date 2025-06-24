@@ -33,14 +33,16 @@ func FinalizeLoginOrCreate(results map[string]string, sharedState map[string]any
 				userid := users.FindUserId(results["username"])
 				user := users.GetByUserId(userid)
 
-				existingConnectionId := user.ConnectionId()
+				if user != nil {
+					existingConnectionId := user.ConnectionId()
 
-				// Send a goodbye message to the currently connected user
-				tplTxt, _ := templates.Process("goodbye", nil)
-				connections.SendTo([]byte(templates.AnsiParse(tplTxt)), existingConnectionId)
+					// Send a goodbye message to the currently connected user
+					tplTxt, _ := templates.Process("goodbye", nil)
+					connections.SendTo([]byte(templates.AnsiParse(tplTxt)), existingConnectionId)
 
-				users.SetZombieUser(userid)
-				connections.Kick(existingConnectionId, fmt.Sprintf(`Duplicate login (ip: %s)`, connDetails.RemoteAddr()))
+					users.SetZombieUser(userid)
+					connections.Kick(existingConnectionId, fmt.Sprintf(`Duplicate login (ip: %s)`, connDetails.RemoteAddr()))
+				}
 
 			}
 
