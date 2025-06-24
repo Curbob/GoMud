@@ -4,6 +4,7 @@ import (
 	"github.com/GoMudEngine/GoMud/internal/combat"
 	"github.com/GoMudEngine/GoMud/internal/mudlog"
 	"github.com/GoMudEngine/GoMud/internal/plugins"
+	"github.com/GoMudEngine/GoMud/internal/util"
 )
 
 // RoundBasedCombat implements the traditional round-based combat system
@@ -63,15 +64,11 @@ func (rbc *RoundBasedCombat) GetName() string {
 
 // ProcessCombatRound handles combat for all actors
 func (rbc *RoundBasedCombat) ProcessCombatRound() {
-	// For now, the round-based combat is handled by the existing hook system
-	// The hook in NewRound_DoCombat.go already contains all the combat logic
-	// In a future refactoring, we would move all that logic here
-	// But for now, we let it continue to run as-is
-
-	// The module's main contribution is:
-	// 1. Registering combat commands (attack, flee, consider)
-	// 2. Providing the combat calculator
-	// 3. Being the selected combat system
+	// Get the current round number
+	roundNumber := util.GetRoundCount()
+	
+	// Process combat for this round
+	rbc.processCombatRound(roundNumber)
 }
 
 // GetCalculator returns the combat calculator

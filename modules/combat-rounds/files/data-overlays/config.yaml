@@ -1,8 +1,0 @@
-# Combat-rounds module configuration overlay
-# These values will be available via the plugin config
-
-# Round-based combat specific settings
-RoundDuration: 3000  # milliseconds per combat round
-MaxAttacksPerRound: 5
-MinDamage: 1
-CriticalMultiplier: 2.0
