@@ -8,10 +8,10 @@ import (
 )
 
 var (
-	combatRegistry     = make(map[string]ICombatSystem)
-	activeCombatSystem ICombatSystem
+	combatRegistry         = make(map[string]ICombatSystem)
+	activeCombatSystem     ICombatSystem
 	activeCombatSystemName string
-	registryMutex      sync.RWMutex
+	registryMutex          sync.RWMutex
 )
 
 // RegisterCombatSystem registers a combat system implementation
@@ -143,15 +143,15 @@ func ShutdownCombatSystem() error {
 			mudlog.Error("Combat Registry", "action", "shutdown error", "system", systemName, "error", err)
 		}
 	}
-	
+
 	// Clear active system regardless of error
 	activeCombatSystem = nil
 	activeCombatSystemName = ""
-	
+
 	if mudlog.IsInitialized() {
 		mudlog.Info("Combat Registry", "action", "shutdown complete", "system", systemName)
 	}
-	
+
 	return err
 }
 

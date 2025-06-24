@@ -84,9 +84,9 @@ func (rbc *RoundBasedCombat) processPlayerCombat(roundNumber uint64) (affectedPl
 }
 
 // handlePlayerFlee processes a player's flee attempt
-func (rbc *RoundBasedCombat) handlePlayerFlee(user *users.UserRecord, room *rooms.Room, 
+func (rbc *RoundBasedCombat) handlePlayerFlee(user *users.UserRecord, room *rooms.Room,
 	affectedPlayerIds *[]int, affectedMobInstanceIds *[]int) {
-	
+
 	// Revert to default combat regardless of outcome
 	user.Character.SetAggro(user.Character.Aggro.UserId, user.Character.Aggro.MobInstanceId, characters.DefaultAttack)
 
@@ -98,7 +98,7 @@ func (rbc *RoundBasedCombat) handlePlayerFlee(user *users.UserRecord, room *room
 		}
 
 		// Stat comparison accounts for up to 70% of chance to flee
-		chanceIn100 := int(float64(user.Character.Stats.Speed.ValueAdj) / 
+		chanceIn100 := int(float64(user.Character.Stats.Speed.ValueAdj) /
 			(float64(user.Character.Stats.Speed.ValueAdj) + float64(mob.Character.Stats.Speed.ValueAdj)) * 70)
 		chanceIn100 += 30
 
@@ -115,7 +115,7 @@ func (rbc *RoundBasedCombat) handlePlayerFlee(user *users.UserRecord, room *room
 	if blockedByMob != `` {
 		user.SendText(fmt.Sprintf(`<ansi fg="red">%s blocks your escape!</ansi>`, blockedByMob))
 		room.SendText(
-			fmt.Sprintf(`<ansi fg="username">%s</ansi> <ansi fg="red">tries to flee, but is blocked by %s!</ansi>`, 
+			fmt.Sprintf(`<ansi fg="username">%s</ansi> <ansi fg="red">tries to flee, but is blocked by %s!</ansi>`,
 				user.Character.Name, blockedByMob),
 			user.UserId)
 	} else {
@@ -146,12 +146,12 @@ func (rbc *RoundBasedCombat) handlePlayerFlee(user *users.UserRecord, room *room
 // handlePlayerSpellCast processes spell casting in combat
 func (rbc *RoundBasedCombat) handlePlayerSpellCast(user *users.UserRecord, room *rooms.Room,
 	affectedPlayerIds *[]int, affectedMobInstanceIds *[]int) {
-	
+
 	if user.Character.Aggro.RoundsWaiting > 0 {
 		user.Character.Aggro.RoundsWaiting--
-		
+
 		scripting.TrySpellScriptEvent(`onWait`, user.UserId, 0, user.Character.Aggro.SpellInfo)
-		
+
 		return
 	}
 
@@ -174,14 +174,14 @@ func (rbc *RoundBasedCombat) handlePlayerSpellCast(user *users.UserRecord, room 
 	if allowRetaliation {
 		if spellData := spells.GetSpell(user.Character.Aggro.SpellInfo.SpellId); spellData != nil {
 			if spellData.Type == spells.HarmSingle || spellData.Type == spells.HarmMulti || spellData.Type == spells.HarmArea {
-				
+
 				// Handle spell effects on player targets
 				for _, userId := range user.Character.Aggro.SpellInfo.TargetUserIds {
 					*affectedPlayerIds = append(*affectedPlayerIds, userId)
-					
+
 					if defUser := users.GetByUserId(userId); defUser != nil {
 						defUser.Character.CancelBuffsWithFlag(buffs.CancelIfCombat)
-						
+
 						if defUser.Character.Health <= 0 {
 							defUser.Character.EndAggro()
 						} else if defUser.Character.Aggro == nil {
@@ -190,14 +190,14 @@ func (rbc *RoundBasedCombat) handlePlayerSpellCast(user *users.UserRecord, room 
 						}
 					}
 				}
-				
+
 				// Handle spell effects on mob targets
 				for _, mobId := range user.Character.Aggro.SpellInfo.TargetMobInstanceIds {
 					*affectedMobInstanceIds = append(*affectedMobInstanceIds, mobId)
-					
+
 					if defMob := mobs.GetInstance(mobId); defMob != nil {
 						defMob.Character.CancelBuffsWithFlag(buffs.CancelIfCombat)
-						
+
 						if defMob.Character.Health <= 0 {
 							defMob.Character.EndAggro()
 						} else if defMob.Character.Aggro == nil {
@@ -216,7 +216,7 @@ func (rbc *RoundBasedCombat) handlePlayerSpellCast(user *users.UserRecord, room 
 // handlePlayerPhysicalCombat processes physical attacks
 func (rbc *RoundBasedCombat) handlePlayerPhysicalCombat(user *users.UserRecord, room *rooms.Room,
 	affectedPlayerIds *[]int, affectedMobInstanceIds *[]int) {
-	
+
 	if user.Character.Aggro == nil {
 		return
 	}
@@ -237,7 +237,7 @@ func (rbc *RoundBasedCombat) handlePlayerPhysicalCombat(user *users.UserRecord, 
 // handlePlayerVsPlayer processes player vs player combat
 func (rbc *RoundBasedCombat) handlePlayerVsPlayer(user *users.UserRecord, room *rooms.Room,
 	affectedPlayerIds *[]int, affectedMobInstanceIds *[]int) {
-	
+
 	defUser := users.GetByUserId(user.Character.Aggro.UserId)
 	if defUser == nil {
 		user.SendText(`Your target can't be found.`)
@@ -282,9 +282,9 @@ func (rbc *RoundBasedCombat) handlePlayerVsPlayer(user *users.UserRecord, room *
 	// Handle wait rounds (for slow weapons)
 	if user.Character.Aggro.RoundsWaiting > 0 {
 		user.Character.Aggro.RoundsWaiting--
-		
+
 		roundResult := combat.GetWaitMessages(items.Wait, user.Character, defUser.Character, combat.User, combat.User)
-		
+
 		for _, msg := range roundResult.MessagesToSource {
 			user.SendText(msg)
 		}
@@ -365,7 +365,7 @@ func (rbc *RoundBasedCombat) handlePlayerVsPlayer(user *users.UserRecord, room *
 // handlePlayerVsMob processes player vs mob combat
 func (rbc *RoundBasedCombat) handlePlayerVsMob(user *users.UserRecord, room *rooms.Room,
 	affectedPlayerIds *[]int, affectedMobInstanceIds *[]int) {
-	
+
 	*affectedMobInstanceIds = append(*affectedMobInstanceIds, user.Character.Aggro.MobInstanceId)
 
 	defMob := mobs.GetInstance(user.Character.Aggro.MobInstanceId)
@@ -412,9 +412,9 @@ func (rbc *RoundBasedCombat) handlePlayerVsMob(user *users.UserRecord, room *roo
 	// Handle wait rounds (for slow weapons)
 	if user.Character.Aggro.RoundsWaiting > 0 {
 		user.Character.Aggro.RoundsWaiting--
-		
+
 		roundResult := combat.GetWaitMessages(items.Wait, user.Character, &defMob.Character, combat.User, combat.Mob)
-		
+
 		for _, msg := range roundResult.MessagesToSource {
 			user.SendText(msg)
 		}
@@ -457,7 +457,7 @@ func (rbc *RoundBasedCombat) handlePlayerVsMob(user *users.UserRecord, room *roo
 
 	// Handle scripted behavior
 	if roundResult.Hit {
-		scripting.TryMobScriptEvent(`onHurt`, defMob.InstanceId, user.UserId, `user`, 
+		scripting.TryMobScriptEvent(`onHurt`, defMob.InstanceId, user.UserId, `user`,
 			map[string]any{`damage`: roundResult.DamageToTarget, `crit`: roundResult.Crit})
 	}
 
@@ -470,7 +470,7 @@ func (rbc *RoundBasedCombat) handlePlayerVsMob(user *users.UserRecord, room *roo
 	// Set mob aggro if not already fighting
 	if defMob.Character.Aggro == nil {
 		defMob.PreventIdle = true
-		
+
 		// If not in same room, move to player's room first
 		if user.Character.RoomId != defMob.Character.RoomId {
 			if mobRoom := rooms.LoadRoom(defMob.Character.RoomId); mobRoom != nil {
@@ -485,7 +485,7 @@ func (rbc *RoundBasedCombat) handlePlayerVsMob(user *users.UserRecord, room *roo
 				}
 			}
 		}
-		
+
 		defMob.Command(fmt.Sprintf("attack @%d", user.UserId))
 	}
 
@@ -513,7 +513,7 @@ func (rbc *RoundBasedCombat) checkEquipmentDamage(user *users.UserRecord, room *
 
 		if user.Character.Equipment.Offhand.BreakTest(modifier) {
 			// Send message about the break
-			room.SendText(fmt.Sprintf(`<ansi fg="214"><ansi fg="202">***</ansi> The <ansi fg="item">%s</ansi> <ansi fg="username">%s</ansi> was carrying breaks! <ansi fg="202">***</ansi></ansi>`, 
+			room.SendText(fmt.Sprintf(`<ansi fg="214"><ansi fg="202">***</ansi> The <ansi fg="item">%s</ansi> <ansi fg="username">%s</ansi> was carrying breaks! <ansi fg="202">***</ansi></ansi>`,
 				user.Character.Equipment.Offhand.NameSimple(), user.Character.Name))
 
 			events.AddToQueue(events.ItemOwnership{
@@ -526,7 +526,7 @@ func (rbc *RoundBasedCombat) checkEquipmentDamage(user *users.UserRecord, room *
 			brokenItem := items.New(20) // Broken item
 			if !user.Character.StoreItem(brokenItem) {
 				room.AddItem(brokenItem, false)
-				
+
 				events.AddToQueue(events.ItemOwnership{
 					UserId: user.UserId,
 					Item:   brokenItem,
@@ -545,7 +545,7 @@ func (rbc *RoundBasedCombat) processMobCombat(roundNumber uint64) (affectedPlaye
 	// Handle mob round of combat
 	for _, mobId := range mobs.GetAllMobInstanceIds() {
 		mob := mobs.GetInstance(mobId)
-		
+
 		// Only handling combat functions here, so ditch out if not in combat
 		if mob == nil || mob.Character.Aggro == nil {
 			continue
@@ -580,7 +580,7 @@ func (rbc *RoundBasedCombat) processMobCombat(roundNumber uint64) (affectedPlaye
 				// Each mob has a 10% chance of doing an idle action.
 				if util.Rand(100) < mob.ActivityLevel {
 					combatAction := mob.CombatCommands[util.Rand(cmdCt)]
-					
+
 					if combatAction == `` { // blank is a no-op
 						continue
 					}
@@ -655,14 +655,14 @@ func (rbc *RoundBasedCombat) handleAffected(affectedPlayerIds []int, affectedMob
 }
 
 // handleMobSpellCast processes mob spell casting
-func (rbc *RoundBasedCombat) handleMobSpellCast(mob *mobs.Mob, mobRoom *rooms.Room, 
+func (rbc *RoundBasedCombat) handleMobSpellCast(mob *mobs.Mob, mobRoom *rooms.Room,
 	affectedPlayerIds *[]int, affectedMobInstanceIds *[]int) {
-	
+
 	if mob.Character.Aggro.RoundsWaiting > 0 {
 		mob.Character.Aggro.RoundsWaiting--
-		
+
 		scripting.TrySpellScriptEvent(`onWait`, 0, mob.InstanceId, mob.Character.Aggro.SpellInfo)
-		
+
 		return
 	}
 
@@ -684,13 +684,13 @@ func (rbc *RoundBasedCombat) handleMobSpellCast(mob *mobs.Mob, mobRoom *rooms.Ro
 	if allowRetaliation {
 		if spellData := spells.GetSpell(mob.Character.Aggro.SpellInfo.SpellId); spellData != nil {
 			if spellData.Type == spells.HarmSingle || spellData.Type == spells.HarmMulti || spellData.Type == spells.HarmArea {
-				
+
 				for _, mobId := range mob.Character.Aggro.SpellInfo.TargetMobInstanceIds {
 					*affectedMobInstanceIds = append(*affectedMobInstanceIds, mobId)
-					
+
 					if defMob := mobs.GetInstance(mobId); defMob != nil {
 						defMob.Character.CancelBuffsWithFlag(buffs.CancelIfCombat)
-						
+
 						if defMob.Character.Health <= 0 {
 							defMob.Character.EndAggro()
 						} else if defMob.Character.Aggro == nil {
@@ -709,9 +709,9 @@ func (rbc *RoundBasedCombat) handleMobSpellCast(mob *mobs.Mob, mobRoom *rooms.Ro
 // handleMobVsPlayer processes mob vs player combat
 func (rbc *RoundBasedCombat) handleMobVsPlayer(mob *mobs.Mob, mobRoom *rooms.Room,
 	affectedPlayerIds *[]int, affectedMobInstanceIds *[]int) {
-	
+
 	*affectedMobInstanceIds = append(*affectedMobInstanceIds, mob.InstanceId)
-	
+
 	defUser := users.GetByUserId(mob.Character.Aggro.UserId)
 	if defUser == nil || mob.Character.RoomId != defUser.Character.RoomId {
 		mob.Character.Aggro = nil
@@ -743,7 +743,7 @@ func (rbc *RoundBasedCombat) handleMobVsPlayer(mob *mobs.Mob, mobRoom *rooms.Roo
 	if mob.Character.Equipment.Weapon.ItemId == 0 && len(mob.Character.Items) > 0 {
 		roll := util.Rand(100)
 		util.LogRoll(`Look for weapon`, roll, mob.Character.Stats.Perception.ValueAdj)
-		
+
 		if roll < mob.Character.Stats.Perception.ValueAdj {
 			possibleWeapons := []string{}
 			for _, itm := range mob.Character.Items {
@@ -762,11 +762,11 @@ func (rbc *RoundBasedCombat) handleMobVsPlayer(mob *mobs.Mob, mobRoom *rooms.Roo
 	// Handle wait rounds (for slow weapons)
 	if mob.Character.Aggro.RoundsWaiting > 0 {
 		mudlog.Debug(`RoundsWaiting`, `User`, mob.Character.Name, `Rounds`, mob.Character.Aggro.RoundsWaiting)
-		
+
 		mob.Character.Aggro.RoundsWaiting--
-		
+
 		roundResult := combat.GetWaitMessages(items.Wait, &mob.Character, defUser.Character, combat.Mob, combat.User)
-		
+
 		for _, msg := range roundResult.MessagesToTarget {
 			defUser.SendText(msg)
 		}
@@ -776,7 +776,7 @@ func (rbc *RoundBasedCombat) handleMobVsPlayer(mob *mobs.Mob, mobRoom *rooms.Roo
 		for _, msg := range roundResult.MessagesToTargetRoom {
 			defRoom.SendText(msg, defUser.UserId)
 		}
-		
+
 		return
 	}
 
@@ -833,20 +833,20 @@ func (rbc *RoundBasedCombat) handleMobVsPlayer(mob *mobs.Mob, mobRoom *rooms.Roo
 // handleMobVsMob processes mob vs mob combat
 func (rbc *RoundBasedCombat) handleMobVsMob(mob *mobs.Mob, mobRoom *rooms.Room,
 	affectedPlayerIds *[]int, affectedMobInstanceIds *[]int) {
-	
+
 	*affectedMobInstanceIds = append(*affectedMobInstanceIds, mob.Character.Aggro.MobInstanceId)
-	
+
 	defMob := mobs.GetInstance(mob.Character.Aggro.MobInstanceId)
-	
+
 	if defMob == nil || mob.Character.RoomId != defMob.Character.RoomId {
 		mob.Character.Aggro = nil
 		return
 	}
 
 	defRoom := rooms.LoadRoom(defMob.Character.RoomId)
-	
+
 	defMob.Character.CancelBuffsWithFlag(buffs.CancelIfCombat)
-	
+
 	if defMob.Character.Health < 1 {
 		mob.Character.Aggro = nil
 		return
@@ -855,18 +855,18 @@ func (rbc *RoundBasedCombat) handleMobVsMob(mob *mobs.Mob, mobRoom *rooms.Room,
 	// Handle wait rounds (for slow weapons)
 	if mob.Character.Aggro.RoundsWaiting > 0 {
 		mudlog.Debug(`RoundsWaiting`, `User`, mob.Character.Name, `Rounds`, mob.Character.Aggro.RoundsWaiting)
-		
+
 		mob.Character.Aggro.RoundsWaiting--
-		
+
 		roundResult := combat.GetWaitMessages(items.Wait, &mob.Character, &defMob.Character, combat.Mob, combat.Mob)
-		
+
 		for _, msg := range roundResult.MessagesToSourceRoom {
 			mobRoom.SendText(msg)
 		}
 		for _, msg := range roundResult.MessagesToTargetRoom {
 			defRoom.SendText(msg)
 		}
-		
+
 		return
 	}
 
@@ -896,7 +896,7 @@ func (rbc *RoundBasedCombat) handleMobVsMob(mob *mobs.Mob, mobRoom *rooms.Room,
 
 	// Handle any scripted behavior now.
 	if roundResult.Hit {
-		scripting.TryMobScriptEvent(`onHurt`, defMob.InstanceId, mob.InstanceId, `mob`, 
+		scripting.TryMobScriptEvent(`onHurt`, defMob.InstanceId, mob.InstanceId, `mob`,
 			map[string]any{`damage`: roundResult.DamageToTarget, `crit`: roundResult.Crit})
 	}
 
@@ -921,7 +921,7 @@ func (rbc *RoundBasedCombat) handleMobVsMob(mob *mobs.Mob, mobRoom *rooms.Room,
 			if defMob.Character.Equipment.Offhand.BreakTest(modifier) {
 				// Send message about the break
 				if defRoom != nil {
-					defRoom.SendText(fmt.Sprintf(`<ansi fg="214"><ansi fg="202">***</ansi> The <ansi fg="item">%s</ansi> <ansi fg="mobname">%s</ansi> was carrying breaks! <ansi fg="202">***</ansi></ansi>`, 
+					defRoom.SendText(fmt.Sprintf(`<ansi fg="214"><ansi fg="202">***</ansi> The <ansi fg="item">%s</ansi> <ansi fg="mobname">%s</ansi> was carrying breaks! <ansi fg="202">***</ansi></ansi>`,
 						defMob.Character.Equipment.Offhand.NameSimple(), defMob.Character.Name))
 
 					events.AddToQueue(events.ItemOwnership{
@@ -934,7 +934,7 @@ func (rbc *RoundBasedCombat) handleMobVsMob(mob *mobs.Mob, mobRoom *rooms.Room,
 					itm := items.New(20) // Broken item
 					if !defMob.Character.StoreItem(itm) {
 						defRoom.AddItem(itm, false)
-						
+
 						events.AddToQueue(events.ItemOwnership{
 							MobInstanceId: defMob.InstanceId,
 							Item:          itm,
