@@ -28,6 +28,10 @@ type RoundBasedTimer struct {
 
 	// Additional mutex for round-specific data
 	roundMutex sync.RWMutex
+	
+	// Track if we've started the timer
+	timerStarted bool
+	timerMutex   sync.Mutex
 }
 
 // NewRoundBasedTimer creates a new round-based timer
@@ -50,15 +54,11 @@ func NewRoundBasedTimer(c *RoundBasedCombat) *RoundBasedTimer {
 
 // Start implements ICombatTimer
 func (rt *RoundBasedTimer) Start() error {
-	// Start base timer
-	if err := rt.BaseTimer.Start(); err != nil {
-		return err
-	}
-
 	// Register for round events
 	rt.newRoundListenerId = events.RegisterListener(events.NewRound{}, rt.handleNewRound)
 	rt.newTurnListenerId = events.RegisterListener(events.NewTurn{}, rt.handleNewTurn)
 
+	// Don't start the actual timer until players are added
 	return nil
 }
 
@@ -74,8 +74,16 @@ func (rt *RoundBasedTimer) Stop() error {
 		rt.newTurnListenerId = 0
 	}
 
-	// Stop base timer
-	return rt.BaseTimer.Stop()
+	// Stop base timer if it's running
+	rt.timerMutex.Lock()
+	defer rt.timerMutex.Unlock()
+	
+	if rt.timerStarted {
+		rt.timerStarted = false
+		return rt.BaseTimer.Stop()
+	}
+	
+	return nil
 }
 
 // handleNewRound updates round tracking
@@ -95,41 +103,19 @@ func (rt *RoundBasedTimer) handleNewRound(e events.Event) events.ListenerReturn 
 
 // handleNewTurn checks combat state for all tracked players
 func (rt *RoundBasedTimer) handleNewTurn(e events.Event) events.ListenerReturn {
-	playersToCheck := rt.GetTrackedPlayers()
-
-	// Check each player's combat state
-	for _, userId := range playersToCheck {
-		if user := users.GetByUserId(userId); user != nil {
-			// If player no longer has aggro, remove from combat tracking
-			if user.Character.Aggro == nil {
-				rt.RemovePlayer(userId)
-				
-				// Send final GMCP update showing combat has ended
-				events.AddToQueue(gmcp.GMCPCombatStatusUpdate{
-					UserId:          userId,
-					CooldownSeconds: 0,
-					MaxSeconds:      float64(rt.roundDuration) / float64(time.Second),
-					NameActive:      "Combat Round",
-					NameIdle:        "Ready",
-					InCombat:        false,
-					CombatStyle:     combat.GetActiveCombatSystemName(),
-					RoundNumber:     rt.roundNumber,
-				})
-			}
-		} else {
-			// User no longer exists, remove from tracking
-			rt.RemovePlayer(userId)
-		}
-	}
-
+	// Combat end detection is now handled in updatePlayers() for immediate response
+	// This function can be used for other turn-based logic if needed
 	return events.Continue
 }
 
 // updatePlayers sends GMCP updates to all tracked players
 func (rt *RoundBasedTimer) updatePlayers() {
-	if !rt.IsActive() {
+	rt.timerMutex.Lock()
+	if !rt.timerStarted {
+		rt.timerMutex.Unlock()
 		return
 	}
+	rt.timerMutex.Unlock()
 
 	rt.roundMutex.RLock()
 	roundStarted := rt.roundStarted
@@ -150,17 +136,68 @@ func (rt *RoundBasedTimer) updatePlayers() {
 	players := rt.GetTrackedPlayers()
 	for _, userId := range players {
 		if user := users.GetByUserId(userId); user != nil {
-			// Send GMCP combat status update
-			events.AddToQueue(gmcp.GMCPCombatStatusUpdate{
-				UserId:          userId,
-				CooldownSeconds: remainingSeconds,
-				MaxSeconds:      maxSeconds,
-				NameActive:      "Combat Round",
-				NameIdle:        "Ready",
-				InCombat:        user.Character.Aggro != nil,
-				CombatStyle:     combat.GetActiveCombatSystemName(),
-				RoundNumber:     roundNumber,
-			})
+			// Check if player still has aggro
+			if user.Character.Aggro == nil {
+				// Player no longer in combat, remove and send final update
+				rt.RemovePlayer(userId)
+				
+				// Send final GMCP update showing combat has ended
+				events.AddToQueue(gmcp.GMCPCombatStatusUpdate{
+					UserId:          userId,
+					CooldownSeconds: 0,
+					MaxSeconds:      maxSeconds,
+					NameActive:      "Combat Round",
+					NameIdle:        "Ready",
+					InCombat:        false,
+					CombatStyle:     combat.GetActiveCombatSystemName(),
+					RoundNumber:     roundNumber,
+				})
+			} else {
+				// Still in combat, send normal update
+				events.AddToQueue(gmcp.GMCPCombatStatusUpdate{
+					UserId:          userId,
+					CooldownSeconds: remainingSeconds,
+					MaxSeconds:      maxSeconds,
+					NameActive:      "Combat Round",
+					NameIdle:        "Ready",
+					InCombat:        true,
+					CombatStyle:     combat.GetActiveCombatSystemName(),
+					RoundNumber:     roundNumber,
+				})
+			}
+		} else {
+			// User no longer exists, remove from tracking
+			rt.RemovePlayer(userId)
 		}
+	}
+}
+
+// AddPlayer adds a player to combat tracking and starts timer if needed
+func (rt *RoundBasedTimer) AddPlayer(userId int) {
+	// Add to tracker
+	rt.PlayerTracker.AddPlayer(userId)
+	
+	// Start timer if this is the first player
+	rt.timerMutex.Lock()
+	defer rt.timerMutex.Unlock()
+	
+	if !rt.timerStarted && len(rt.GetTrackedPlayers()) > 0 {
+		rt.timerStarted = true
+		rt.BaseTimer.Start()
+	}
+}
+
+// RemovePlayer removes a player from combat tracking and stops timer if needed
+func (rt *RoundBasedTimer) RemovePlayer(userId int) {
+	// Remove from tracker
+	rt.PlayerTracker.RemovePlayer(userId)
+	
+	// Stop timer if no more players
+	rt.timerMutex.Lock()
+	defer rt.timerMutex.Unlock()
+	
+	if rt.timerStarted && len(rt.GetTrackedPlayers()) == 0 {
+		rt.timerStarted = false
+		rt.BaseTimer.Stop()
 	}
 }
