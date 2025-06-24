@@ -15,7 +15,7 @@ type CooldownTimer struct {
 	cooldowns map[string]*ActorCooldown // key: "user:123" or "mob:456"
 	callbacks map[string]func()
 	lastSent  map[string]float64 // Track last sent value to avoid duplicates
-	
+
 	// Additional mutex for cooldown-specific data
 	cooldownMutex sync.RWMutex
 }
@@ -38,10 +38,10 @@ func NewCooldownTimer(c *TwitchCombat) *CooldownTimer {
 		callbacks: make(map[string]func()),
 		lastSent:  make(map[string]float64),
 	}
-	
+
 	// Create base timer with update function
 	ct.BaseTimer = combat.NewBaseTimer("combat-twitch", ct.processCooldowns)
-	
+
 	return ct
 }
 
@@ -58,31 +58,31 @@ func (ct *CooldownTimer) Stop() error {
 // processCooldowns checks and executes expired cooldowns
 func (ct *CooldownTimer) processCooldowns() {
 	now := time.Now()
-	
+
 	ct.cooldownMutex.Lock()
 	defer ct.cooldownMutex.Unlock()
-	
+
 	for key, cooldown := range ct.cooldowns {
 		if now.After(cooldown.NextAction) {
 			// Cooldown expired
 			if cooldown.OffBalance {
 				cooldown.OffBalance = false
-				
+
 				// Notify the actor their balance is restored
 				ct.combat.SendBalanceNotification(cooldown.ActorId, cooldown.ActorType)
-				
+
 				// Update GMCP
 				if cooldown.ActorType == combat.User {
 					ct.combat.SendGMCPBalanceUpdate(cooldown.ActorId, 0, 0)
 				}
 			}
-			
+
 			// Execute callback if any
 			if cooldown.Callback != nil {
 				go cooldown.Callback()
 				cooldown.Callback = nil
 			}
-			
+
 			// Remove expired cooldown
 			delete(ct.cooldowns, key)
 			delete(ct.lastSent, key)
@@ -90,7 +90,7 @@ func (ct *CooldownTimer) processCooldowns() {
 			// Still on cooldown, send GMCP updates
 			remaining := cooldown.NextAction.Sub(now).Seconds()
 			maxSeconds := cooldown.MaxDuration.Seconds()
-			
+
 			// Always send updates during cooldown for smooth countdown
 			ct.combat.SendGMCPBalanceUpdate(cooldown.ActorId, remaining, maxSeconds)
 		}
@@ -100,10 +100,10 @@ func (ct *CooldownTimer) processCooldowns() {
 // SetActorCooldown sets a cooldown for an actor
 func (ct *CooldownTimer) SetActorCooldown(actorId int, actorType combat.SourceTarget, duration time.Duration) {
 	key := ct.makeKey(actorId, actorType)
-	
+
 	ct.cooldownMutex.Lock()
 	defer ct.cooldownMutex.Unlock()
-	
+
 	ct.cooldowns[key] = &ActorCooldown{
 		NextAction:  time.Now().Add(duration),
 		OffBalance:  true,
@@ -111,7 +111,7 @@ func (ct *CooldownTimer) SetActorCooldown(actorId int, actorType combat.SourceTa
 		ActorType:   actorType,
 		MaxDuration: duration,
 	}
-	
+
 	// Clear last sent value to force immediate update
 	delete(ct.lastSent, key)
 }
@@ -119,10 +119,10 @@ func (ct *CooldownTimer) SetActorCooldown(actorId int, actorType combat.SourceTa
 // SetActorCallback sets a callback to execute when cooldown expires
 func (ct *CooldownTimer) SetActorCallback(actorId int, actorType combat.SourceTarget, duration time.Duration, callback func()) {
 	key := ct.makeKey(actorId, actorType)
-	
+
 	ct.cooldownMutex.Lock()
 	defer ct.cooldownMutex.Unlock()
-	
+
 	cooldown, exists := ct.cooldowns[key]
 	if exists {
 		cooldown.Callback = callback
@@ -140,45 +140,45 @@ func (ct *CooldownTimer) SetActorCallback(actorId int, actorType combat.SourceTa
 // CanPerformAction checks if an actor can perform an action
 func (ct *CooldownTimer) CanPerformAction(actorId int, actorType combat.SourceTarget) bool {
 	key := ct.makeKey(actorId, actorType)
-	
+
 	ct.cooldownMutex.RLock()
 	defer ct.cooldownMutex.RUnlock()
-	
+
 	cooldown, exists := ct.cooldowns[key]
 	if !exists {
 		return true
 	}
-	
+
 	return time.Now().After(cooldown.NextAction)
 }
 
 // GetRemainingCooldown returns remaining cooldown time
 func (ct *CooldownTimer) GetRemainingCooldown(actorId int, actorType combat.SourceTarget) time.Duration {
 	key := ct.makeKey(actorId, actorType)
-	
+
 	ct.cooldownMutex.RLock()
 	defer ct.cooldownMutex.RUnlock()
-	
+
 	cooldown, exists := ct.cooldowns[key]
 	if !exists {
 		return 0
 	}
-	
+
 	remaining := cooldown.NextAction.Sub(time.Now())
 	if remaining < 0 {
 		return 0
 	}
-	
+
 	return remaining
 }
 
 // ClearActorCooldown removes an actor's cooldown
 func (ct *CooldownTimer) ClearActorCooldown(actorId int, actorType combat.SourceTarget) {
 	key := ct.makeKey(actorId, actorType)
-	
+
 	ct.cooldownMutex.Lock()
 	defer ct.cooldownMutex.Unlock()
-	
+
 	delete(ct.cooldowns, key)
 	delete(ct.lastSent, key)
 }
@@ -191,15 +191,15 @@ func (ct *CooldownTimer) makeKey(actorId int, actorType combat.SourceTarget) str
 // GetNextActionTime returns when an actor can next act
 func (ct *CooldownTimer) GetNextActionTime(actorId int, actorType combat.SourceTarget) time.Time {
 	key := ct.makeKey(actorId, actorType)
-	
+
 	ct.cooldownMutex.RLock()
 	defer ct.cooldownMutex.RUnlock()
-	
+
 	cooldown, exists := ct.cooldowns[key]
 	if !exists {
 		return time.Now()
 	}
-	
+
 	return cooldown.NextAction
 }
 

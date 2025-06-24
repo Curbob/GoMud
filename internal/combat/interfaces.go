@@ -61,7 +61,6 @@ type ICombatTimer interface {
 	Stop() error
 }
 
-
 // CombatAction represents a queued combat action
 type CombatAction struct {
 	AttackerId   int
@@ -73,4 +72,3 @@ type CombatAction struct {
 	ExitName     string
 	Timestamp    time.Time
 }
-

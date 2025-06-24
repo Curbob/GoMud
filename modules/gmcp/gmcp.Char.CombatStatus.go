@@ -59,7 +59,7 @@ func handleCombatStatusUpdate(e events.Event) events.ListenerReturn {
 		"in_combat":    evt.InCombat,
 		"combat_style": evt.CombatStyle,
 	}
-	
+
 	// Only include round_number if it's set (for round-based combat)
 	if evt.RoundNumber > 0 {
 		payload["round_number"] = evt.RoundNumber

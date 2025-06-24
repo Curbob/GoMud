@@ -66,7 +66,7 @@ func (rbc *RoundBasedCombat) GetName() string {
 func (rbc *RoundBasedCombat) ProcessCombatRound() {
 	// Get the current round number
 	roundNumber := util.GetRoundCount()
-	
+
 	// Process combat for this round
 	rbc.processCombatRound(roundNumber)
 }
