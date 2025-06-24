@@ -12,13 +12,13 @@ import (
 
 // MockCombatCalculator implements ICombatCalculator for testing
 type MockCombatCalculator struct {
-	hitResult       bool
-	damage          int
-	critResult      bool
-	defense         int
-	initiative      int
-	attackCount     int
-	powerRanking    int
+	hitResult    bool
+	damage       int
+	critResult   bool
+	defense      int
+	initiative   int
+	attackCount  int
+	powerRanking int
 }
 
 func (m *MockCombatCalculator) CalculateHitChance(attacker, defender *characters.Character) bool {
@@ -86,7 +86,7 @@ func TestPerformAttack_BasicHit(t *testing.T) {
 		Health: 100,
 	}
 	defender := &characters.Character{
-		Name:   "Defender", 
+		Name:   "Defender",
 		Health: 100,
 	}
 
@@ -163,10 +163,11 @@ func TestPerformAttack_WithDefense(t *testing.T) {
 	defender := &characters.Character{Name: "Defender"}
 
 	// Create mock calculator with defense
+	// The calculator already applies defense reduction internally
 	calc := &MockCombatCalculator{
 		hitResult:   true,
-		damage:      30,
-		defense:     10, // 10 defense = 5 damage reduction
+		damage:      25, // This is the final damage after defense reduction
+		defense:     10, // Used by CalculateDefense but not by delegator
 		attackCount: 1,
 	}
 
@@ -174,8 +175,8 @@ func TestPerformAttack_WithDefense(t *testing.T) {
 	result := performAttack(attacker, defender, User, Mob, calc, nil)
 
 	// Verify results
-	assert.Equal(t, 25, result.DamageToTarget, "Expected damage after reduction")
-	assert.Equal(t, 5, result.DamageToTargetReduction, "Expected damage reduction")
+	assert.Equal(t, 25, result.DamageToTarget, "Expected final damage from calculator")
+	assert.Equal(t, 0, result.DamageToTargetReduction, "No reduction applied by delegator")
 }
 
 func TestPerformAttack_MultipleAttacks(t *testing.T) {
@@ -207,9 +208,9 @@ func TestAttackMessages(t *testing.T) {
 		hitResult:   false,
 		attackCount: 1,
 	}
-	
+
 	result := performAttack(attacker, defender, User, Mob, calc, nil)
-	
+
 	// Should have miss messages
 	assert.NotEmpty(t, result.MessagesToSource, "Expected miss message for attacker")
 	assert.NotEmpty(t, result.MessagesToTarget, "Expected miss message for defender")
@@ -218,9 +219,9 @@ func TestAttackMessages(t *testing.T) {
 	// Test hit message generation
 	calc.hitResult = true
 	calc.damage = 20
-	
+
 	result = performAttack(attacker, defender, User, Mob, calc, nil)
-	
+
 	// Should have hit messages
 	assert.NotEmpty(t, result.MessagesToSource, "Expected hit message for attacker")
 	assert.NotEmpty(t, result.MessagesToTarget, "Expected hit message for defender")
@@ -239,7 +240,7 @@ func TestGetActiveCombatSystem(t *testing.T) {
 	// Test with no active system
 	activeCombatSystem = nil
 	activeCombatSystemName = ""
-	
+
 	assert.Nil(t, GetActiveCombatSystem(), "Expected nil when no system is active")
 	assert.Empty(t, GetActiveCombatSystemName(), "Expected empty name when no system is active")
 
@@ -247,7 +248,7 @@ func TestGetActiveCombatSystem(t *testing.T) {
 	mockSystem := &MockCombatSystem{}
 	activeCombatSystem = mockSystem
 	activeCombatSystemName = "test-system"
-	
+
 	assert.Equal(t, mockSystem, GetActiveCombatSystem(), "Expected to get the active system")
 	assert.Equal(t, "test-system", GetActiveCombatSystemName(), "Expected correct system name")
 }
@@ -255,7 +256,7 @@ func TestGetActiveCombatSystem(t *testing.T) {
 func TestCombatSystemRegistry(t *testing.T) {
 	// Create a unique name for this test
 	testName := "test-registry-system"
-	
+
 	// Clean up after test
 	defer func() {
 		registryMutex.Lock()
@@ -287,14 +288,14 @@ func TestSetActiveCombatSystem(t *testing.T) {
 	originalSystem := activeCombatSystem
 	originalName := activeCombatSystemName
 	originalRegistry := make(map[string]ICombatSystem)
-	
+
 	// Copy registry
 	registryMutex.Lock()
 	for k, v := range combatRegistry {
 		originalRegistry[k] = v
 	}
 	registryMutex.Unlock()
-	
+
 	// Restore state after test
 	defer func() {
 		registryMutex.Lock()
@@ -309,7 +310,7 @@ func TestSetActiveCombatSystem(t *testing.T) {
 	mockSystem := &MockCombatSystem{
 		calculator: &MockCombatCalculator{},
 	}
-	
+
 	err := RegisterCombatSystem(testName, mockSystem)
 	require.NoError(t, err, "Failed to register system")
 
@@ -333,7 +334,7 @@ func TestListCombatSystems(t *testing.T) {
 		originalRegistry[k] = v
 	}
 	registryMutex.Unlock()
-	
+
 	// Restore after test
 	defer func() {
 		registryMutex.Lock()
@@ -351,7 +352,7 @@ func TestListCombatSystems(t *testing.T) {
 
 	// Get list
 	systems := ListCombatSystems()
-	
+
 	// Verify
 	assert.Len(t, systems, 3, "Expected 3 systems")
 	assert.Contains(t, systems, "system-a")

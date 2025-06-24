@@ -2,7 +2,7 @@ package combat
 
 import (
 	"fmt"
-	
+
 	"github.com/GoMudEngine/GoMud/internal/characters"
 	"github.com/GoMudEngine/GoMud/internal/items"
 	"github.com/GoMudEngine/GoMud/internal/mobs"
@@ -24,7 +24,7 @@ func AttackPlayerVsMob(user *users.UserRecord, mob *mobs.Mob) AttackResult {
 			mudlog.Error("AttackPlayerVsMob", "error", "nil combatant", "user", user != nil, "mob", mob != nil)
 		}
 		return AttackResult{
-			Hit: false,
+			Hit:              false,
 			MessagesToSource: []string{"Combat error: invalid target"},
 		}
 	}
@@ -39,7 +39,7 @@ func AttackPlayerVsMob(user *users.UserRecord, mob *mobs.Mob) AttackResult {
 	}
 
 	// Use the combat system's calculator
-	return performAttack(user.Character, &mob.Character, User, Mob, system.GetCalculator(), 
+	return performAttack(user.Character, &mob.Character, User, Mob, system.GetCalculator(),
 		func(result *AttackResult) {
 			if result.DamageToSource != 0 {
 				user.Character.ApplyHealthChange(result.DamageToSource * -1)
@@ -67,7 +67,7 @@ func AttackPlayerVsPlayer(userAtk *users.UserRecord, userDef *users.UserRecord) 
 			mudlog.Error("AttackPlayerVsPlayer", "error", "nil combatant", "attacker", userAtk != nil, "defender", userDef != nil)
 		}
 		return AttackResult{
-			Hit: false,
+			Hit:              false,
 			MessagesToSource: []string{"Combat error: invalid target"},
 		}
 	}
@@ -111,7 +111,7 @@ func AttackMobVsPlayer(mob *mobs.Mob, user *users.UserRecord) AttackResult {
 			mudlog.Error("AttackMobVsPlayer", "error", "nil combatant", "mob", mob != nil, "user", user != nil)
 		}
 		return AttackResult{
-			Hit: false,
+			Hit:              false,
 			MessagesToTarget: []string{"Combat error: invalid attacker"},
 		}
 	}
@@ -177,16 +177,16 @@ func AttackMobVsMob(mobAtk *mobs.Mob, mobDef *mobs.Mob) AttackResult {
 }
 
 // performAttack handles a single attack using the combat calculator
-func performAttack(attacker, defender *characters.Character, attackerType, defenderType SourceTarget, 
+func performAttack(attacker, defender *characters.Character, attackerType, defenderType SourceTarget,
 	calculator ICombatCalculator, postAttack func(*AttackResult)) AttackResult {
-	
+
 	result := AttackResult{}
-	
+
 	// Validate inputs
 	if attacker == nil || defender == nil || calculator == nil {
 		if mudlog.IsInitialized() {
-			mudlog.Error("performAttack", "error", "nil parameter", 
-				"attacker", attacker != nil, 
+			mudlog.Error("performAttack", "error", "nil parameter",
+				"attacker", attacker != nil,
 				"defender", defender != nil,
 				"calculator", calculator != nil)
 		}
@@ -194,7 +194,7 @@ func performAttack(attacker, defender *characters.Character, attackerType, defen
 		result.SendToSource("Combat error: system failure")
 		return result
 	}
-	
+
 	// Calculate number of attacks
 	attackCount := calculator.CalculateAttackCount(attacker, defender)
 	if attackCount < 1 {
@@ -203,7 +203,7 @@ func performAttack(attacker, defender *characters.Character, attackerType, defen
 		}
 		attackCount = 1
 	}
-	
+
 	for i := 0; i < attackCount; i++ {
 		// Check if attack hits
 		hit := calculator.CalculateHitChance(attacker, defender)
@@ -213,81 +213,73 @@ func performAttack(attacker, defender *characters.Character, attackerType, defen
 			generateMissMessages(&result, attacker, defender, attackerType, defenderType)
 			continue
 		}
-		
+
 		result.Hit = true
-		
+
 		// Check for critical hit
 		result.Crit = calculator.CalculateCriticalChance(attacker, defender)
-		
+
 		// Get weapon for damage calculation
 		var weapon *items.Item
 		if attacker.Equipment.Weapon.ItemId > 0 {
 			weapon = &attacker.Equipment.Weapon
 		}
-		
-		// Calculate damage
+
+		// Calculate damage (calculator already applies defense reduction)
 		damage := calculator.CalculateDamage(attacker, defender, weapon)
-		
-		// Apply damage reduction from defense
-		defense := calculator.CalculateDefense(defender)
-		damageReduction := defense / 2 // Simple reduction formula
-		if damageReduction > damage {
-			damageReduction = damage
-		}
-		
-		result.DamageToTarget += damage - damageReduction
-		result.DamageToTargetReduction += damageReduction
-		
+
+		result.DamageToTarget += damage
+
 		// Generate hit messages
 		generateHitMessages(&result, attacker, defender, attackerType, defenderType, damage, result.Crit)
-		
+
 		// Check for buffs to apply
 		checkCombatBuffs(&result, attacker, defender)
-		
+
 		// Check for counter-attack damage
 		checkCounterDamage(&result, attacker, defender)
 	}
-	
+
 	// Apply post-attack effects
 	if postAttack != nil {
 		postAttack(&result)
 	}
-	
+
 	return result
 }
 
 // generateMissMessages creates appropriate miss messages
-func generateMissMessages(result *AttackResult, attacker, defender *characters.Character, 
+func generateMissMessages(result *AttackResult, attacker, defender *characters.Character,
 	attackerType, defenderType SourceTarget) {
-	
+
 	attackerName := getActorName(attacker, attackerType)
 	defenderName := getActorName(defender, defenderType)
-	
+
 	result.SendToSource(fmt.Sprintf(`You miss <ansi fg="%sname">%s</ansi>.`, defenderType, defenderName))
 	result.SendToTarget(fmt.Sprintf(`<ansi fg="%sname">%s</ansi> misses you.`, attackerType, attackerName))
-	result.SendToSourceRoom(fmt.Sprintf(`<ansi fg="%sname">%s</ansi> misses <ansi fg="%sname">%s</ansi>.`, 
+	result.SendToSourceRoom(fmt.Sprintf(`<ansi fg="%sname">%s</ansi> misses <ansi fg="%sname">%s</ansi>.`,
 		attackerType, attackerName, defenderType, defenderName))
 }
 
 // generateHitMessages creates appropriate hit messages
 func generateHitMessages(result *AttackResult, attacker, defender *characters.Character,
 	attackerType, defenderType SourceTarget, damage int, crit bool) {
-	
+
 	attackerName := getActorName(attacker, attackerType)
 	defenderName := getActorName(defender, defenderType)
-	
+
 	critText := ""
 	if crit {
 		critText = " <ansi fg=\"red\">CRITICALLY</ansi>"
 	}
-	
+
 	weaponName := "fists"
 	if attacker.Equipment.Weapon.ItemId > 0 {
 		weaponName = attacker.Equipment.Weapon.DisplayName()
 	} else if attacker.RaceId > 0 {
 		weaponName = races.GetRace(attacker.RaceId).UnarmedName
 	}
-	
+
 	result.SendToSource(fmt.Sprintf(`You%s hit <ansi fg="%sname">%s</ansi> with your <ansi fg="item">%s</ansi> for <ansi fg="damage">%d damage</ansi>.`,
 		critText, defenderType, defenderName, weaponName, damage))
 	result.SendToTarget(fmt.Sprintf(`<ansi fg="%sname">%s</ansi>%s hits you with <ansi fg="item">%s</ansi> for <ansi fg="damage">%d damage</ansi>.`,
@@ -315,7 +307,7 @@ func checkCombatBuffs(result *AttackResult, attacker, defender *characters.Chara
 			}
 		}
 	}
-	
+
 	// Future: Check defensive buffs here
 }
 

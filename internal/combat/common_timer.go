@@ -137,7 +137,7 @@ func (pt *PlayerTracker) IsPlayerTracked(userId int) bool {
 func (pt *PlayerTracker) GetTrackedPlayers() []int {
 	pt.mutex.RLock()
 	defer pt.mutex.RUnlock()
-	
+
 	players := make([]int, 0, len(pt.players))
 	for userId := range pt.players {
 		players = append(players, userId)

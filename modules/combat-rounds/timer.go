@@ -152,4 +152,3 @@ func (rt *RoundBasedTimer) updatePlayers() {
 		}
 	}
 }
-
