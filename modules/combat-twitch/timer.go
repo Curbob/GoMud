@@ -18,6 +18,10 @@ type CooldownTimer struct {
 
 	// Additional mutex for cooldown-specific data
 	cooldownMutex sync.RWMutex
+	
+	// Track if timer is started
+	timerStarted bool
+	timerMutex   sync.Mutex
 }
 
 // ActorCooldown tracks cooldown state for an actor
@@ -47,12 +51,20 @@ func NewCooldownTimer(c *TwitchCombat) *CooldownTimer {
 
 // Start implements ICombatTimer
 func (ct *CooldownTimer) Start() error {
-	return ct.BaseTimer.Start()
+	// Don't start timer until cooldowns are added
+	return nil
 }
 
 // Stop implements ICombatTimer
 func (ct *CooldownTimer) Stop() error {
-	return ct.BaseTimer.Stop()
+	ct.timerMutex.Lock()
+	defer ct.timerMutex.Unlock()
+	
+	if ct.timerStarted {
+		ct.timerStarted = false
+		return ct.BaseTimer.Stop()
+	}
+	return nil
 }
 
 // processCooldowns checks and executes expired cooldowns
@@ -95,6 +107,16 @@ func (ct *CooldownTimer) processCooldowns() {
 			ct.combat.SendGMCPBalanceUpdate(cooldown.ActorId, remaining, maxSeconds)
 		}
 	}
+	
+	// Stop timer if no more cooldowns
+	if len(ct.cooldowns) == 0 {
+		ct.timerMutex.Lock()
+		if ct.timerStarted {
+			ct.timerStarted = false
+			go ct.BaseTimer.Stop()
+		}
+		ct.timerMutex.Unlock()
+	}
 }
 
 // SetActorCooldown sets a cooldown for an actor
@@ -114,6 +136,14 @@ func (ct *CooldownTimer) SetActorCooldown(actorId int, actorType combat.SourceTa
 
 	// Clear last sent value to force immediate update
 	delete(ct.lastSent, key)
+	
+	// Start timer if not already running
+	ct.timerMutex.Lock()
+	if !ct.timerStarted {
+		ct.timerStarted = true
+		go ct.BaseTimer.Start()
+	}
+	ct.timerMutex.Unlock()
 }
 
 // SetActorCallback sets a callback to execute when cooldown expires
@@ -135,6 +165,14 @@ func (ct *CooldownTimer) SetActorCallback(actorId int, actorType combat.SourceTa
 			MaxDuration: duration,
 		}
 	}
+	
+	// Start timer if not already running
+	ct.timerMutex.Lock()
+	if !ct.timerStarted {
+		ct.timerStarted = true
+		go ct.BaseTimer.Start()
+	}
+	ct.timerMutex.Unlock()
 }
 
 // CanPerformAction checks if an actor can perform an action
