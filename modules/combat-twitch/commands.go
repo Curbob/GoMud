@@ -43,17 +43,27 @@ func (tc *TwitchCombat) attackCommand(rest string, user *users.UserRecord, room 
 		return true, nil
 	}
 
-	// Find target (simplified - would need full implementation)
-	var targetMob *mobs.Mob
-	for _, mobId := range room.GetMobs() {
-		if mob := mobs.GetInstance(mobId); mob != nil {
-			if mob.Character.Name == rest {
-				targetMob = mob
-				break
-			}
-		}
+	// Find target using the same logic as round-based combat
+	attackPlayerId, attackMobInstanceId := room.FindByName(rest)
+	
+	// Can't attack self
+	if attackPlayerId == user.UserId {
+		attackPlayerId = 0
 	}
-
+	
+	// Check if we found a target
+	if attackMobInstanceId == 0 && attackPlayerId == 0 {
+		user.SendText("They aren't here.")
+		return true, nil
+	}
+	
+	// For now, twitch combat only supports attacking mobs
+	if attackMobInstanceId == 0 {
+		user.SendText("You can only attack mobs in twitch combat.")
+		return true, nil
+	}
+	
+	targetMob := mobs.GetInstance(attackMobInstanceId)
 	if targetMob == nil {
 		user.SendText("They aren't here.")
 		return true, nil
