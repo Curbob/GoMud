@@ -93,6 +93,12 @@ func (tc *TwitchCombat) SendBalanceNotification(actorId int, actorType combat.So
 
 // SendGMCPBalanceUpdate sends GMCP balance information
 func (tc *TwitchCombat) SendGMCPBalanceUpdate(userId int, remainingSeconds float64, maxSeconds float64) {
+	// Check if user is actually in combat
+	inCombat := false
+	if user := users.GetByUserId(userId); user != nil {
+		inCombat = user.Character.Aggro != nil
+	}
+	
 	// Send GMCP combat status update
 	events.AddToQueue(gmcp.GMCPCombatStatusUpdate{
 		UserId:          userId,
@@ -100,7 +106,7 @@ func (tc *TwitchCombat) SendGMCPBalanceUpdate(userId int, remainingSeconds float
 		MaxSeconds:      maxSeconds,
 		NameActive:      "Unbalanced",
 		NameIdle:        "Balanced",
-		InCombat:        remainingSeconds > 0,
+		InCombat:        inCombat,
 		CombatStyle:     combat.GetActiveCombatSystemName(),
 		RoundNumber:     0, // Not applicable for twitch combat
 	})

@@ -285,22 +285,12 @@ func (a ScriptActor) AddGold(amt int, bankAmt ...int) {
 }
 
 func (a ScriptActor) AddHealth(amt int) int {
-	ret := a.characterRecord.ApplyHealthChange(amt)
-
-	if ret != 0 && a.userId > 0 {
-		events.AddToQueue(events.CharacterVitalsChanged{UserId: a.userId})
-	}
-
+	ret := a.characterRecord.ApplyHealthChange(amt, a.userId)
 	return ret
 }
 
 func (a ScriptActor) AddMana(amt int) int {
-	ret := a.characterRecord.ApplyManaChange(amt)
-
-	if ret != 0 && a.userId > 0 {
-		events.AddToQueue(events.CharacterVitalsChanged{UserId: a.userId})
-	}
-
+	ret := a.characterRecord.ApplyManaChange(amt, a.userId)
 	return ret
 }
 
