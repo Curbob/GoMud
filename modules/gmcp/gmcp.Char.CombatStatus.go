@@ -7,24 +7,27 @@ import (
 	"github.com/GoMudEngine/GoMud/internal/users"
 )
 
-// GMCPCombatCooldownUpdate is sent when combat cooldown status changes
-type GMCPCombatCooldownUpdate struct {
+// GMCPCombatStatusUpdate is sent when combat status changes
+type GMCPCombatStatusUpdate struct {
 	UserId          int
 	CooldownSeconds float64
 	MaxSeconds      float64
 	NameActive      string
 	NameIdle        string
+	InCombat        bool
+	CombatStyle     string
+	RoundNumber     uint64 // Only relevant for round-based combat
 }
 
-func (g GMCPCombatCooldownUpdate) Type() string { return `GMCPCombatCooldownUpdate` }
+func (g GMCPCombatStatusUpdate) Type() string { return `GMCPCombatStatusUpdate` }
 
 func init() {
-	// Register listener for combat cooldown updates
-	events.RegisterListener(GMCPCombatCooldownUpdate{}, handleCombatCooldownUpdate)
+	// Register listener for combat status updates
+	events.RegisterListener(GMCPCombatStatusUpdate{}, handleCombatStatusUpdate)
 }
 
-func handleCombatCooldownUpdate(e events.Event) events.ListenerReturn {
-	evt, typeOk := e.(GMCPCombatCooldownUpdate)
+func handleCombatStatusUpdate(e events.Event) events.ListenerReturn {
+	evt, typeOk := e.(GMCPCombatStatusUpdate)
 	if !typeOk {
 		return events.Continue
 	}
@@ -53,12 +56,19 @@ func handleCombatCooldownUpdate(e events.Event) events.ListenerReturn {
 		"max_cooldown": maxCooldown,
 		"name_active":  evt.NameActive,
 		"name_idle":    evt.NameIdle,
+		"in_combat":    evt.InCombat,
+		"combat_style": evt.CombatStyle,
+	}
+	
+	// Only include round_number if it's set (for round-based combat)
+	if evt.RoundNumber > 0 {
+		payload["round_number"] = evt.RoundNumber
 	}
 
 	// Send the GMCP update
 	events.AddToQueue(GMCPOut{
 		UserId:  evt.UserId,
-		Module:  "Char.CombatCooldown",
+		Module:  "Char.CombatStatus",
 		Payload: payload,
 	})
 

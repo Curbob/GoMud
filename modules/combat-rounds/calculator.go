@@ -109,36 +109,6 @@ func (calc *RoundBasedCalculator) CalculateAttackCount(attacker, defender *chara
 
 // PowerRanking calculates relative power between actors
 func (calc *RoundBasedCalculator) PowerRanking(attacker, defender *characters.Character) float64 {
-	attacks, dCount, dSides, dBonus, _ := attacker.Equipment.Weapon.GetDiceRoll()
-	atkDmg := attacks * (dCount*dSides + dBonus)
-
-	attacks, dCount, dSides, dBonus, _ = defender.Equipment.Weapon.GetDiceRoll()
-	defDmg := attacks * (dCount*dSides + dBonus)
-
-	pct := 0.0
-	if defDmg == 0 {
-		pct += 0.4
-	} else {
-		pct += 0.4 * float64(atkDmg) / float64(defDmg)
-	}
-
-	if defender.Stats.Speed.ValueAdj == 0 {
-		pct += 0.3
-	} else {
-		pct += 0.3 * float64(attacker.Stats.Speed.ValueAdj) / float64(defender.Stats.Speed.ValueAdj)
-	}
-
-	if defender.HealthMax.Value == 0 {
-		pct += 0.2
-	} else {
-		pct += 0.2 * float64(attacker.HealthMax.Value) / float64(defender.HealthMax.Value)
-	}
-
-	if defender.GetDefense() == 0 {
-		pct += 0.1
-	} else {
-		pct += 0.1 * float64(attacker.GetDefense()) / float64(defender.GetDefense())
-	}
-
-	return pct
+	// Use the default implementation
+	return combat.PowerRanking(*attacker, *defender)
 }

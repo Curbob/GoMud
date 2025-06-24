@@ -27,89 +27,181 @@ const (
 	Mob  SourceTarget = "mob"
 )
 
-// attackPlayerVsMob performs a combat round from a player to a mob
+// executeAttack executes a combat attack between any two combatants
+func executeAttack(sourceActor, targetActor combatActor, sourceType, targetType SourceTarget) AttackResult {
+	// Get characters from actors
+	sourceChar := sourceActor.getCharacter()
+	targetChar := targetActor.getCharacter()
+
+	// Calculate combat result
+	attackResult := calculateCombat(*sourceChar, *targetChar, sourceType, targetType)
+
+	// Apply damage to source if any
+	if attackResult.DamageToSource != 0 {
+		sourceActor.applyDamage(attackResult.DamageToSource)
+	}
+
+	// Apply damage to target
+	if attackResult.DamageToTarget != 0 {
+		targetActor.applyDamage(attackResult.DamageToTarget)
+	}
+
+	// Track damage for mobs
+	targetActor.trackDamage(sourceActor, attackResult.DamageToTarget)
+
+	// Play sounds for users
+	sourceActor.playAttackSound(attackResult.Hit, true)
+	targetActor.playAttackSound(attackResult.Hit, false)
+
+	return attackResult
+}
+
+// combatActor interface for users and mobs in combat
+type combatActor interface {
+	getCharacter() *characters.Character
+	applyDamage(damage int)
+	trackDamage(attacker combatActor, damage int)
+	playAttackSound(hit bool, isAttacker bool)
+}
+
+// userCombatActor wraps a user for combat
+type userCombatActor struct {
+	user *users.UserRecord
+}
+
+func (u userCombatActor) getCharacter() *characters.Character {
+	return u.user.Character
+}
+
+func (u userCombatActor) applyDamage(damage int) {
+	u.user.Character.ApplyHealthChange(damage * -1)
+	u.user.WimpyCheck()
+}
+
+func (u userCombatActor) trackDamage(attacker combatActor, damage int) {
+	// Users don't track damage
+}
+
+func (u userCombatActor) playAttackSound(hit bool, isAttacker bool) {
+	if isAttacker {
+		if hit {
+			u.user.PlaySound(`hit-other`, `combat`)
+		} else {
+			u.user.PlaySound(`miss`, `combat`)
+		}
+	} else if hit {
+		u.user.PlaySound(`hit-self`, `combat`)
+	}
+}
+
+// mobCombatActor wraps a mob for combat
+type mobCombatActor struct {
+	mob *mobs.Mob
+}
+
+func (m mobCombatActor) getCharacter() *characters.Character {
+	return &m.mob.Character
+}
+
+func (m mobCombatActor) applyDamage(damage int) {
+	m.mob.Character.ApplyHealthChange(damage * -1)
+}
+
+func (m mobCombatActor) trackDamage(attacker combatActor, damage int) {
+	// Track player damage
+	if userActor, ok := attacker.(userCombatActor); ok {
+		m.mob.Character.TrackPlayerDamage(userActor.user.UserId, damage)
+	} else if mobActor, ok := attacker.(mobCombatActor); ok {
+		// If attacking mob was player charmed, attribute damage to that player
+		if charmedUserId := mobActor.mob.Character.GetCharmedUserId(); charmedUserId > 0 {
+			m.mob.Character.TrackPlayerDamage(charmedUserId, damage)
+		}
+	}
+}
+
+func (m mobCombatActor) playAttackSound(hit bool, isAttacker bool) {
+	// Mobs don't play sounds
+}
+
+// Legacy wrapper functions for backward compatibility
 func attackPlayerVsMob(user *users.UserRecord, mob *mobs.Mob) AttackResult {
-
-	attackResult := calculateCombat(*user.Character, mob.Character, User, Mob)
-
-	if attackResult.DamageToSource != 0 {
-		user.Character.ApplyHealthChange(attackResult.DamageToSource * -1)
-		user.WimpyCheck()
-	}
-
-	mob.Character.ApplyHealthChange(attackResult.DamageToTarget * -1)
-
-	// Remember who has hit him
-	mob.Character.TrackPlayerDamage(user.UserId, attackResult.DamageToTarget)
-
-	if attackResult.Hit {
-		user.PlaySound(`hit-other`, `combat`)
-	} else {
-		user.PlaySound(`miss`, `combat`)
-	}
-
-	return attackResult
+	return executeAttack(userCombatActor{user}, mobCombatActor{mob}, User, Mob)
 }
 
-// attackPlayerVsPlayer performs a combat round from a player to a player
 func attackPlayerVsPlayer(userAtk *users.UserRecord, userDef *users.UserRecord) AttackResult {
-
-	attackResult := calculateCombat(*userAtk.Character, *userDef.Character, User, User)
-
-	if attackResult.DamageToSource != 0 {
-		userAtk.Character.ApplyHealthChange(attackResult.DamageToSource * -1)
-		userAtk.WimpyCheck()
-	}
-
-	if attackResult.DamageToTarget != 0 {
-		userDef.Character.ApplyHealthChange(attackResult.DamageToTarget * -1)
-		userDef.WimpyCheck()
-	}
-
-	if attackResult.Hit {
-		userAtk.PlaySound(`hit-other`, `combat`)
-		userDef.PlaySound(`hit-self`, `combat`)
-	} else {
-		userAtk.PlaySound(`miss`, `combat`)
-	}
-
-	return attackResult
+	return executeAttack(userCombatActor{userAtk}, userCombatActor{userDef}, User, User)
 }
 
-// attackMobVsPlayer performs a combat round from a mob to a player
 func attackMobVsPlayer(mob *mobs.Mob, user *users.UserRecord) AttackResult {
-
-	attackResult := calculateCombat(mob.Character, *user.Character, Mob, User)
-
-	mob.Character.ApplyHealthChange(attackResult.DamageToSource * -1)
-
-	if attackResult.DamageToTarget != 0 {
-		user.Character.ApplyHealthChange(attackResult.DamageToTarget * -1)
-		user.WimpyCheck()
-	}
-
-	if attackResult.Hit {
-		user.PlaySound(`hit-self`, `combat`)
-	}
-
-	return attackResult
+	return executeAttack(mobCombatActor{mob}, userCombatActor{user}, Mob, User)
 }
 
-// attackMobVsMob performs a combat round from a mob to a mob
 func attackMobVsMob(mobAtk *mobs.Mob, mobDef *mobs.Mob) AttackResult {
+	return executeAttack(mobCombatActor{mobAtk}, mobCombatActor{mobDef}, Mob, Mob)
+}
 
-	attackResult := calculateCombat(mobAtk.Character, mobDef.Character, Mob, User)
-
-	mobAtk.Character.ApplyHealthChange(attackResult.DamageToSource * -1)
-	mobDef.Character.ApplyHealthChange(attackResult.DamageToTarget * -1)
-
-	// If attacking mob was player charmed, attribute damage done to that player
-	if charmedUserId := mobAtk.Character.GetCharmedUserId(); charmedUserId > 0 {
-		// Remember who has hit him
-		mobDef.Character.TrackPlayerDamage(charmedUserId, attackResult.DamageToTarget)
+// createCombatTokens creates a map of token replacements for combat messages
+func createCombatTokens(sourceChar *characters.Character, targetChar *characters.Character, sourceType SourceTarget, targetType SourceTarget, damage string) map[items.TokenName]string {
+	weaponName := races.GetRace(sourceChar.RaceId).UnarmedName
+	if sourceChar.Equipment.Weapon.ItemId > 0 {
+		weaponName = sourceChar.Equipment.Weapon.DisplayName()
 	}
 
-	return attackResult
+	sourceName := sourceChar.Name
+	if sourceType == Mob {
+		sourceName = sourceChar.GetMobName(0).String()
+	}
+
+	targetName := targetChar.Name
+	if targetType == Mob {
+		targetName = targetChar.GetMobName(0).String()
+	}
+
+	tokens := map[items.TokenName]string{
+		items.TokenItemName:     weaponName,
+		items.TokenSource:       sourceName,
+		items.TokenSourceType:   string(sourceType) + `name`,
+		items.TokenTarget:       targetName,
+		items.TokenTargetType:   string(targetType) + `name`,
+		items.TokenUsesLeft:     `[Invalid]`,
+		items.TokenDamage:       damage,
+		items.TokenEntranceName: `unknown`,
+		items.TokenExitName:     `unknown`,
+	}
+
+	// Find exit names if in different rooms
+	if sourceChar.RoomId != targetChar.RoomId {
+		if atkRoom := rooms.LoadRoom(sourceChar.RoomId); atkRoom != nil {
+			for exitName, exit := range atkRoom.Exits {
+				if exit.RoomId == targetChar.RoomId {
+					tokens[items.TokenExitName] = exitName
+					break
+				}
+			}
+		}
+		if defRoom := rooms.LoadRoom(targetChar.RoomId); defRoom != nil {
+			for exitName, exit := range defRoom.Exits {
+				if exit.RoomId == sourceChar.RoomId {
+					tokens[items.TokenEntranceName] = exitName
+					break
+				}
+			}
+		}
+	}
+
+	return tokens
+}
+
+// applyTokensToMessages applies token replacements to combat messages
+func applyTokensToMessages(tokens map[items.TokenName]string, messages ...items.ItemMessage) []items.ItemMessage {
+	result := make([]items.ItemMessage, len(messages))
+	for i, msg := range messages {
+		for tokenName, tokenValue := range tokens {
+			msg = msg.SetTokenValue(tokenName, tokenValue)
+		}
+		result[i] = msg
+	}
+	return result
 }
 
 func GetWaitMessages(stepType items.Intensity, sourceChar *characters.Character, targetChar *characters.Character, sourceType SourceTarget, targetType SourceTarget) AttackResult {
@@ -126,91 +218,39 @@ func GetWaitMessages(stepType items.Intensity, sourceChar *characters.Character,
 		msgSeed = sourceChar.Equipment.Weapon.ItemId
 	}
 
-	tokenReplacements := map[items.TokenName]string{
-		items.TokenItemName:     races.GetRace(sourceChar.RaceId).UnarmedName,
-		items.TokenSource:       sourceChar.Name,
-		items.TokenSourceType:   string(sourceType) + `name`,
-		items.TokenTarget:       targetChar.Name,
-		items.TokenTargetType:   string(targetType) + `name`,
-		items.TokenUsesLeft:     `[Invalid]`,
-		items.TokenDamage:       `[Invalid]`,
-		items.TokenEntranceName: `unknown`,
-		items.TokenExitName:     `unknown`,
-	}
-
 	if sourceChar.RoomId == targetChar.RoomId {
 		toAttackerMsg = msgs.Together.ToAttacker.Get(msgSeed)
 		toDefenderMsg = msgs.Together.ToDefender.Get(msgSeed)
 		toAttackerRoomMsg = msgs.Together.ToRoom.Get(msgSeed)
 		toDefenderRoomMsg = items.ItemMessage("")
-
 	} else {
-
 		toAttackerMsg = msgs.Separate.ToAttacker.Get(msgSeed)
 		toDefenderMsg = msgs.Separate.ToDefender.Get(msgSeed)
 		toAttackerRoomMsg = msgs.Separate.ToAttackerRoom.Get(msgSeed)
 		toDefenderRoomMsg = msgs.Separate.ToDefenderRoom.Get(msgSeed)
-
-		// Find the exit that leads to the target from the source (if any)
-		if atkRoom := rooms.LoadRoom(sourceChar.RoomId); atkRoom != nil {
-			tokenReplacements[items.TokenExitName] = `unknown`
-			for exitName, exit := range atkRoom.Exits {
-				if exit.RoomId == targetChar.RoomId {
-					tokenReplacements[items.TokenExitName] = exitName
-					break
-				}
-			}
-		}
-		// find the exit that leads to the source from the target (if any)
-		if defRoom := rooms.LoadRoom(targetChar.RoomId); defRoom != nil {
-			tokenReplacements[items.TokenEntranceName] = `unknown`
-			for exitName, exit := range defRoom.Exits {
-				if exit.RoomId == sourceChar.RoomId {
-					tokenReplacements[items.TokenEntranceName] = exitName
-					break
-				}
-			}
-		}
 	}
 
-	if sourceChar.Equipment.Weapon.ItemId > 0 {
-		tokenReplacements[items.TokenItemName] = sourceChar.Equipment.Weapon.DisplayName()
-	}
+	// Create tokens and apply them
+	tokens := createCombatTokens(sourceChar, targetChar, sourceType, targetType, `[Invalid]`)
+	appliedMsgs := applyTokensToMessages(tokens, toAttackerMsg, toDefenderMsg, toAttackerRoomMsg, toDefenderRoomMsg)
 
-	if sourceType == Mob {
-		tokenReplacements[items.TokenSource] = sourceChar.GetMobName(0).String()
-	}
-
-	if targetType == Mob {
-		tokenReplacements[items.TokenTarget] = targetChar.GetMobName(0).String()
-	}
-
-	for tokenName, tokenValue := range tokenReplacements {
-		toAttackerMsg = toAttackerMsg.SetTokenValue(tokenName, tokenValue)
-		toDefenderMsg = toDefenderMsg.SetTokenValue(tokenName, tokenValue)
-		toAttackerRoomMsg = toAttackerRoomMsg.SetTokenValue(tokenName, tokenValue)
-		if len(string(toDefenderRoomMsg)) > 0 {
-			toDefenderRoomMsg = toDefenderRoomMsg.SetTokenValue(tokenName, tokenValue)
-		}
-	}
-
-	if string(toAttackerMsg) != `` {
-		attackResult.SendToSource(string(toAttackerMsg))
+	if len(appliedMsgs) > 0 && string(appliedMsgs[0]) != `` {
+		attackResult.SendToSource(string(appliedMsgs[0]))
 	}
 
 	if !sourceChar.HasBuffFlag(buffs.Hidden) {
 
-		if string(toDefenderMsg) != `` {
-			attackResult.SendToTarget(string(toDefenderMsg))
+		if len(appliedMsgs) > 1 && string(appliedMsgs[1]) != `` {
+			attackResult.SendToTarget(string(appliedMsgs[1]))
 		}
 
-		if string(toAttackerRoomMsg) != `` {
-			attackResult.SendToSourceRoom(string(toAttackerRoomMsg))
+		if len(appliedMsgs) > 2 && string(appliedMsgs[2]) != `` {
+			attackResult.SendToSourceRoom(string(appliedMsgs[2]))
 		}
 
 		if sourceChar.RoomId != targetChar.RoomId {
-			if string(toDefenderRoomMsg) != `` {
-				attackResult.SendToTargetRoom(string(toDefenderRoomMsg))
+			if len(appliedMsgs) > 3 && string(appliedMsgs[3]) != `` {
+				attackResult.SendToTargetRoom(string(appliedMsgs[3]))
 			}
 		}
 
@@ -235,7 +275,9 @@ func calculateCombat(sourceChar characters.Character, targetChar characters.Char
 
 	for i := 0; i < attackCount; i++ {
 
-		mudlog.Debug(`calculateCombat`, `Atk`, fmt.Sprintf(`%d/%d`, i+1, attackCount), `Source`, fmt.Sprintf(`%s (%s)`, sourceChar.Name, sourceType), `Target`, fmt.Sprintf(`%s (%s)`, targetChar.Name, targetType))
+		if mudlog.IsInitialized() {
+			mudlog.Debug(`calculateCombat`, `Atk`, fmt.Sprintf(`%d/%d`, i+1, attackCount), `Source`, fmt.Sprintf(`%s (%s)`, sourceChar.Name, sourceType), `Target`, fmt.Sprintf(`%s (%s)`, targetChar.Name, targetType))
+		}
 
 		attackWeapons := []items.Item{}
 
@@ -293,7 +335,7 @@ func calculateCombat(sourceChar characters.Character, targetChar characters.Char
 
 		attackMessagePrefix := ``
 		// If they are backstabbing it's a free crit
-		if sourceChar.Aggro.Type == characters.BackStab {
+		if sourceChar.Aggro != nil && sourceChar.Aggro.Type == characters.BackStab {
 			attackResult.Crit = true
 			attackMessagePrefix = `<ansi fg="magenta-bold">*[BACKSTAB]*</ansi> `
 			// Failover to the default attack
@@ -341,7 +383,9 @@ func calculateCombat(sourceChar characters.Character, targetChar characters.Char
 				msgSeed = weapon.ItemId
 			}
 
-			mudlog.Debug("DiceRolls", "attacks", attacks, "dCount", dCount, "dSides", dSides, "dBonus", dBonus, "critBuffs", critBuffs)
+			if mudlog.IsInitialized() {
+				mudlog.Debug("DiceRolls", "attacks", attacks, "dCount", dCount, "dSides", dSides, "dBonus", dBonus, "critBuffs", critBuffs)
+			}
 
 			// Individual weapons may get multiple attacks
 			for j := 0; j < attacks; j++ {
@@ -382,71 +426,30 @@ func calculateCombat(sourceChar characters.Character, targetChar characters.Char
 
 				var toAttackerMsg, toDefenderMsg, toAttackerRoomMsg, toDefenderRoomMsg items.ItemMessage
 
-				tokenReplacements := map[items.TokenName]string{
-					items.TokenItemName:     weaponName,
-					items.TokenSource:       sourceChar.Name,
-					items.TokenSourceType:   string(sourceType) + `name`,
-					items.TokenTarget:       targetChar.Name,
-					items.TokenTargetType:   string(targetType) + `name`,
-					items.TokenUsesLeft:     `[Invalid]`,
-					items.TokenDamage:       strconv.Itoa(attackTargetDamage),
-					items.TokenEntranceName: `unknown`,
-					items.TokenExitName:     `unknown`,
-				}
+				// Create combat tokens
+				// Note: weaponName is already set above
+				tokenReplacements := createCombatTokens(&sourceChar, &targetChar, sourceType, targetType, strconv.Itoa(attackTargetDamage))
+				tokenReplacements[items.TokenItemName] = weaponName // Override with the specific weapon used
 
 				if sourceChar.RoomId == targetChar.RoomId {
-
 					toAttackerMsg = msgs.Together.ToAttacker.Get(msgSeed)
 					toDefenderMsg = msgs.Together.ToDefender.Get(msgSeed)
 					toAttackerRoomMsg = msgs.Together.ToRoom.Get(msgSeed)
 					toDefenderRoomMsg = items.ItemMessage("")
-
 				} else {
-
 					toAttackerMsg = msgs.Separate.ToAttacker.Get(msgSeed)
 					toDefenderMsg = msgs.Separate.ToDefender.Get(msgSeed)
 					toAttackerRoomMsg = msgs.Separate.ToAttackerRoom.Get(msgSeed)
 					toDefenderRoomMsg = msgs.Separate.ToDefenderRoom.Get(msgSeed)
-
-					// Find the exit that leads to the target from the source (if any)
-					if atkRoom := rooms.LoadRoom(sourceChar.RoomId); atkRoom != nil {
-						for exitName, exit := range atkRoom.Exits {
-							if exit.RoomId == targetChar.RoomId {
-								tokenReplacements[items.TokenExitName] = exitName
-								break
-							}
-						}
-					}
-					// find the exit that leads to the source from the target (if any)
-					if defRoom := rooms.LoadRoom(targetChar.RoomId); defRoom != nil {
-						for exitName, exit := range defRoom.Exits {
-							if exit.RoomId == sourceChar.RoomId {
-								tokenReplacements[items.TokenEntranceName] = exitName
-								break
-							}
-						}
-					}
 				}
 
-				if sourceChar.Equipment.Weapon.ItemId > 0 {
-					tokenReplacements[items.TokenItemName] = sourceChar.Equipment.Weapon.DisplayName()
-				}
-
-				if sourceType == Mob {
-					tokenReplacements[items.TokenSource] = sourceChar.GetMobName(0).String()
-				}
-
-				if targetType == Mob {
-					tokenReplacements[items.TokenTarget] = targetChar.GetMobName(0).String()
-				}
-
-				for tokenName, tokenValue := range tokenReplacements {
-					toAttackerMsg = toAttackerMsg.SetTokenValue(tokenName, tokenValue)
-					toDefenderMsg = toDefenderMsg.SetTokenValue(tokenName, tokenValue)
-					toAttackerRoomMsg = toAttackerRoomMsg.SetTokenValue(tokenName, tokenValue)
-					if len(string(toDefenderRoomMsg)) > 0 {
-						toDefenderRoomMsg = toDefenderRoomMsg.SetTokenValue(tokenName, tokenValue)
-					}
+				// Apply tokens to messages
+				appliedMsgs := applyTokensToMessages(tokenReplacements, toAttackerMsg, toDefenderMsg, toAttackerRoomMsg, toDefenderRoomMsg)
+				if len(appliedMsgs) >= 4 {
+					toAttackerMsg = appliedMsgs[0]
+					toDefenderMsg = appliedMsgs[1]
+					toAttackerRoomMsg = appliedMsgs[2]
+					toDefenderRoomMsg = appliedMsgs[3]
 				}
 
 				if attackResult.Crit {
@@ -488,16 +491,11 @@ func calculateCombat(sourceChar characters.Character, targetChar characters.Char
 				)
 
 				// Send to room
-				attackResult.SendToSourceRoom(
-					string(toAttackerRoomMsg.SetTokenValue(items.TokenTarget, targetChar.Name).
-						SetTokenValue(items.TokenTargetType, string(targetType))),
-				)
+				attackResult.SendToSourceRoom(string(toAttackerRoomMsg))
 
 				// Send to defender room if separate
 				if len(string(toDefenderRoomMsg)) > 0 {
-					attackResult.SendToTargetRoom(
-						string(toDefenderRoomMsg.SetTokenValue(items.TokenTarget, targetChar.Name).SetTokenValue(items.TokenTargetType, string(targetType))),
-					)
+					attackResult.SendToTargetRoom(string(toDefenderRoomMsg))
 				}
 
 				attackResult.DamageToTarget += attackTargetDamage

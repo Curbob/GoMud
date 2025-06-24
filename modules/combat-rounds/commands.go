@@ -7,7 +7,6 @@ import (
 
 	"github.com/GoMudEngine/GoMud/internal/buffs"
 	"github.com/GoMudEngine/GoMud/internal/characters"
-	"github.com/GoMudEngine/GoMud/internal/combat"
 	"github.com/GoMudEngine/GoMud/internal/events"
 	"github.com/GoMudEngine/GoMud/internal/mobs"
 	"github.com/GoMudEngine/GoMud/internal/mudlog"
@@ -210,7 +209,7 @@ func (rbc *RoundBasedCombat) attackCommand(rest string, user *users.UserRecord, 
 
 			// Register player with combat timer
 			if rbc.timer != nil {
-				rbc.timer.RegisterActor(user.UserId, combat.User, nil)
+				rbc.timer.AddPlayer(user.UserId)
 			}
 
 			user.SendText(
@@ -271,7 +270,7 @@ func (rbc *RoundBasedCombat) attackCommand(rest string, user *users.UserRecord, 
 
 			// Register player with combat timer
 			if rbc.timer != nil {
-				rbc.timer.RegisterActor(user.UserId, combat.User, nil)
+				rbc.timer.AddPlayer(user.UserId)
 			}
 
 			user.SendText(
