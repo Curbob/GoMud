@@ -52,29 +52,15 @@ type ICombatCalculator interface {
 	PowerRanking(attacker, defender *characters.Character) float64
 }
 
-// ICombatTimer defines timing system for combat
+// ICombatTimer defines minimal timing system interface for combat
 type ICombatTimer interface {
 	// Start begins the timer system
 	Start() error
 
 	// Stop halts the timer system
 	Stop() error
-
-	// RegisterActor adds an actor to the timing system
-	RegisterActor(actorId int, actorType SourceTarget, callback func())
-
-	// UnregisterActor removes an actor from the timing system
-	UnregisterActor(actorId int, actorType SourceTarget)
-
-	// SetActorCooldown sets cooldown for an actor's next action
-	SetActorCooldown(actorId int, actorType SourceTarget, duration time.Duration)
-
-	// GetNextActionTime returns when an actor can act next
-	GetNextActionTime(actorId int, actorType SourceTarget) time.Time
-
-	// CanPerformAction checks if an actor can act now
-	CanPerformAction(actorId int, actorType SourceTarget) bool
 }
+
 
 // CombatAction represents a queued combat action
 type CombatAction struct {
@@ -88,19 +74,3 @@ type CombatAction struct {
 	Timestamp    time.Time
 }
 
-// CombatState tracks combat state for an actor
-type CombatState struct {
-	InCombat      bool
-	Opponents     []CombatOpponent
-	LastAction    time.Time
-	NextAction    time.Time
-	CurrentAction *CombatAction
-}
-
-// CombatOpponent tracks an opponent in combat
-type CombatOpponent struct {
-	ActorId      int
-	ActorType    SourceTarget
-	AggroLevel   int
-	LastAttacked time.Time
-}

@@ -23,13 +23,22 @@ import (
 
 func DoCombat(e events.Event) events.ListenerReturn {
 
-	evt := e.(events.NewRound)
-
 	// Check if we have an active combat system that wants to handle rounds
 	if system := combat.GetActiveCombatSystem(); system != nil {
+		defer func() {
+			if r := recover(); r != nil {
+				mudlog.Error("DoCombat", "panic", "combat system error", "system", combat.GetActiveCombatSystemName(), "error", r)
+			}
+		}()
 		system.ProcessCombatRound()
-		// For now, still run the existing combat logic
-		// In the future, the combat system will handle everything
+		return events.Continue
+	}
+
+	// Fallback to old combat logic if no system is active
+	evt, ok := e.(events.NewRound)
+	if !ok {
+		mudlog.Error("DoCombat", "error", "invalid event type", "type", fmt.Sprintf("%T", e))
+		return events.Continue
 	}
 
 	//

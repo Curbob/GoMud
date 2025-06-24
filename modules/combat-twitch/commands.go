@@ -60,7 +60,7 @@ func (tc *TwitchCombat) attackCommand(rest string, user *users.UserRecord, room 
 	}
 
 	// Register the player with the timer if not already registered
-	tc.timer.RegisterActor(user.UserId, combat.User, nil)
+	tc.timer.RegisterActor(user.UserId, combat.User)
 
 	// Set combat state first
 	user.Character.SetAggro(0, targetMob.InstanceId, characters.DefaultAttack)
@@ -180,6 +180,14 @@ func (tc *TwitchCombat) mobAttackCommand(rest string, mob *mobs.Mob, room *rooms
 	// Check if player died
 	if targetUser.Character.Health <= 0 {
 		mob.Character.EndAggro()
+	} else if mob.Character.Aggro != nil {
+		// Set callback for next attack if mob is still in combat
+		tc.timer.SetActorCallback(mob.InstanceId, combat.Mob, cooldown, func() {
+			// Make sure mob still exists and has aggro
+			if m := mobs.GetInstance(mob.InstanceId); m != nil && m.Character.Aggro != nil {
+				m.Command(fmt.Sprintf("attack @%d", m.Character.Aggro.UserId))
+			}
+		})
 	}
 
 	return true, nil
