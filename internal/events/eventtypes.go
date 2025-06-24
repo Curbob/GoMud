@@ -323,6 +323,15 @@ type CharacterVitalsChanged struct {
 
 func (p CharacterVitalsChanged) Type() string { return `CharacterVitalsChanged` }
 
+// CharacterAggroChanged is triggered when a character's aggro state changes
+type CharacterAggroChanged struct {
+	UserId        int
+	MobInstanceId int
+	HasAggro      bool
+}
+
+func (e CharacterAggroChanged) Type() string { return `CharacterAggroChanged` }
+
 // Health, mana, etc.
 type CharacterTrained struct {
 	UserId int
