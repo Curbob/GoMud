@@ -100,7 +100,7 @@ func main() {
 		os.Getenv(`LOG_NOCOLOR`) == ``,
 	)
 
-	flags.HandleFlags()
+	flags.HandleFlags(VERSION)
 
 	configs.ReloadConfig()
 	c := configs.GetConfig()

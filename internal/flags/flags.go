@@ -11,12 +11,20 @@ import (
 	"github.com/GoMudEngine/GoMud/internal/mudlog"
 )
 
-func HandleFlags() {
+func HandleFlags(serverVersion string) {
+
 	var portsearch string
+	var showVersion bool
 
 	flag.StringVar(&portsearch, "port-search", "", "Search for the first 10 open ports: -port-search=30000-40000")
+	flag.BoolVar(&showVersion, "version", false, "Display the current binary version")
 
 	flag.Parse()
+
+	if showVersion {
+		fmt.Println(serverVersion)
+		os.Exit(0)
+	}
 
 	if portsearch != `` {
 		doPortSearch(portsearch)
