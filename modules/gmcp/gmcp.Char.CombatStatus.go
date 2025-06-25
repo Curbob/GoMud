@@ -100,7 +100,7 @@ func handlePlayerSpawn(e events.Event) events.ListenerReturn {
 	if combatStyle == "" {
 		combatStyle = "default"
 	}
-	
+
 	// Set names based on combat system
 	var nameActive, nameIdle string
 	switch combatStyle {

@@ -7,6 +7,8 @@ import (
 
 	"github.com/GoMudEngine/GoMud/internal/buffs"
 	"github.com/GoMudEngine/GoMud/internal/characters"
+	"github.com/GoMudEngine/GoMud/internal/combat"
+	"github.com/GoMudEngine/GoMud/internal/configs"
 	"github.com/GoMudEngine/GoMud/internal/events"
 	"github.com/GoMudEngine/GoMud/internal/mobs"
 	"github.com/GoMudEngine/GoMud/internal/mudlog"
@@ -23,6 +25,8 @@ func (rbc *RoundBasedCombat) registerCommands() {
 	rbc.plug.AddUserCommand("kill", rbc.attackCommand, false, false) // Alias for attack
 	rbc.plug.AddUserCommand("flee", rbc.fleeCommand, false, false)
 	rbc.plug.AddUserCommand("consider", rbc.considerCommand, false, false)
+	rbc.plug.AddUserCommand("combatinfo", rbc.combatInfoCommand, true, true) // Admin only
+	rbc.plug.AddUserCommand("config", rbc.configCommand, true, true)         // Admin only
 
 	// Register mob commands
 	rbc.plug.AddMobCommand("attack", rbc.mobAttackCommand, false)
@@ -535,4 +539,250 @@ func (rbc *RoundBasedCombat) mobFleeCommand(rest string, mob *mobs.Mob, room *ro
 	}
 
 	return true, nil
+}
+
+// combatInfoCommand shows detailed combat calculations for a target
+func (rbc *RoundBasedCombat) combatInfoCommand(rest string, user *users.UserRecord, room *rooms.Room, flags events.EventFlag) (bool, error) {
+	var targetChar *characters.Character
+	var targetName string
+	var isPlayer bool
+
+	if rest == "" {
+		// Show info for the player themselves
+		targetChar = user.Character
+		targetName = user.Character.Name
+		isPlayer = true
+	} else {
+		// Find target using the same logic as attack command
+		attackPlayerId, attackMobInstanceId := room.FindByName(rest)
+
+		if attackPlayerId > 0 && attackPlayerId != user.UserId {
+			if targetUser := users.GetByUserId(attackPlayerId); targetUser != nil {
+				targetChar = targetUser.Character
+				targetName = targetUser.Character.Name
+				isPlayer = true
+			}
+		} else if attackMobInstanceId > 0 {
+			if targetMob := mobs.GetInstance(attackMobInstanceId); targetMob != nil {
+				targetChar = &targetMob.Character
+				targetName = fmt.Sprintf("%s (#%d)", targetMob.Character.Name, attackMobInstanceId)
+				isPlayer = false
+			}
+		}
+
+		if targetChar == nil {
+			user.SendText("Target not found.")
+			return true, nil
+		}
+	}
+
+	c := configs.GetConfig()
+	baseRoundSeconds := c.Timing.RoundSeconds
+
+	// Header
+	user.SendText(fmt.Sprintf(`<ansi fg="yellow">═══ Combat Information: %s ═══</ansi>`, targetName))
+	user.SendText("")
+
+	// Character type
+	if isPlayer {
+		user.SendText(`<ansi fg="cyan">Type:</ansi>            Player`)
+	} else {
+		user.SendText(`<ansi fg="cyan">Type:</ansi>            Mob`)
+	}
+
+	// For round-based combat, show different information
+	user.SendText("")
+	user.SendText(`<ansi fg="yellow">── Combat Statistics ──</ansi>`)
+	user.SendText(fmt.Sprintf(`<ansi fg="cyan">Level:</ansi>           %d`, targetChar.Level))
+	user.SendText(fmt.Sprintf(`<ansi fg="cyan">Health:</ansi>          %d / %d`, targetChar.Health, targetChar.HealthMax.Value))
+	user.SendText(fmt.Sprintf(`<ansi fg="cyan">Alignment:</ansi>       %d`, targetChar.Alignment))
+
+	// Weapon info
+	user.SendText("")
+	user.SendText(`<ansi fg="yellow">── Weapon Information ──</ansi>`)
+
+	if targetChar.Equipment.Weapon.ItemId > 0 {
+		weaponSpec := targetChar.Equipment.Weapon.GetSpec()
+		user.SendText(fmt.Sprintf(`<ansi fg="cyan">Weapon:</ansi>          %s`, weaponSpec.Name))
+		user.SendText(fmt.Sprintf(`<ansi fg="cyan">Damage:</ansi>          %s`, weaponSpec.Damage.DiceRoll))
+		user.SendText(fmt.Sprintf(`<ansi fg="cyan">Wait Rounds:</ansi>     %d rounds`, weaponSpec.WaitRounds))
+
+		if weaponSpec.WaitRounds > 0 {
+			user.SendText(fmt.Sprintf(`<ansi fg="cyan">Attack Interval:</ansi> Every %d rounds`, weaponSpec.WaitRounds+1))
+		} else {
+			user.SendText(`<ansi fg="cyan">Attack Interval:</ansi> Every round`)
+		}
+	} else {
+		user.SendText(`<ansi fg="cyan">Weapon:</ansi>          None (unarmed)`)
+		user.SendText(`<ansi fg="cyan">Damage:</ansi>          1d3 (fists)`)
+		user.SendText(`<ansi fg="cyan">Attack Interval:</ansi> Every round`)
+	}
+
+	// All stats for reference
+	user.SendText("")
+	user.SendText(`<ansi fg="yellow">── Character Stats ──</ansi>`)
+	user.SendText(fmt.Sprintf(`<ansi fg="cyan">Strength:</ansi>        %d (adj: %d)`, targetChar.Stats.Strength.Value, targetChar.Stats.Strength.ValueAdj))
+	user.SendText(fmt.Sprintf(`<ansi fg="cyan">Speed:</ansi>           %d (adj: %d)`, targetChar.Stats.Speed.Value, targetChar.Stats.Speed.ValueAdj))
+	user.SendText(fmt.Sprintf(`<ansi fg="cyan">Smarts:</ansi>          %d (adj: %d)`, targetChar.Stats.Smarts.Value, targetChar.Stats.Smarts.ValueAdj))
+	user.SendText(fmt.Sprintf(`<ansi fg="cyan">Vitality:</ansi>        %d (adj: %d)`, targetChar.Stats.Vitality.Value, targetChar.Stats.Vitality.ValueAdj))
+	user.SendText(fmt.Sprintf(`<ansi fg="cyan">Mysticism:</ansi>       %d (adj: %d)`, targetChar.Stats.Mysticism.Value, targetChar.Stats.Mysticism.ValueAdj))
+	user.SendText(fmt.Sprintf(`<ansi fg="cyan">Perception:</ansi>      %d (adj: %d)`, targetChar.Stats.Perception.Value, targetChar.Stats.Perception.ValueAdj))
+
+	// Combat system info
+	user.SendText("")
+	user.SendText(`<ansi fg="yellow">── Combat System ──</ansi>`)
+	user.SendText(fmt.Sprintf(`<ansi fg="cyan">Active System:</ansi>   %s`, combat.GetActiveCombatSystemName()))
+	user.SendText(fmt.Sprintf(`<ansi fg="cyan">Round Duration:</ansi>  %d seconds`, baseRoundSeconds))
+	user.SendText(`<ansi fg="cyan">Note:</ansi>            In round-based combat, attacks happen automatically`)
+	user.SendText(`                  based on weapon speed and combat rounds.`)
+
+	return true, nil
+}
+
+// configCommand handles combat configuration
+func (rbc *RoundBasedCombat) configCommand(rest string, user *users.UserRecord, room *rooms.Room, flags events.EventFlag) (bool, error) {
+	parts := strings.Fields(rest)
+
+	// No arguments - show available config categories
+	if len(parts) == 0 {
+		user.SendText(`<ansi fg="yellow">Configuration Categories:</ansi>`)
+		user.SendText(`  config combat      - Combat system configuration`)
+		// Other config categories would be listed here in the future
+		return true, nil
+	}
+
+	// Check for "combat" subcommand
+	if parts[0] != "combat" {
+		user.SendText(`Usage: config combat [...]`)
+		return true, nil
+	}
+
+	// Remove "combat" from parts
+	parts = parts[1:]
+
+	// No arguments after combat - show combat config help
+	if len(parts) == 0 {
+		user.SendText(`<ansi fg="yellow">Combat Configuration Commands:</ansi>`)
+		user.SendText(`  config combat info         - Show current combat settings`)
+		user.SendText(`  config combat system <name>  - Switch combat system`)
+		user.SendText(`  config combat systems      - List available combat systems`)
+		user.SendText(``)
+		user.SendText(`<ansi fg="yellow">Note:</ansi> Round-based combat has no configurable cooldown settings.`)
+		user.SendText(`      Attack frequency is determined by weapon wait rounds.`)
+		return true, nil
+	}
+
+	// Handle subcommands
+	switch parts[0] {
+	case "info":
+		// Show current combat settings
+		user.SendText(fmt.Sprintf(`<ansi fg="yellow">═══ Current Combat Configuration ═══</ansi>`))
+		user.SendText(fmt.Sprintf(`<ansi fg="cyan">Active System:</ansi>            %s`, combat.GetActiveCombatSystemName()))
+		user.SendText(fmt.Sprintf(`<ansi fg="cyan">Round Duration:</ansi>           %d seconds`, configs.GetConfig().Timing.RoundSeconds))
+		user.SendText(``)
+		user.SendText(`<ansi fg="yellow">Note:</ansi> Round-based combat uses weapon wait rounds and round`)
+		user.SendText(`      duration to determine attack frequency.`)
+		return true, nil
+
+	case "system":
+		// Switch combat system
+		if len(parts) < 2 {
+			user.SendText(`Usage: config combat system <name>`)
+			return true, nil
+		}
+
+		newSystem := parts[1]
+		currentSystem := combat.GetActiveCombatSystemName()
+
+		if newSystem == currentSystem {
+			user.SendText(fmt.Sprintf(`Combat system is already set to: %s`, currentSystem))
+			return true, nil
+		}
+
+		// Collect all combat states before switching
+		type CombatState struct {
+			userId int
+			aggro  *characters.Aggro
+		}
+		savedStates := []CombatState{}
+
+		// Pause all combat - save and clear aggro states
+		for _, u := range users.GetAllActiveUsers() {
+			if u.Character.Aggro != nil {
+				savedStates = append(savedStates, CombatState{
+					userId: u.UserId,
+					aggro: &characters.Aggro{
+						Type:          u.Character.Aggro.Type,
+						MobInstanceId: u.Character.Aggro.MobInstanceId,
+						UserId:        u.Character.Aggro.UserId,
+					},
+				})
+				u.Character.Aggro = nil
+				u.SendText(`<ansi fg="yellow">[SYSTEM] Combat paused for system transition...</ansi>`)
+			}
+		}
+
+		// Also handle mob aggro - iterate through all active mobs
+		savedMobStates := make(map[int]*characters.Aggro)
+		// Get unique rooms with users or mobs
+		checkedRooms := make(map[int]bool)
+		for _, u := range users.GetAllActiveUsers() {
+			if roomObj := rooms.LoadRoom(u.Character.RoomId); roomObj != nil {
+				if !checkedRooms[roomObj.RoomId] {
+					checkedRooms[roomObj.RoomId] = true
+					for _, mobId := range roomObj.GetMobs() {
+						if mob := mobs.GetInstance(mobId); mob != nil && mob.Character.Aggro != nil {
+							savedMobStates[mobId] = &characters.Aggro{
+								Type:          mob.Character.Aggro.Type,
+								MobInstanceId: mob.Character.Aggro.MobInstanceId,
+								UserId:        mob.Character.Aggro.UserId,
+							}
+							mob.Character.Aggro = nil
+						}
+					}
+				}
+			}
+		}
+
+		// Convert saved states to the combat package format
+		combatStates := make([]combat.CombatState, len(savedStates))
+		for i, state := range savedStates {
+			combatStates[i] = combat.CombatState{
+				UserId: state.userId,
+				Aggro:  state.aggro,
+			}
+		}
+
+		// Queue the combat system switch event
+		user.SendText(`<ansi fg="yellow">Switching combat systems...</ansi>`)
+		events.AddToQueue(combat.SwitchCombatSystemEvent{
+			NewSystem:      newSystem,
+			OldSystem:      currentSystem,
+			RequestingUser: user.UserId,
+			SavedStates:    combatStates,
+			SavedMobStates: savedMobStates,
+		})
+
+		return true, nil
+
+	case "systems":
+		// List available systems
+		systems := combat.ListCombatSystems()
+		current := combat.GetActiveCombatSystemName()
+
+		user.SendText(`<ansi fg="yellow">Available Combat Systems:</ansi>`)
+		for _, sys := range systems {
+			if sys == current {
+				user.SendText(fmt.Sprintf(`  <ansi fg="green">%s (active)</ansi>`, sys))
+			} else {
+				user.SendText(fmt.Sprintf(`  %s`, sys))
+			}
+		}
+		return true, nil
+
+	default:
+		user.SendText(fmt.Sprintf(`Unknown combat subcommand: %s`, parts[0]))
+		user.SendText(`Valid subcommands: system, systems`)
+		return true, nil
+	}
 }

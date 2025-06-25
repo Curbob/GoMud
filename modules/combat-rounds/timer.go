@@ -7,6 +7,7 @@ import (
 	"github.com/GoMudEngine/GoMud/internal/combat"
 	"github.com/GoMudEngine/GoMud/internal/configs"
 	"github.com/GoMudEngine/GoMud/internal/events"
+	"github.com/GoMudEngine/GoMud/internal/mudlog"
 	"github.com/GoMudEngine/GoMud/internal/users"
 	"github.com/GoMudEngine/GoMud/modules/gmcp"
 )
@@ -28,7 +29,7 @@ type RoundBasedTimer struct {
 
 	// Additional mutex for round-specific data
 	roundMutex sync.RWMutex
-	
+
 	// Track if we've started the timer
 	timerStarted bool
 	timerMutex   sync.Mutex
@@ -54,9 +55,17 @@ func NewRoundBasedTimer(c *RoundBasedCombat) *RoundBasedTimer {
 
 // Start implements ICombatTimer
 func (rt *RoundBasedTimer) Start() error {
-	// Register for round events
-	rt.newRoundListenerId = events.RegisterListener(events.NewRound{}, rt.handleNewRound)
-	rt.newTurnListenerId = events.RegisterListener(events.NewTurn{}, rt.handleNewTurn)
+	// Defer registration to avoid deadlock when called from event handler
+	go func() {
+		// Small delay to ensure we're out of the event handler
+		time.Sleep(1 * time.Millisecond)
+
+		// Register for round events
+		rt.newRoundListenerId = events.RegisterListener(events.NewRound{}, rt.handleNewRound)
+		rt.newTurnListenerId = events.RegisterListener(events.NewTurn{}, rt.handleNewTurn)
+
+		mudlog.Info("RoundBasedTimer", "action", "event listeners registered")
+	}()
 
 	// Don't start the actual timer until players are added
 	return nil
@@ -64,25 +73,43 @@ func (rt *RoundBasedTimer) Start() error {
 
 // Stop implements ICombatTimer
 func (rt *RoundBasedTimer) Stop() error {
-	// Unregister event listeners
-	if rt.newRoundListenerId != 0 {
-		events.UnregisterListener(events.NewRound{}, rt.newRoundListenerId)
-		rt.newRoundListenerId = 0
-	}
-	if rt.newTurnListenerId != 0 {
-		events.UnregisterListener(events.NewTurn{}, rt.newTurnListenerId)
-		rt.newTurnListenerId = 0
+	mudlog.Info("RoundBasedTimer", "action", "Stop called")
+
+	// Save listener IDs for deferred unregistration
+	roundListenerId := rt.newRoundListenerId
+	turnListenerId := rt.newTurnListenerId
+	rt.newRoundListenerId = 0
+	rt.newTurnListenerId = 0
+
+	// Defer unregistration to avoid deadlock when called from event handler
+	if roundListenerId != 0 || turnListenerId != 0 {
+		go func() {
+			// Small delay to ensure we're out of the event handler
+			time.Sleep(1 * time.Millisecond)
+
+			if roundListenerId != 0 {
+				mudlog.Info("RoundBasedTimer", "action", "unregistering NewRound listener")
+				events.UnregisterListener(events.NewRound{}, roundListenerId)
+			}
+			if turnListenerId != 0 {
+				mudlog.Info("RoundBasedTimer", "action", "unregistering NewTurn listener")
+				events.UnregisterListener(events.NewTurn{}, turnListenerId)
+			}
+		}()
 	}
 
 	// Stop base timer if it's running
 	rt.timerMutex.Lock()
 	defer rt.timerMutex.Unlock()
-	
+
 	if rt.timerStarted {
+		mudlog.Info("RoundBasedTimer", "action", "stopping base timer")
 		rt.timerStarted = false
-		return rt.BaseTimer.Stop()
+		// Also defer the base timer stop to avoid any potential issues
+		go rt.BaseTimer.Stop()
 	}
-	
+
+	mudlog.Info("RoundBasedTimer", "action", "Stop completed")
 	return nil
 }
 
@@ -140,7 +167,7 @@ func (rt *RoundBasedTimer) updatePlayers() {
 			if user.Character.Aggro == nil {
 				// Player no longer in combat, remove and send final update
 				rt.RemovePlayer(userId)
-				
+
 				// Send final GMCP update showing combat has ended
 				events.AddToQueue(gmcp.GMCPCombatStatusUpdate{
 					UserId:          userId,
@@ -176,11 +203,11 @@ func (rt *RoundBasedTimer) updatePlayers() {
 func (rt *RoundBasedTimer) AddPlayer(userId int) {
 	// Add to tracker
 	rt.PlayerTracker.AddPlayer(userId)
-	
+
 	// Start timer if this is the first player
 	rt.timerMutex.Lock()
 	defer rt.timerMutex.Unlock()
-	
+
 	if !rt.timerStarted && len(rt.GetTrackedPlayers()) > 0 {
 		rt.timerStarted = true
 		rt.BaseTimer.Start()
@@ -191,13 +218,18 @@ func (rt *RoundBasedTimer) AddPlayer(userId int) {
 func (rt *RoundBasedTimer) RemovePlayer(userId int) {
 	// Remove from tracker
 	rt.PlayerTracker.RemovePlayer(userId)
-	
-	// Stop timer if no more players
+
+	// Check if we should stop timer
+	shouldStop := false
 	rt.timerMutex.Lock()
-	defer rt.timerMutex.Unlock()
-	
 	if rt.timerStarted && len(rt.GetTrackedPlayers()) == 0 {
 		rt.timerStarted = false
-		rt.BaseTimer.Stop()
+		shouldStop = true
+	}
+	rt.timerMutex.Unlock()
+
+	// Stop timer outside of mutex to avoid deadlock
+	if shouldStop {
+		go rt.BaseTimer.Stop()
 	}
 }

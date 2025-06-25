@@ -292,11 +292,6 @@ GamePlay:
   #   varied.
   #   Note: see _datafiles/combat-messages/*
   ConsistentAttackMessages: true
-  # - CombatStyle -
-  #   The combat system to use. Available options:
-  #     combat-rounds - Traditional round-based combat (default)
-  #     combat-twitch - Action-based combat with balance/unbalance
-  CombatStyle: combat-rounds
   # - PVP -
   #   Possible Values:
   #     enabled   - PVP is enabled everywhere
@@ -313,6 +308,40 @@ GamePlay:
   # - MobConverseChance -
   #   Chance in 100 that the mob will attempt to converse when idle.
   MobConverseChance: 3
+  # - Combat -
+  #   Combat-specific settings for different combat systems
+  Combat:
+    # - Style -
+    #   The combat system to use. Available options:
+    #     combat-rounds - Traditional round-based combat (default)
+    #     combat-twitch - Action-based combat with balance/unbalance
+    Style: combat-twitch
+    # - TwitchUnarmedBaseMs -
+    #   Base cooldown for unarmed combat in milliseconds (twitch combat only)
+    TwitchUnarmedBaseMs: 3000
+    # - TwitchArmedBaseMs -
+    #   Base cooldown for armed combat in milliseconds (twitch combat only)
+    TwitchArmedBaseMs: 4000
+    # - TwitchMaxSpeedReduction -
+    #   Maximum speed reduction percentage (0-100) (twitch combat only)
+    TwitchMaxSpeedReduction: 50
+    # - TwitchSpeedDivisor -
+    #   Divisor for speed bonus calculation (twitch combat only)
+    #   Speed bonus = adjusted speed / divisor
+    TwitchSpeedDivisor: 200
+    # - TwitchMobUnarmedBaseMs -
+    #   Base cooldown for mob unarmed combat in milliseconds (twitch combat only)
+    TwitchMobUnarmedBaseMs: 4000
+    # - TwitchMobArmedBaseMs -
+    #   Base cooldown for mob armed combat in milliseconds (twitch combat only)
+    TwitchMobArmedBaseMs: 5000
+    # - TwitchMobMaxSpeedReduction -
+    #   Maximum speed reduction percentage for mobs (0-100) (twitch combat only)
+    TwitchMobMaxSpeedReduction: 50
+    # - TwitchMobSpeedDivisor -
+    #   Divisor for mob speed bonus calculation (twitch combat only)
+    #   Mob speed bonus = mob adjusted speed / divisor
+    TwitchMobSpeedDivisor: 200
 
 ################################################################################
 #
