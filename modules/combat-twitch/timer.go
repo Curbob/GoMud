@@ -18,7 +18,7 @@ type CooldownTimer struct {
 
 	// Additional mutex for cooldown-specific data
 	cooldownMutex sync.RWMutex
-	
+
 	// Track if timer is started
 	timerStarted bool
 	timerMutex   sync.Mutex
@@ -59,7 +59,7 @@ func (ct *CooldownTimer) Start() error {
 func (ct *CooldownTimer) Stop() error {
 	ct.timerMutex.Lock()
 	defer ct.timerMutex.Unlock()
-	
+
 	if ct.timerStarted {
 		ct.timerStarted = false
 		return ct.BaseTimer.Stop()
@@ -71,9 +71,10 @@ func (ct *CooldownTimer) Stop() error {
 func (ct *CooldownTimer) processCooldowns() {
 	now := time.Now()
 
-	ct.cooldownMutex.Lock()
-	defer ct.cooldownMutex.Unlock()
+	// Process cooldowns and determine if we should stop
+	shouldStop := false
 
+	ct.cooldownMutex.Lock()
 	for key, cooldown := range ct.cooldowns {
 		if now.After(cooldown.NextAction) {
 			// Cooldown expired
@@ -107,15 +108,24 @@ func (ct *CooldownTimer) processCooldowns() {
 			ct.combat.SendGMCPBalanceUpdate(cooldown.ActorId, remaining, maxSeconds)
 		}
 	}
-	
-	// Stop timer if no more cooldowns
+
+	// Check if we should stop the timer (no more cooldowns)
 	if len(ct.cooldowns) == 0 {
+		shouldStop = true
+	}
+	ct.cooldownMutex.Unlock()
+
+	// Handle timer stopping outside of cooldown mutex
+	if shouldStop {
 		ct.timerMutex.Lock()
 		if ct.timerStarted {
 			ct.timerStarted = false
+			ct.timerMutex.Unlock()
+			// Schedule async stop to avoid blocking the update loop
 			go ct.BaseTimer.Stop()
+		} else {
+			ct.timerMutex.Unlock()
 		}
-		ct.timerMutex.Unlock()
 	}
 }
 
@@ -136,12 +146,12 @@ func (ct *CooldownTimer) SetActorCooldown(actorId int, actorType combat.SourceTa
 
 	// Clear last sent value to force immediate update
 	delete(ct.lastSent, key)
-	
+
 	// Start timer if not already running
 	ct.timerMutex.Lock()
 	if !ct.timerStarted {
 		ct.timerStarted = true
-		go ct.BaseTimer.Start()
+		ct.BaseTimer.Start()
 	}
 	ct.timerMutex.Unlock()
 }
@@ -165,12 +175,12 @@ func (ct *CooldownTimer) SetActorCallback(actorId int, actorType combat.SourceTa
 			MaxDuration: duration,
 		}
 	}
-	
+
 	// Start timer if not already running
 	ct.timerMutex.Lock()
 	if !ct.timerStarted {
 		ct.timerStarted = true
-		go ct.BaseTimer.Start()
+		ct.BaseTimer.Start()
 	}
 	ct.timerMutex.Unlock()
 }

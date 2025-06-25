@@ -173,16 +173,19 @@ func main() {
 
 	mudlog.Info(`========================`)
 
+	// Initialize combat registry event handlers
+	combat.InitializeRegistry()
+
 	// Initialize combat system before loading data files
 	// This ensures combat commands are available during module loading
 	gamePlayConfig := configs.GetGamePlayConfig()
-	mudlog.Info("Combat System", "info", "Initializing combat system", "style", gamePlayConfig.CombatStyle.String())
-	if err := combat.SetActiveCombatSystem(gamePlayConfig.CombatStyle.String()); err != nil {
-		mudlog.Error("Combat System", "error", err, "module", gamePlayConfig.CombatStyle.String())
+	mudlog.Info("Combat System", "info", "Initializing combat system", "style", gamePlayConfig.Combat.Style.String())
+	if err := combat.SetActiveCombatSystem(gamePlayConfig.Combat.Style.String()); err != nil {
+		mudlog.Error("Combat System", "error", err, "module", gamePlayConfig.Combat.Style.String())
 		mudlog.Info("Combat System", "info", "Using default combat system")
 		// The fallback will be to use the existing hardcoded combat
 	} else {
-		mudlog.Info("Combat System", "info", "Successfully initialized", "style", gamePlayConfig.CombatStyle.String())
+		mudlog.Info("Combat System", "info", "Successfully initialized", "style", gamePlayConfig.Combat.Style.String())
 	}
 
 	// Load all the data files up front.

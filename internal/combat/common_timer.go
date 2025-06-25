@@ -13,9 +13,9 @@ type BaseTimer struct {
 	ticker     *time.Ticker
 	stopChan   chan bool
 	active     bool
-	stopOnce   sync.Once
 	updateFunc func()
-	name       string // For logging
+	name       string         // For logging
+	wg         sync.WaitGroup // Track goroutines
 }
 
 // NewBaseTimer creates a new base timer
@@ -36,15 +36,13 @@ func (bt *BaseTimer) Start() error {
 		return nil // Already running
 	}
 
-	// Reset stop once to allow restart
-	bt.stopOnce = sync.Once{}
-
 	// Create ticker for 100ms updates
 	bt.ticker = time.NewTicker(100 * time.Millisecond)
-	bt.stopChan = make(chan bool)
+	bt.stopChan = make(chan bool, 1) // Buffered to prevent blocking
 	bt.active = true
 
 	// Start update loop
+	bt.wg.Add(1)
 	go bt.runUpdateLoop()
 
 	if mudlog.IsInitialized() {
@@ -55,26 +53,49 @@ func (bt *BaseTimer) Start() error {
 
 // Stop halts the timer loop
 func (bt *BaseTimer) Stop() error {
-	bt.stopOnce.Do(func() {
-		bt.mutex.Lock()
-		defer bt.mutex.Unlock()
+	bt.mutex.Lock()
 
-		if !bt.active {
-			return
-		}
+	if !bt.active {
+		bt.mutex.Unlock()
+		return nil
+	}
 
-		bt.active = false
+	bt.active = false
 
-		if bt.ticker != nil {
-			bt.ticker.Stop()
-		}
+	if bt.ticker != nil {
+		bt.ticker.Stop()
+		bt.ticker = nil
+	}
 
-		close(bt.stopChan)
+	// Send stop signal (non-blocking due to buffer)
+	select {
+	case bt.stopChan <- true:
+	default:
+	}
 
+	bt.mutex.Unlock()
+
+	// Wait for the update loop to finish with timeout
+	done := make(chan struct{})
+	go func() {
+		bt.wg.Wait()
+		close(done)
+	}()
+
+	select {
+	case <-done:
+		// Timer stopped cleanly
 		if mudlog.IsInitialized() {
 			mudlog.Info("BaseTimer stopped", "name", bt.name)
 		}
-	})
+	case <-time.After(2 * time.Second):
+		// Timeout - log warning and continue
+		if mudlog.IsInitialized() {
+			mudlog.Error("BaseTimer stop timeout", "name", bt.name,
+				"message", "Timer goroutine did not stop within 2 seconds")
+		}
+	}
+
 	return nil
 }
 
@@ -87,10 +108,17 @@ func (bt *BaseTimer) IsActive() bool {
 
 // runUpdateLoop runs the timer's update function on each tick
 func (bt *BaseTimer) runUpdateLoop() {
+	defer bt.wg.Done()
+
 	for {
 		select {
 		case <-bt.ticker.C:
-			if bt.updateFunc != nil {
+			// Check if we're still active
+			bt.mutex.RLock()
+			active := bt.active
+			bt.mutex.RUnlock()
+
+			if active && bt.updateFunc != nil {
 				bt.updateFunc()
 			}
 		case <-bt.stopChan:

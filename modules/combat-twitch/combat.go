@@ -33,10 +33,14 @@ func NewTwitchCombat(plug *plugins.Plugin) *TwitchCombat {
 
 // Initialize sets up the combat system
 func (tc *TwitchCombat) Initialize() error {
+	mudlog.Info("Combat System", "module", "combat-twitch", "action", "Initialize started")
+
 	// Register combat commands
+	mudlog.Info("Combat System", "module", "combat-twitch", "action", "registering commands")
 	tc.registerCommands()
 
 	// Start the timer system
+	mudlog.Info("Combat System", "module", "combat-twitch", "action", "starting timer")
 	if err := tc.timer.Start(); err != nil {
 		return err
 	}
@@ -48,15 +52,19 @@ func (tc *TwitchCombat) Initialize() error {
 
 // Shutdown cleanly shuts down the combat system
 func (tc *TwitchCombat) Shutdown() error {
+	// Get timer reference while holding lock
 	tc.mutex.Lock()
-	defer tc.mutex.Unlock()
+	timer := tc.timer
+	tc.active = false
+	tc.mutex.Unlock()
 
-	// Stop the timer system
-	if tc.timer != nil {
-		tc.timer.Stop()
+	// Stop the timer system outside of lock to avoid deadlock
+	if timer != nil {
+		if err := timer.Stop(); err != nil {
+			mudlog.Error("Failed to stop combat timer", "error", err)
+		}
 	}
 
-	tc.active = false
 	mudlog.Info("Combat System", "module", "combat-twitch", "status", "shutdown")
 	return nil
 }
@@ -98,7 +106,7 @@ func (tc *TwitchCombat) SendGMCPBalanceUpdate(userId int, remainingSeconds float
 	if user := users.GetByUserId(userId); user != nil {
 		inCombat = user.Character.Aggro != nil
 	}
-	
+
 	// Send GMCP combat status update
 	events.AddToQueue(gmcp.GMCPCombatStatusUpdate{
 		UserId:          userId,

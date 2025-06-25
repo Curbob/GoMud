@@ -1242,7 +1242,7 @@ func (c *Character) ApplyHealthChange(healthChange int, userId ...int) int {
 	c.Health = newHealth
 
 	actualChange := newHealth - oldHealth
-	
+
 	// Trigger GMCP update if health changed and userId provided
 	if actualChange != 0 && len(userId) > 0 && userId[0] > 0 {
 		events.AddToQueue(events.CharacterVitalsChanged{UserId: userId[0]})
@@ -1259,14 +1259,14 @@ func (c *Character) ApplyManaChange(manaChange int, userId ...int) int {
 	} else if c.Mana > c.ManaMax.Value {
 		c.Mana = c.ManaMax.Value
 	}
-	
+
 	actualChange := c.Mana - oldMana
-	
+
 	// Trigger GMCP update if mana changed and userId provided
 	if actualChange != 0 && len(userId) > 0 && userId[0] > 0 {
 		events.AddToQueue(events.CharacterVitalsChanged{UserId: userId[0]})
 	}
-	
+
 	return actualChange
 }
 

@@ -150,8 +150,8 @@ func UnregisterListener(emptyEvent Event, id ListenerId) bool {
 
 func DoListeners(e Event) ListenerReturn {
 
-	listenerLock.Lock()
-	defer listenerLock.Unlock()
+	listenerLock.RLock()
+	defer listenerLock.RUnlock()
 
 	if len(eventListeners) == 0 {
 		return Continue

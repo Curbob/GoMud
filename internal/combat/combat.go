@@ -74,7 +74,7 @@ func (u userCombatActor) getCharacter() *characters.Character {
 }
 
 func (u userCombatActor) applyDamage(damage int) {
-	u.user.Character.ApplyHealthChange(damage * -1, u.user.UserId)
+	u.user.Character.ApplyHealthChange(damage*-1, u.user.UserId)
 	u.user.WimpyCheck()
 }
 

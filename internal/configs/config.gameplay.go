@@ -20,8 +20,8 @@ type GamePlay struct {
 	// Alt chars
 	MaxAltCharacters ConfigInt `yaml:"MaxAltCharacters"` // How many characters beyond the default character can they create?
 	// Combat
-	ConsistentAttackMessages ConfigBool   `yaml:"ConsistentAttackMessages"`            // Whether each weapon has consistent attack messages
-	CombatStyle              ConfigString `yaml:"CombatStyle" default:"combat-rounds"` // Which combat module to use
+	ConsistentAttackMessages ConfigBool     `yaml:"ConsistentAttackMessages"` // Whether each weapon has consistent attack messages
+	Combat                   GameplayCombat `yaml:"Combat"`                   // Combat-specific settings
 
 	// PVP Restrictions
 	PVP             ConfigString `yaml:"PVP"`
@@ -41,6 +41,23 @@ type GameplayDeath struct {
 	CorpseDecayTime     ConfigString `yaml:"CorpseDecayTime"`     // How long until corpses decay to dust (go away)
 }
 
+type GameplayCombat struct {
+	// Combat system selection
+	Style ConfigString `yaml:"Style" default:"combat-rounds"` // Which combat module to use
+
+	// Twitch combat settings for players
+	TwitchUnarmedBaseMs     ConfigInt `yaml:"TwitchUnarmedBaseMs"`     // Base cooldown for unarmed combat in milliseconds
+	TwitchArmedBaseMs       ConfigInt `yaml:"TwitchArmedBaseMs"`       // Base cooldown for armed combat in milliseconds
+	TwitchMaxSpeedReduction ConfigInt `yaml:"TwitchMaxSpeedReduction"` // Maximum speed reduction percentage (0-100)
+	TwitchSpeedDivisor      ConfigInt `yaml:"TwitchSpeedDivisor"`      // Divisor for speed bonus calculation
+
+	// Twitch combat settings for mobs
+	TwitchMobUnarmedBaseMs     ConfigInt `yaml:"TwitchMobUnarmedBaseMs"`     // Base cooldown for mob unarmed combat in milliseconds
+	TwitchMobArmedBaseMs       ConfigInt `yaml:"TwitchMobArmedBaseMs"`       // Base cooldown for mob armed combat in milliseconds
+	TwitchMobMaxSpeedReduction ConfigInt `yaml:"TwitchMobMaxSpeedReduction"` // Maximum speed reduction percentage for mobs (0-100)
+	TwitchMobSpeedDivisor      ConfigInt `yaml:"TwitchMobSpeedDivisor"`      // Divisor for mob speed bonus calculation
+}
+
 func (g *GamePlay) Validate() {
 
 	// Ignore AllowItemBuffRemoval
@@ -49,8 +66,8 @@ func (g *GamePlay) Validate() {
 	// Ignore CorpsesEnabled
 
 	// Default combat style if not specified
-	if g.CombatStyle == "" {
-		g.CombatStyle = "combat-rounds"
+	if g.Combat.Style == "" {
+		g.Combat.Style = "combat-rounds"
 	}
 
 	if g.Death.EquipmentDropChance < 0.0 || g.Death.EquipmentDropChance > 1.0 {
@@ -128,6 +145,56 @@ func (g *GamePlay) Validate() {
 		g.MobConverseChance = 0
 	} else if g.MobConverseChance > 100 {
 		g.MobConverseChance = 100
+	}
+
+	// Validate combat settings
+	if g.Combat.TwitchUnarmedBaseMs == 0 {
+		g.Combat.TwitchUnarmedBaseMs = 2500 // Default 2.5 seconds
+	} else if g.Combat.TwitchUnarmedBaseMs < 100 || g.Combat.TwitchUnarmedBaseMs > 10000 {
+		g.Combat.TwitchUnarmedBaseMs = 2500
+	}
+
+	if g.Combat.TwitchArmedBaseMs == 0 {
+		g.Combat.TwitchArmedBaseMs = 2000 // Default 2 seconds
+	} else if g.Combat.TwitchArmedBaseMs < 100 || g.Combat.TwitchArmedBaseMs > 10000 {
+		g.Combat.TwitchArmedBaseMs = 2000
+	}
+
+	if g.Combat.TwitchMaxSpeedReduction == 0 {
+		g.Combat.TwitchMaxSpeedReduction = 50 // Default 50%
+	} else if g.Combat.TwitchMaxSpeedReduction < 0 || g.Combat.TwitchMaxSpeedReduction > 100 {
+		g.Combat.TwitchMaxSpeedReduction = 50
+	}
+
+	if g.Combat.TwitchSpeedDivisor == 0 {
+		g.Combat.TwitchSpeedDivisor = 200 // Default divisor
+	} else if g.Combat.TwitchSpeedDivisor < 1 || g.Combat.TwitchSpeedDivisor > 1000 {
+		g.Combat.TwitchSpeedDivisor = 200
+	}
+
+	// Validate mob combat settings
+	if g.Combat.TwitchMobUnarmedBaseMs == 0 {
+		g.Combat.TwitchMobUnarmedBaseMs = 2500 // Default 2.5 seconds
+	} else if g.Combat.TwitchMobUnarmedBaseMs < 100 || g.Combat.TwitchMobUnarmedBaseMs > 10000 {
+		g.Combat.TwitchMobUnarmedBaseMs = 2500
+	}
+
+	if g.Combat.TwitchMobArmedBaseMs == 0 {
+		g.Combat.TwitchMobArmedBaseMs = 2000 // Default 2 seconds
+	} else if g.Combat.TwitchMobArmedBaseMs < 100 || g.Combat.TwitchMobArmedBaseMs > 10000 {
+		g.Combat.TwitchMobArmedBaseMs = 2000
+	}
+
+	if g.Combat.TwitchMobMaxSpeedReduction == 0 {
+		g.Combat.TwitchMobMaxSpeedReduction = 50 // Default 50%
+	} else if g.Combat.TwitchMobMaxSpeedReduction < 0 || g.Combat.TwitchMobMaxSpeedReduction > 100 {
+		g.Combat.TwitchMobMaxSpeedReduction = 50
+	}
+
+	if g.Combat.TwitchMobSpeedDivisor == 0 {
+		g.Combat.TwitchMobSpeedDivisor = 200 // Default divisor
+	} else if g.Combat.TwitchMobSpeedDivisor < 1 || g.Combat.TwitchMobSpeedDivisor > 1000 {
+		g.Combat.TwitchMobSpeedDivisor = 200
 	}
 
 }

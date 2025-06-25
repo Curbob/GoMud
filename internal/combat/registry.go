@@ -4,7 +4,11 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/GoMudEngine/GoMud/internal/configs"
+	"github.com/GoMudEngine/GoMud/internal/events"
+	"github.com/GoMudEngine/GoMud/internal/mobs"
 	"github.com/GoMudEngine/GoMud/internal/mudlog"
+	"github.com/GoMudEngine/GoMud/internal/users"
 )
 
 var (
@@ -46,25 +50,15 @@ func GetCombatSystem(name string) (ICombatSystem, error) {
 
 // SetActiveCombatSystem sets the active combat system
 func SetActiveCombatSystem(name string) error {
-	registryMutex.Lock()
-	defer registryMutex.Unlock()
-
 	// Validate input
 	if name == "" {
 		return fmt.Errorf("combat system name cannot be empty")
 	}
 
-	// Shutdown current system if active
-	if activeCombatSystem != nil {
-		oldName := activeCombatSystemName
-		if err := activeCombatSystem.Shutdown(); err != nil {
-			// Only log if mudlog is initialized (it might not be during tests)
-			if mudlog.IsInitialized() {
-				mudlog.Error("Combat Registry", "action", "shutdown failed", "system", oldName, "error", err)
-			}
-			// Continue anyway - we don't want to block switching due to shutdown errors
-		}
-	}
+	// Get references while holding lock briefly
+	registryMutex.Lock()
+	oldSystem := activeCombatSystem
+	oldName := activeCombatSystemName
 
 	// Get new system
 	system, exists := combatRegistry[name]
@@ -73,24 +67,54 @@ func SetActiveCombatSystem(name string) error {
 		for k := range combatRegistry {
 			availableSystems = append(availableSystems, k)
 		}
+		registryMutex.Unlock()
 		return fmt.Errorf("combat system '%s' not found, available systems: %v", name, availableSystems)
 	}
 
-	// Initialize new system
+	// Clear active system to prevent access during transition
+	activeCombatSystem = nil
+	activeCombatSystemName = ""
+	registryMutex.Unlock()
+
+	// Shutdown current system if active (outside of lock)
+	if oldSystem != nil {
+		if err := oldSystem.Shutdown(); err != nil {
+			// Only log if mudlog is initialized (it might not be during tests)
+			if mudlog.IsInitialized() {
+				mudlog.Error("Combat Registry", "action", "shutdown failed", "system", oldName, "error", err)
+			}
+			// Continue anyway - we don't want to block switching due to shutdown errors
+		}
+	}
+
+	// Initialize new system (outside of lock)
+	if mudlog.IsInitialized() {
+		mudlog.Info("Combat Registry", "action", "initializing", "system", name)
+	}
 	if err := system.Initialize(); err != nil {
 		// Try to restore previous system on failure
-		if activeCombatSystem != nil && activeCombatSystemName != "" {
-			if restoreErr := activeCombatSystem.Initialize(); restoreErr != nil {
+		if oldSystem != nil && oldName != "" {
+			if restoreErr := oldSystem.Initialize(); restoreErr != nil {
 				if mudlog.IsInitialized() {
 					mudlog.Error("Combat Registry", "action", "restore failed", "error", restoreErr)
 				}
+			} else {
+				// Restore the old system
+				registryMutex.Lock()
+				activeCombatSystem = oldSystem
+				activeCombatSystemName = oldName
+				registryMutex.Unlock()
 			}
 		}
 		return fmt.Errorf("failed to initialize combat system %s: %w", name, err)
 	}
 
+	// Set the new active system
+	registryMutex.Lock()
 	activeCombatSystem = system
 	activeCombatSystemName = name
+	registryMutex.Unlock()
+
 	// Only log if mudlog is initialized (it might not be during tests)
 	if mudlog.IsInitialized() {
 		mudlog.Info("Combat Registry", "action", "activated", "system", name)
@@ -162,4 +186,91 @@ func ClearRegistry() {
 
 	combatRegistry = make(map[string]ICombatSystem)
 	activeCombatSystem = nil
+}
+
+// InitializeRegistry sets up the combat registry event handlers
+func InitializeRegistry() {
+	events.RegisterListener(SwitchCombatSystemEvent{}, handleCombatSystemSwitch)
+	if mudlog.IsInitialized() {
+		mudlog.Info("Combat Registry", "action", "event handler registered")
+	}
+}
+
+// handleCombatSystemSwitch processes combat system switch events
+func handleCombatSystemSwitch(e events.Event) events.ListenerReturn {
+	if mudlog.IsInitialized() {
+		mudlog.Info("Combat Registry", "action", "handleCombatSystemSwitch started")
+	}
+
+	evt, ok := e.(SwitchCombatSystemEvent)
+	if !ok {
+		return events.Continue
+	}
+
+	// Get the requesting user
+	user := users.GetByUserId(evt.RequestingUser)
+	if user == nil {
+		return events.Continue
+	}
+
+	if mudlog.IsInitialized() {
+		mudlog.Info("Combat Registry", "action", "calling SetActiveCombatSystem", "newSystem", evt.NewSystem)
+	}
+
+	// Attempt to switch
+	if err := SetActiveCombatSystem(evt.NewSystem); err != nil {
+		// Restore combat states on failure
+		for _, state := range evt.SavedStates {
+			if u := users.GetByUserId(state.UserId); u != nil {
+				u.Character.Aggro = state.Aggro
+			}
+		}
+		for mobId, aggro := range evt.SavedMobStates {
+			if mob := mobs.GetInstance(mobId); mob != nil {
+				mob.Character.Aggro = aggro
+			}
+		}
+
+		user.SendText(fmt.Sprintf(`<ansi fg="red">Failed to switch combat system: %s</ansi>`, err.Error()))
+		mudlog.Error("Combat Registry", "action", "switch failed", "error", err.Error())
+		return events.Continue
+	}
+
+	// Save the combat system to the main config
+	if err := configs.SetVal("GamePlay.Combat.Style", evt.NewSystem); err != nil {
+		user.SendText(fmt.Sprintf(`<ansi fg="red">Failed to save combat system setting: %s</ansi>`, err.Error()))
+	}
+
+	user.SendText(fmt.Sprintf(`<ansi fg="green">Combat system switched from %s to %s</ansi>`, evt.OldSystem, evt.NewSystem))
+
+	// Restore combat states with new system
+	for _, state := range evt.SavedStates {
+		if u := users.GetByUserId(state.UserId); u != nil {
+			u.Character.Aggro = state.Aggro
+
+			// Register with new combat system if it has timers
+			if evt.NewSystem == "combat-rounds" {
+				// Round-based combat will pick up players on next combat check
+				u.SendText(`<ansi fg="yellow">[SYSTEM] Combat resumed with round-based system.</ansi>`)
+			} else {
+				u.SendText(`<ansi fg="yellow">[SYSTEM] Combat resumed with twitch system.</ansi>`)
+			}
+		}
+	}
+
+	// Restore mob aggro
+	for mobId, aggro := range evt.SavedMobStates {
+		if mob := mobs.GetInstance(mobId); mob != nil {
+			mob.Character.Aggro = aggro
+		}
+	}
+
+	// Broadcast to non-combat players
+	for _, u := range users.GetAllActiveUsers() {
+		if u.UserId != user.UserId && u.Character.Aggro == nil {
+			u.SendText(fmt.Sprintf(`<ansi fg="yellow">[SYSTEM] Combat system changed to: %s</ansi>`, evt.NewSystem))
+		}
+	}
+
+	return events.Continue
 }
