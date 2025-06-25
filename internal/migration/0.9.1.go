@@ -19,7 +19,7 @@ import (
 // If found, the data is moved to a zone-config.yaml file, and the ZoneConfig data in the Room datafile is removed.
 func migrate_RoomZoneConfig() error {
 
-	// This struct is how ZoneConfig looked as of 1.0.0
+	// This struct is how ZoneConfig looked as of 0.9.1
 	// Since we will be upgrading an older version to this format, use a copy of the struct from that period
 	// To ensure we aren't using a struct that has changed over time
 	type zoneConfig_1_0_0 struct {
@@ -132,14 +132,14 @@ func migrate_RoomZoneConfig() error {
 			continue
 		}
 
-		mudlog.Info("Migration 1.0.0", "file", path, "message", "migrating zoneconfig from room data file to zone-config.yaml")
+		mudlog.Info("Migration 0.9.1", "file", path, "message", "migrating zoneconfig from room data file to zone-config.yaml")
 
 		//
 		// From here on out, this code migrates zoneconfig data out of room file and into zone-config.yaml
 		//
 		roomFileInfo, _ := os.Stat(path)
 
-		mudlog.Info("Migration 1.0.0", "file", path, "message", "isolating zoneconfig data")
+		mudlog.Info("Migration 0.9.1", "file", path, "message", "isolating zoneconfig data")
 
 		//
 		// Isolate the zoneconfig and write it to its own zone-config.yaml file
@@ -171,7 +171,7 @@ func migrate_RoomZoneConfig() error {
 			}
 		}
 
-		mudlog.Info("Migration 1.0.0", "file", path, "message", "writing "+zoneFilePath)
+		mudlog.Info("Migration 0.9.1", "file", path, "message", "writing "+zoneFilePath)
 
 		//
 		// Write the zone data to the zone-config.yaml path
@@ -188,7 +188,7 @@ func migrate_RoomZoneConfig() error {
 		// Mark zone file as existing
 		existingZoneFiles[zoneFilePath] = struct{}{}
 
-		mudlog.Info("Migration 1.0.0", "file", path, "message", "writing modified room data")
+		mudlog.Info("Migration 0.9.1", "file", path, "message", "writing modified room data")
 
 		//
 		// Now clear the "zoneconfig" node from the room data.
@@ -223,7 +223,7 @@ func migrate_RoomZoneConfig() error {
 			return err
 		}
 
-		mudlog.Info("Migration 1.0.0", "file", path, "message", "successfully updated")
+		mudlog.Info("Migration 0.9.1", "file", path, "message", "successfully updated")
 
 	}
 
