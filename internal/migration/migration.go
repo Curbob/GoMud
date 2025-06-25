@@ -12,8 +12,8 @@ import (
 // They should be put in the order of oldest to newest and follow the pattern as below
 func doAllMigrations(lastConfigVersion version.Version) error {
 
-	// 0.0.0 -> 1.0.0
-	if lastConfigVersion.IsOlderThan(version.New(1, 0, 0)) {
+	// 0.0.0 -> 0.9.1
+	if lastConfigVersion.IsOlderThan(version.New(0, 9, 1)) {
 
 		if err := migrate_RoomZoneConfig(); err != nil {
 			return err

@@ -63,7 +63,7 @@ import (
 // When updating this version:
 // 1. Expect to update the github release version
 // 2. Consider whether any migration code is needed for breaking changes, particularly in datafiles (see internal/migration)
-const VERSION = "1.0.0"
+const VERSION = "0.9.1"
 
 var (
 	sigChan            = make(chan os.Signal, 1)
