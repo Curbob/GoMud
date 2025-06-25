@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 
 	"github.com/GoMudEngine/GoMud/internal/configs"
 	"github.com/GoMudEngine/GoMud/internal/mudlog"
@@ -48,27 +49,85 @@ func migrate_RoomZoneConfig() error {
 		return err
 	}
 
+	existingZoneFiles := map[string]struct{}{}
+
 	// We only care about room files, so ###.yaml (possible negative)
 	re := regexp.MustCompile(`^[\-0-9]+\.yaml$`)
 	for _, path := range matches {
 
-		filename := filepath.Base(path)
-		if !re.MatchString(filename) {
+		//
+		// Must look like a room yaml file:
+		// 1.yaml
+		// 123.yaml
+		// -83.yaml
+		// etc.
+		//
+
+		if !re.MatchString(filepath.Base(path)) {
 			continue
 		}
+
+		//
+		// strip the filename form the room file and replace with zone-config.yaml
+		// to get the path to the zone-config.yaml
+		//
+		zoneFilePath := filepath.Join(filepath.Dir(path), "zone-config.yaml")
+
+		//
+		// The following checks whether the zone config file already exists
+		// We will leave the config data in the room data file if the zone-config.yaml is already present.
+		// It should be inert if present, since it is not unmarshalled into anything in current code.
+		//
+
+		// Check whether zone file already is tracked as existing, if found, skip.
+		if _, ok := existingZoneFiles[zoneFilePath]; ok {
+			continue
+		}
+
+		_, err = os.Stat(zoneFilePath)
+		if err == nil {
+			// Mark zone file as existing, skip further processing.
+			existingZoneFiles[zoneFilePath] = struct{}{}
+			continue
+		}
+
+		//
+		// End check for existing zone-config.yaml
+		// After this point, we will unmarshal the yaml file into a generic map structure.
+		// This allows us to examine the data in the yaml file, particularly the "zoneconfig" node
+		// since the ZoneConfig field has been removed from the rooms.Room struct
+		// We can de-populate the field, move it, and re-write the yaml back to the original room template file.
+		// The downside to this method is that being a map, the fields will be read/written in a non-deterministic manner,
+		// So the room yaml file field orders may be written in a random order.
+		// Because of this, and as a final fix, we will finally marshal/unmarshal into the proper room struct from the map data
+		// Allowing us to write the data in an expected ordered form.
+		//
 
 		data, err := os.ReadFile(path)
 		if err != nil {
 			return err
 		}
 
-		filedata := map[string]any{}
+		//
+		// First do a simple check for the field name in the text file.
+		// We know the way the field will appear: "zoneconfig:"
+		// This avoids having to unmarshal the struct and search that way, unnecessarily.
+		//
+		if !strings.Contains(string(data), "zoneconfig:") {
+			continue
+		}
 
+		//
+		// Unmarshal the entire yaml file into a map
+		// This will let us further examine the data, modify it, etc.
+		//
+		filedata := map[string]any{}
 		err = yaml.Unmarshal(data, &filedata)
 		if err != nil {
 			return fmt.Errorf("failed to parse YAML: %w", err)
 		}
 
+		// Make sure that the zoneconfig key is present and populated
 		if filedata[`zoneconfig`] == nil {
 			continue
 		}
@@ -82,7 +141,13 @@ func migrate_RoomZoneConfig() error {
 
 		mudlog.Info("Migration 1.0.0", "file", path, "message", "isolating zoneconfig data")
 
+		//
 		// Isolate the zoneconfig and write it to its own zone-config.yaml file
+		// We'll marshal just the zoneconfig data, get its bytes, then unmarshal it into
+		// the desired target structure.
+		// Some fields have changed or are missing due to some slight differences in the new struct
+		// so we'll also try and reconcile some of that by pulling from the core room definition
+		//
 		zoneBytes, err := yaml.Marshal(filedata[`zoneconfig`])
 		if err != nil {
 			return err
@@ -106,23 +171,34 @@ func migrate_RoomZoneConfig() error {
 			}
 		}
 
+		mudlog.Info("Migration 1.0.0", "file", path, "message", "writing "+zoneFilePath)
+
+		//
+		// Write the zone data to the zone-config.yaml path
+		// We'll just use whatever permissions were set in the room file for this file.
+		//
 		zoneFileBytes, err := yaml.Marshal(zoneDataStruct)
 		if err != nil {
 			return err
 		}
-
-		zoneFilePath := filepath.Join(filepath.Dir(path), "zone-config.yaml")
-
-		mudlog.Info("Migration 1.0.0", "file", path, "message", "writing "+zoneFilePath)
-
 		if err := os.WriteFile(zoneFilePath, zoneFileBytes, roomFileInfo.Mode().Perm()); err != nil {
 			return err
 		}
 
-		// Now clear "zoneconfig" and write the room data back
-		filedata[`zoneconfig`] = nil
+		// Mark zone file as existing
+		existingZoneFiles[zoneFilePath] = struct{}{}
 
 		mudlog.Info("Migration 1.0.0", "file", path, "message", "writing modified room data")
+
+		//
+		// Now clear the "zoneconfig" node from the room data.
+		// The data will be in a random order if we just write this back to the room yaml file,
+		// so we'll take the extract step of marshalling the room data from the map into a string,
+		// and then unmarshal it into the actual target rooms.Room{} struct.
+		// This way, when writing to a file, it'll be in the typical field order according to the struct
+		// field order.
+		//
+		delete(filedata, `zoneconfig`)
 
 		// First marshal the modified room data into bytes
 		modifiedRoomBytes, err := yaml.Marshal(filedata)
@@ -142,6 +218,7 @@ func migrate_RoomZoneConfig() error {
 			return err
 		}
 
+		// Again, we'll just use the rooms original permissions when writing.
 		if err := os.WriteFile(path, modifiedRoomBytes, roomFileInfo.Mode().Perm()); err != nil {
 			return err
 		}

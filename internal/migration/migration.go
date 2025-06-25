@@ -8,42 +8,49 @@ import (
 	"github.com/GoMudEngine/GoMud/internal/version"
 )
 
-func Run(lastConfigVersion version.Version, serverVersion version.Version) (err error) {
+// Migration code goes here.
+// They should be put in the order of oldest to newest and follow the pattern as below
+func doAllMigrations(lastConfigVersion version.Version) error {
 
+	// 0.0.0 -> 1.0.0
+	if lastConfigVersion.IsOlderThan(version.New(1, 0, 0)) {
+
+		if err := migrate_RoomZoneConfig(); err != nil {
+			return err
+		}
+
+	}
+
+	return nil
+}
+
+// Entrypoint for migrations.
+// This is run on server start-up, after config files are loaded.
+// NOTE: This means migrations that modify config files themselves would need special consideration
+func Run(lastConfigVersion version.Version, serverVersion version.Version) error {
+
+	//
+	// If already up to speed on version, we don't really need to do anything.
+	//
 	if lastConfigVersion.IsEqualTo(serverVersion) {
 		return nil
 	}
 
 	//
-	// Note: Follow this pattern and keep these version upgrades in order of lowest to greatest to avoid problems
-	// Note2: Take care to not shadow the err variable, since it is used in defer
+	// Start by making a backup of all datafiles.
 	//
-	var backupFolder string
-
-	// This defer checks whether an error is present before returning
-	// If so, restores backup.
-	defer func() {
-		if err != nil && backupFolder != `` {
-			fmt.Println("OOPS", err)
-			copyDir(backupFolder, string(configs.GetFilePathsConfig().DataFiles))
-		}
-		os.RemoveAll(backupFolder)
-	}()
-
-	backupFolder, err = datafilesBackup()
+	backupFolder, err := datafilesBackup()
 	if err != nil {
-		err = fmt.Errorf(`could not backup datafiles: %w`, err)
-		return
+		return fmt.Errorf(`could not backup datafiles: %w`, err)
 	}
+	defer os.RemoveAll(backupFolder)
 
-	// 0.0.0 -> 1.0.0
-	if lastConfigVersion.IsOlderThan(version.New(1, 0, 0)) {
-
-		err = migrate_RoomZoneConfig()
-		if err != nil {
-			return
-		}
-
+	//
+	// If an error occured, restore backup
+	//
+	if err := doAllMigrations(lastConfigVersion); err != nil {
+		copyDir(backupFolder, string(configs.GetFilePathsConfig().DataFiles))
+		return err
 	}
 
 	//
@@ -51,5 +58,5 @@ func Run(lastConfigVersion version.Version, serverVersion version.Version) (err 
 	//
 	configs.SetVal(`Server.CurrentVersion`, serverVersion.String())
 
-	return
+	return nil
 }
