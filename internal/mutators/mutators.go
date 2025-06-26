@@ -46,7 +46,6 @@ type Mutator struct {
 // This is a special function used for when room instance data is saved
 // It handles checking for special equality cases that the normal reflect.DeepEqual() doesn't handle the way we want.
 func (m MutatorList) SkipInstanceSave(other any) bool {
-	return false
 	m2, ok := other.(MutatorList)
 	if !ok {
 		return false
