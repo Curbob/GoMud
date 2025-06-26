@@ -17,6 +17,41 @@ import (
 	lru "github.com/hashicorp/golang-lru/v2"
 )
 
+// Helper functions for consistent GMCP formatting
+
+// IntToString converts an int to string, returns "" for 0
+func IntToString(val int) string {
+	if val == 0 {
+		return ""
+	}
+	return strconv.Itoa(val)
+}
+
+// Int64ToString converts an int64 to string, returns "" for 0
+func Int64ToString(val int64) string {
+	if val == 0 {
+		return ""
+	}
+	return strconv.FormatInt(val, 10)
+}
+
+// FloatToString converts a float to string with specified decimals, returns "" for 0
+func FloatToString(val float64, decimals int) string {
+	if val == 0 {
+		return ""
+	}
+	format := fmt.Sprintf("%%.%df", decimals)
+	return fmt.Sprintf(format, val)
+}
+
+// BoolToString converts a bool to "true" or "false" string
+func BoolToString(val bool) string {
+	if val {
+		return "true"
+	}
+	return "false"
+}
+
 const (
 	TELNET_GMCP term.IACByte = 201 // https://tintin.mudhalla.net/protocols/gmcp/
 )

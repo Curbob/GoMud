@@ -1,6 +1,7 @@
 package gmcp
 
 import (
+	"fmt"
 	"math"
 
 	"github.com/GoMudEngine/GoMud/internal/combat"
@@ -18,6 +19,9 @@ type GMCPCombatStatusUpdate struct {
 	InCombat        bool
 	CombatStyle     string
 	RoundNumber     uint64 // Only relevant for round-based combat
+	Target          string // Current combat target name
+	TargetHpCurrent int    // Current HP of target (only when in combat)
+	TargetHpMax     int    // Max HP of target (only when in combat)
 }
 
 func (g GMCPCombatStatusUpdate) Type() string { return `GMCPCombatStatusUpdate` }
@@ -46,17 +50,19 @@ func handleCombatStatusUpdate(e events.Event) events.ListenerReturn {
 	}
 
 	if !isGMCPEnabled(user.ConnectionId()) {
-		return events.Cancel
+		// Don't cancel, just skip - the event might be useful for other listeners
+		return events.Continue
 	}
 
-	// Round to 1 decimal place
+	// Round to 1 decimal place and format as string to ensure x.y format
 	cooldown := math.Round(evt.CooldownSeconds*10) / 10
 	maxCooldown := math.Round(evt.MaxSeconds*10) / 10
 
 	// Build the payload
+	// Use formatted strings for cooldowns to ensure they always have .x format
 	payload := map[string]interface{}{
-		"cooldown":     cooldown,
-		"max_cooldown": maxCooldown,
+		"cooldown":     fmt.Sprintf("%.1f", cooldown),
+		"max_cooldown": fmt.Sprintf("%.1f", maxCooldown),
 		"name_active":  evt.NameActive,
 		"name_idle":    evt.NameIdle,
 		"in_combat":    evt.InCombat,
@@ -66,6 +72,22 @@ func handleCombatStatusUpdate(e events.Event) events.ListenerReturn {
 	// Only include round_number if it's set (for round-based combat)
 	if evt.RoundNumber > 0 {
 		payload["round_number"] = evt.RoundNumber
+	}
+
+	// Always include target, use "None" if not set
+	if evt.Target != "" {
+		payload["target"] = evt.Target
+	} else {
+		payload["target"] = "None"
+	}
+
+	// Always include target HP fields as strings
+	if evt.InCombat && evt.TargetHpMax > 0 {
+		payload["target_hp_current"] = fmt.Sprintf("%d", evt.TargetHpCurrent)
+		payload["target_hp_max"] = fmt.Sprintf("%d", evt.TargetHpMax)
+	} else {
+		payload["target_hp_current"] = ""
+		payload["target_hp_max"] = ""
 	}
 
 	// Send the GMCP update
@@ -126,6 +148,9 @@ func handlePlayerSpawn(e events.Event) events.ListenerReturn {
 		InCombat:        inCombat,
 		CombatStyle:     combatStyle,
 		RoundNumber:     0,
+		Target:          "", // No target on spawn initially
+		TargetHpCurrent: 0,
+		TargetHpMax:     0,
 	})
 
 	return events.Continue
