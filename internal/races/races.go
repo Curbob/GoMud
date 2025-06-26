@@ -113,6 +113,11 @@ func (r *Race) Validate() error {
 		r.Damage.FormatDiceRoll()
 	}
 
+	// Ensure TNLScale is never 0, default to 1.0
+	if r.TNLScale == 0 {
+		r.TNLScale = 1.0
+	}
+
 	return nil
 }
 

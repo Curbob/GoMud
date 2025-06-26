@@ -1381,6 +1381,10 @@ func (c *Character) RecalculateStats() {
 
 	if raceInfo := races.GetRace(c.RaceId); raceInfo != nil {
 		c.TNLScale = raceInfo.TNLScale
+		// Safety check: ensure TNLScale is never 0
+		if c.TNLScale == 0 {
+			c.TNLScale = 1.0
+		}
 		c.Stats.Strength.Base = raceInfo.Stats.Strength.Base
 		c.Stats.Speed.Base = raceInfo.Stats.Speed.Base
 		c.Stats.Smarts.Base = raceInfo.Stats.Smarts.Base
