@@ -191,8 +191,8 @@ func (g *GMCPPartyModule) GetPartyNode(party *parties.Party, gmcpModule string) 
 			}
 
 			partyPayload.Vitals[user.Character.Name] = GMCPPartyModule_Payload_Vitals{
-				Level:         user.Character.Level,
-				HealthPercent: hPct,
+				Level:         IntToString(user.Character.Level),
+				HealthPercent: IntToString(hPct),
 				Location:      roomTitle,
 			}
 
@@ -221,9 +221,9 @@ func (g *GMCPPartyModule) GetPartyNode(party *parties.Party, gmcpModule string) 
 		if user := users.GetByUserId(uId); user != nil {
 
 			partyPayload.Vitals[user.Character.Name] = GMCPPartyModule_Payload_Vitals{
-				Level:         0,
-				HealthPercent: 0,
-				Location:      ``,
+				Level:         "",
+				HealthPercent: "",
+				Location:      "",
 			}
 
 			if gmcpModule == `Party.Vitals` {
@@ -269,7 +269,7 @@ type GMCPPartyModule_Payload_User struct {
 }
 
 type GMCPPartyModule_Payload_Vitals struct {
-	Level         int    `json:"level"`    // level of user
-	HealthPercent int    `json:"health"`   // 1 = 1%, 23 = 23% etc.
+	Level         string `json:"level"`    // level of user
+	HealthPercent string `json:"health"`   // 1 = 1%, 23 = 23% etc.
 	Location      string `json:"location"` // Title of room they are in
 }

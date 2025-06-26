@@ -1,8 +1,6 @@
 package gmcp
 
 import (
-	"strconv"
-
 	"github.com/GoMudEngine/GoMud/internal/configs"
 	"github.com/GoMudEngine/GoMud/internal/events"
 	"github.com/GoMudEngine/GoMud/internal/plugins"
@@ -42,29 +40,32 @@ func (g *GMCPGameModule) onJoinLeave(e events.Event) events.ListenerReturn {
 
 	tFormat := string(c.TextFormats.Time)
 
-	whoPayload := `"Who": { "Players": [`
-
-	infoPayloads := map[int]string{}
-
-	pCt := 0
+	// Build player list
+	players := []map[string]string{}
 	for _, user := range users.GetAllActiveUsers() {
-
-		infoPayloads[user.UserId] = `"Info": { "logintime": "` + user.GetConnectTime().Format(tFormat) + `", "name": "` + string(c.Server.MudName) + `" }`
-
-		if pCt > 0 {
-			whoPayload += `, `
-		}
-		pCt++
-
-		whoPayload += `{ "level": ` + strconv.Itoa(user.Character.Level) + `, "name": "` + user.Character.Name + `", "title": "` + user.Role + `"}`
+		players = append(players, map[string]string{
+			"level": IntToString(user.Character.Level),
+			"name":  user.Character.Name,
+			"title": user.Role,
+		})
 	}
-	whoPayload += `] }`
 
-	for userId, infoStr := range infoPayloads {
+	// Send to each active user
+	for _, user := range users.GetAllActiveUsers() {
+		payload := map[string]interface{}{
+			"Info": map[string]string{
+				"logintime": user.GetConnectTime().Format(tFormat),
+				"name":      string(c.Server.MudName),
+			},
+			"Who": map[string]interface{}{
+				"Players": players,
+			},
+		}
+
 		events.AddToQueue(GMCPOut{
-			UserId:  userId,
+			UserId:  user.UserId,
 			Module:  `Game`,
-			Payload: `{ ` + infoStr + `, ` + whoPayload + ` }`,
+			Payload: payload,
 		})
 	}
 
