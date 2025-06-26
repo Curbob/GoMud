@@ -116,7 +116,7 @@ func (g *GMCPCharModule) charChangeHandler(e events.Event) events.ListenerReturn
 
 	events.AddToQueue(GMCPCharUpdate{
 		UserId:     evt.UserId,
-		Identifier: `Char`,
+		Identifier: `Char.Vitals, Char.Stats, Char.Status`,
 	})
 
 	return events.Continue
@@ -257,10 +257,10 @@ func (g *GMCPCharModule) levelUpHandler(e events.Event) events.ListenerReturn {
 		return events.Continue
 	}
 
-	// Changing equipment might affect stats, inventory, maxhp/maxmp etc
+	// Level up affects many things, send all relevant sub-modules
 	events.AddToQueue(GMCPCharUpdate{
 		UserId:     evt.UserId,
-		Identifier: `Char`,
+		Identifier: `Char.Vitals, Char.Stats, Char.Status, Char.Skills, Char.Worth`,
 	})
 
 	return events.Continue
@@ -277,10 +277,31 @@ func (g *GMCPCharModule) playerSpawnHandler(e events.Event) events.ListenerRetur
 		return events.Continue
 	}
 
-	// Send full update
+	// Send ALL individual module updates for initial UI setup
+	// We send them as separate modules to avoid overwriting sub-modules like Char.CombatStatus
+
+	// Basic character info and stats
 	events.AddToQueue(GMCPCharUpdate{
 		UserId:     evt.UserId,
-		Identifier: `Char`,
+		Identifier: `Char.Info, Char.Vitals, Char.Stats, Char.Status, Char.Worth`,
+	})
+
+	// Skills, buffs, and quests
+	events.AddToQueue(GMCPCharUpdate{
+		UserId:     evt.UserId,
+		Identifier: `Char.Skills, Char.Affects, Char.Quests`,
+	})
+
+	// Inventory modules
+	events.AddToQueue(GMCPCharUpdate{
+		UserId:     evt.UserId,
+		Identifier: `Char.Inventory, Char.Inventory.Worn, Char.Inventory.Backpack, Char.Inventory.Backpack.Summary`,
+	})
+
+	// Combat-related modules (pets, enemies)
+	events.AddToQueue(GMCPCharUpdate{
+		UserId:     evt.UserId,
+		Identifier: `Char.Pets, Char.Enemies`,
 	})
 
 	return events.Continue
@@ -323,11 +344,14 @@ func (g *GMCPCharModule) buildAndSendGMCPPayload(e events.Event) events.Listener
 
 			payload, moduleName := g.GetCharNode(user, requestedId)
 
-			events.AddToQueue(GMCPOut{
-				UserId:  evt.UserId,
-				Module:  moduleName,
-				Payload: payload,
-			})
+			// Only send if we got valid data
+			if payload != nil && moduleName != "" {
+				events.AddToQueue(GMCPOut{
+					UserId:  evt.UserId,
+					Module:  moduleName,
+					Payload: payload,
+				})
+			}
 
 		}
 
@@ -349,7 +373,7 @@ func (g *GMCPCharModule) GetCharNode(user *users.UserRecord, gmcpModule string) 
 			Class:     skills.GetProfession(user.Character.GetAllSkillRanks()),
 			Race:      user.Character.Race(),
 			Alignment: user.Character.AlignmentName(),
-			Level:     user.Character.Level,
+			Level:     IntToString(user.Character.Level),
 		}
 
 		if !all {
@@ -399,10 +423,10 @@ func (g *GMCPCharModule) GetCharNode(user *users.UserRecord, gmcpModule string) 
 				e := GMCPCharModule_Enemy{
 					Id:      mob.ShorthandId(),
 					Name:    mob.Character.Name,
-					Level:   mob.Character.Level,
-					Hp:      mob.Character.Health,
-					MaxHp:   mob.Character.HealthMax.Value,
-					Engaged: mob.InstanceId == aggroMobInstanceId,
+					Level:   IntToString(mob.Character.Level),
+					Hp:      IntToString(mob.Character.Health),
+					MaxHp:   IntToString(mob.Character.HealthMax.Value),
+					Engaged: BoolToString(mob.InstanceId == aggroMobInstanceId),
 				}
 
 				payload.Enemies = append(payload.Enemies, e)
@@ -422,8 +446,8 @@ func (g *GMCPCharModule) GetCharNode(user *users.UserRecord, gmcpModule string) 
 		payload.Inventory = &GMCPCharModule_Payload_Inventory{
 			Backpack: &GMCPCharModule_Payload_Inventory_Backpack{
 				Summary: GMCPCharModule_Payload_Inventory_Backpack_Summary{
-					Count: len(user.Character.Items),
-					Max:   user.Character.CarryCapacity(),
+					Count: IntToString(len(user.Character.Items)),
+					Max:   IntToString(user.Character.CarryCapacity()),
 				},
 			},
 		}
@@ -438,8 +462,8 @@ func (g *GMCPCharModule) GetCharNode(user *users.UserRecord, gmcpModule string) 
 			Backpack: &GMCPCharModule_Payload_Inventory_Backpack{
 				Items: []GMCPCharModule_Payload_Inventory_Item{},
 				Summary: GMCPCharModule_Payload_Inventory_Backpack_Summary{
-					Count: len(user.Character.Items),
-					Max:   user.Character.CarryCapacity(),
+					Count: IntToString(len(user.Character.Items)),
+					Max:   IntToString(user.Character.CarryCapacity()),
 				},
 			},
 
@@ -475,12 +499,12 @@ func (g *GMCPCharModule) GetCharNode(user *users.UserRecord, gmcpModule string) 
 	if all || g.wantsGMCPPayload(`Char.Stats`, gmcpModule) {
 
 		payload.Stats = &GMCPCharModule_Payload_Stats{
-			Strength:   user.Character.Stats.Strength.ValueAdj,
-			Speed:      user.Character.Stats.Speed.ValueAdj,
-			Smarts:     user.Character.Stats.Smarts.ValueAdj,
-			Vitality:   user.Character.Stats.Vitality.ValueAdj,
-			Mysticism:  user.Character.Stats.Mysticism.ValueAdj,
-			Perception: user.Character.Stats.Perception.ValueAdj,
+			Strength:   IntToString(user.Character.Stats.Strength.ValueAdj),
+			Speed:      IntToString(user.Character.Stats.Speed.ValueAdj),
+			Smarts:     IntToString(user.Character.Stats.Smarts.ValueAdj),
+			Vitality:   IntToString(user.Character.Stats.Vitality.ValueAdj),
+			Mysticism:  IntToString(user.Character.Stats.Mysticism.ValueAdj),
+			Perception: IntToString(user.Character.Stats.Perception.ValueAdj),
 		}
 
 		if !all {
@@ -491,10 +515,10 @@ func (g *GMCPCharModule) GetCharNode(user *users.UserRecord, gmcpModule string) 
 	if all || g.wantsGMCPPayload(`Char.Vitals`, gmcpModule) {
 
 		payload.Vitals = &GMCPCharModule_Payload_Vitals{
-			Hp:    user.Character.Health,
-			HpMax: user.Character.HealthMax.Value,
-			Sp:    user.Character.Mana,
-			SpMax: user.Character.ManaMax.Value,
+			Hp:    IntToString(user.Character.Health),
+			HpMax: IntToString(user.Character.HealthMax.Value),
+			Sp:    IntToString(user.Character.Mana),
+			SpMax: IntToString(user.Character.ManaMax.Value),
 		}
 
 		if !all {
@@ -505,12 +529,12 @@ func (g *GMCPCharModule) GetCharNode(user *users.UserRecord, gmcpModule string) 
 	if all || g.wantsGMCPPayload(`Char.Worth`, gmcpModule) {
 
 		payload.Worth = &GMCPCharModule_Payload_Worth{
-			Gold:           user.Character.Gold,
-			Bank:           user.Character.Bank,
-			SkillPoints:    user.Character.StatPoints,
-			TrainingPoints: user.Character.TrainingPoints,
-			TNL:            user.Character.XPTL(user.Character.Level),
-			XP:             user.Character.Experience,
+			Gold:           IntToString(user.Character.Gold),
+			Bank:           IntToString(user.Character.Bank),
+			SkillPoints:    IntToString(user.Character.StatPoints),
+			TrainingPoints: IntToString(user.Character.TrainingPoints),
+			TNL:            IntToString(user.Character.XPTL(user.Character.Level)),
+			XP:             IntToString(user.Character.Experience),
 		}
 
 		if !all {
@@ -552,14 +576,14 @@ func (g *GMCPCharModule) GetCharNode(user *users.UserRecord, gmcpModule string) 
 			aff := GMCPCharModule_Payload_Affect{
 				Name:         name,
 				Description:  desc,
-				DurationMax:  timeMax,
-				DurationLeft: timeLeft,
+				DurationMax:  IntToString(timeMax),
+				DurationLeft: IntToString(timeLeft),
 				Type:         buffSource,
 			}
 
-			aff.Mods = make(map[string]int)
+			aff.Mods = make(map[string]string)
 			for name, value := range buffSpec.StatMods {
-				aff.Mods[name] = value
+				aff.Mods[name] = IntToString(value)
 			}
 
 			if _, ok := payload.Affects[name]; ok {
@@ -598,7 +622,7 @@ func (g *GMCPCharModule) GetCharNode(user *users.UserRecord, gmcpModule string) 
 
 			questPayload := GMCPCharModule_Payload_Quest{
 				Name:        questInfo.Name,
-				Completion:  0,
+				Completion:  "0",
 				Description: questInfo.Description,
 			}
 
@@ -610,7 +634,7 @@ func (g *GMCPCharModule) GetCharNode(user *users.UserRecord, gmcpModule string) 
 				}
 			}
 
-			questPayload.Completion = int(math.Floor(float64(completedSteps)/float64(totalSteps)) * 100)
+			questPayload.Completion = IntToString(int(math.Floor(float64(completedSteps)/float64(totalSteps)) * 100))
 
 			// Add to the returned output
 			payload.Quests = append(payload.Quests, questPayload)
@@ -624,9 +648,13 @@ func (g *GMCPCharModule) GetCharNode(user *users.UserRecord, gmcpModule string) 
 	// If we reached this point and Char wasn't requested, we have a problem.
 	if !all {
 		mudlog.Error(`gmcp.Char`, `error`, `Bad module requested`, `module`, gmcpModule)
+		return nil, ""
 	}
 
-	return payload, `Char`
+	// Don't send "Char" - this overwrites sub-modules
+	// Instead, return nil to indicate nothing should be sent
+	mudlog.Error(`gmcp.Char`, `warning`, `Attempted to send full Char module - blocked to prevent overwriting sub-modules`)
+	return nil, ""
 }
 
 // wantsGMCPPayload(`Char.Info`, `Char`)
@@ -663,12 +691,12 @@ type GMCPCharModule_Payload struct {
 // Char.Info
 // /////////////////
 type GMCPCharModule_Payload_Info struct {
-	Account   string `json:"account,omitempty"`
-	Name      string `json:"name,omitempty"`
-	Class     string `json:"class,omitempty"`
-	Race      string `json:"race,omitempty"`
-	Alignment string `json:"alignment,omitempty"`
-	Level     int    `json:"level,omitempty"`
+	Account   string `json:"account"`
+	Name      string `json:"name"`
+	Class     string `json:"class"`
+	Race      string `json:"race"`
+	Alignment string `json:"alignment"`
+	Level     string `json:"level"`
 }
 
 // /////////////////
@@ -677,10 +705,10 @@ type GMCPCharModule_Payload_Info struct {
 type GMCPCharModule_Enemy struct {
 	Id      string `json:"id"`
 	Name    string `json:"name"`
-	Level   int    `json:"level"`
-	Hp      int    `json:"hp"`
-	MaxHp   int    `json:"hp_max"`
-	Engaged bool   `json:"engaged"`
+	Level   string `json:"level"`
+	Hp      string `json:"hp"`
+	MaxHp   string `json:"hp_max"`
+	Engaged string `json:"engaged"`
 }
 
 // /////////////////
@@ -697,8 +725,8 @@ type GMCPCharModule_Payload_Inventory_Backpack struct {
 }
 
 type GMCPCharModule_Payload_Inventory_Backpack_Summary struct {
-	Count int `json:"count,omitempty"`
-	Max   int `json:"max,omitempty"`
+	Count string `json:"count"`
+	Max   string `json:"max"`
 }
 
 type GMCPCharModule_Payload_Inventory_Worn struct {
@@ -719,7 +747,7 @@ type GMCPCharModule_Payload_Inventory_Item struct {
 	Name    string   `json:"name"`
 	Type    string   `json:"type"`
 	SubType string   `json:"subtype"`
-	Uses    int      `json:"uses"`
+	Uses    string   `json:"uses"`
 	Details []string `json:"details"`
 }
 
@@ -731,7 +759,7 @@ func newInventory_Item(itm items.Item) GMCPCharModule_Payload_Inventory_Item {
 		Name:    itm.Name(),
 		Type:    string(itmSpec.Type),
 		SubType: string(itmSpec.Subtype),
-		Uses:    itm.Uses,
+		Uses:    IntToString(itm.Uses),
 		Details: []string{},
 	}
 
@@ -750,46 +778,46 @@ func newInventory_Item(itm items.Item) GMCPCharModule_Payload_Inventory_Item {
 // Char.Stats
 // /////////////////
 type GMCPCharModule_Payload_Stats struct {
-	Strength   int `json:"strength,omitempty"`
-	Speed      int `json:"speed,omitempty"`
-	Smarts     int `json:"smarts,omitempty"`
-	Vitality   int `json:"vitality,omitempty"`
-	Mysticism  int `json:"mysticism,omitempty"`
-	Perception int `json:"perception,omitempty"`
+	Strength   string `json:"strength"`
+	Speed      string `json:"speed"`
+	Smarts     string `json:"smarts"`
+	Vitality   string `json:"vitality"`
+	Mysticism  string `json:"mysticism"`
+	Perception string `json:"perception"`
 }
 
 // /////////////////
 // Char.Vitals
 // /////////////////
 type GMCPCharModule_Payload_Vitals struct {
-	Hp    int `json:"hp,omitempty"`
-	HpMax int `json:"hp_max,omitempty"`
-	Sp    int `json:"sp,omitempty"`
-	SpMax int `json:"sp_max,omitempty"`
+	Hp    string `json:"hp"`
+	HpMax string `json:"hp_max"`
+	Sp    string `json:"sp"`
+	SpMax string `json:"sp_max"`
 }
 
 // /////////////////
 // Char.Worth
 // /////////////////
 type GMCPCharModule_Payload_Worth struct {
-	Gold           int `json:"gold_carry,omitempty"`
-	Bank           int `json:"gold_bank,omitempty"`
-	SkillPoints    int `json:"skillpoints,omitempty"`
-	TrainingPoints int `json:"trainingpoints,omitempty"`
-	TNL            int `json:"tnl,omitempty"`
-	XP             int `json:"xp,omitempty"`
+	Gold           string `json:"gold_carry"`
+	Bank           string `json:"gold_bank"`
+	SkillPoints    string `json:"skillpoints"`
+	TrainingPoints string `json:"trainingpoints"`
+	TNL            string `json:"tnl"`
+	XP             string `json:"xp"`
 }
 
 // /////////////////
 // Char.Affects
 // /////////////////
 type GMCPCharModule_Payload_Affect struct {
-	Name         string         `json:"name"`
-	Description  string         `json:"description"`
-	DurationMax  int            `json:"duration_max"`
-	DurationLeft int            `json:"duration_cur"`
-	Type         string         `json:"type"`
-	Mods         map[string]int `json:"affects"`
+	Name         string            `json:"name"`
+	Description  string            `json:"description"`
+	DurationMax  string            `json:"duration_max"`
+	DurationLeft string            `json:"duration_cur"`
+	Type         string            `json:"type"`
+	Mods         map[string]string `json:"affects"`
 }
 
 // /////////////////
@@ -798,7 +826,7 @@ type GMCPCharModule_Payload_Affect struct {
 type GMCPCharModule_Payload_Quest struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
-	Completion  int    `json:"completion"`
+	Completion  string `json:"completion"`
 }
 
 // /////////////////

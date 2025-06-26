@@ -5,6 +5,7 @@ import (
 
 	"github.com/GoMudEngine/GoMud/internal/combat"
 	"github.com/GoMudEngine/GoMud/internal/events"
+	"github.com/GoMudEngine/GoMud/internal/mobs"
 	"github.com/GoMudEngine/GoMud/internal/mudlog"
 	"github.com/GoMudEngine/GoMud/internal/plugins"
 	"github.com/GoMudEngine/GoMud/internal/users"
@@ -18,14 +19,19 @@ type TwitchCombat struct {
 	timer      *CooldownTimer
 	active     bool
 	mutex      sync.RWMutex
+
+	// Track last target name per user for persistent targeting
+	userTargets     map[int]string // userId -> target name
+	userTargetMutex sync.RWMutex
 }
 
 // NewTwitchCombat creates a new twitch-based combat system
 func NewTwitchCombat(plug *plugins.Plugin) *TwitchCombat {
 	tc := &TwitchCombat{
-		plug:       plug,
-		calculator: NewTwitchCalculator(),
-		active:     false,
+		plug:        plug,
+		calculator:  NewTwitchCalculator(),
+		active:      false,
+		userTargets: make(map[int]string),
 	}
 	tc.timer = NewCooldownTimer(tc)
 	return tc
@@ -103,9 +109,24 @@ func (tc *TwitchCombat) SendBalanceNotification(actorId int, actorType combat.So
 func (tc *TwitchCombat) SendGMCPBalanceUpdate(userId int, remainingSeconds float64, maxSeconds float64) {
 	// Check if user is actually in combat
 	inCombat := false
-	if user := users.GetByUserId(userId); user != nil {
+	targetHpCurrent := 0
+	targetHpMax := 0
+
+	user := users.GetByUserId(userId)
+	if user != nil {
 		inCombat = user.Character.Aggro != nil
+
+		// If in combat, get target HP
+		if inCombat && user.Character.Aggro.MobInstanceId > 0 {
+			if targetMob := mobs.GetInstance(user.Character.Aggro.MobInstanceId); targetMob != nil {
+				targetHpCurrent = targetMob.Character.Health
+				targetHpMax = targetMob.Character.HealthMax.ValueAdj
+			}
+		}
 	}
+
+	// Get the user's current target
+	target := tc.GetUserTarget(userId)
 
 	// Send GMCP combat status update
 	events.AddToQueue(gmcp.GMCPCombatStatusUpdate{
@@ -117,5 +138,68 @@ func (tc *TwitchCombat) SendGMCPBalanceUpdate(userId int, remainingSeconds float
 		InCombat:        inCombat,
 		CombatStyle:     combat.GetActiveCombatSystemName(),
 		RoundNumber:     0, // Not applicable for twitch combat
+		Target:          target,
+		TargetHpCurrent: targetHpCurrent,
+		TargetHpMax:     targetHpMax,
 	})
+}
+
+// SetUserTarget stores the last target name for a user
+func (tc *TwitchCombat) SetUserTarget(userId int, targetName string) {
+	tc.userTargetMutex.Lock()
+	if targetName == "" {
+		delete(tc.userTargets, userId)
+	} else {
+		tc.userTargets[userId] = targetName
+	}
+	tc.userTargetMutex.Unlock()
+
+	// Send GMCP update with new target
+	// Get current cooldown to include in update
+	remaining := tc.timer.GetRemainingCooldown(userId, combat.User).Seconds()
+	maxDuration := float64(0)
+	if remaining > 0 {
+		// If on cooldown, get max duration
+		// For simplicity, we'll just send the update with current remaining time
+		maxDuration = remaining // This isn't perfect but avoids accessing internal timer state
+	}
+
+	tc.SendGMCPBalanceUpdate(userId, remaining, maxDuration)
+}
+
+// GetUserTarget retrieves the last target name for a user
+func (tc *TwitchCombat) GetUserTarget(userId int) string {
+	tc.userTargetMutex.RLock()
+	defer tc.userTargetMutex.RUnlock()
+
+	return tc.userTargets[userId]
+}
+
+// ClearUserTarget removes the stored target for a user
+func (tc *TwitchCombat) ClearUserTarget(userId int) {
+	tc.userTargetMutex.Lock()
+	delete(tc.userTargets, userId)
+	tc.userTargetMutex.Unlock()
+
+	// Send GMCP update with cleared target
+	remaining := tc.timer.GetRemainingCooldown(userId, combat.User).Seconds()
+	maxDuration := float64(0)
+	if remaining > 0 {
+		maxDuration = remaining
+	}
+
+	tc.SendGMCPBalanceUpdate(userId, remaining, maxDuration)
+}
+
+// SendCombatUpdate sends GMCP updates for a player involved in combat
+// This should be called after any combat action that might change HP
+func (tc *TwitchCombat) SendCombatUpdate(userId int) {
+	// Get current cooldown for the user
+	remaining := tc.timer.GetRemainingCooldown(userId, combat.User).Seconds()
+	maxDuration := float64(0)
+	if remaining > 0 {
+		maxDuration = remaining
+	}
+
+	tc.SendGMCPBalanceUpdate(userId, remaining, maxDuration)
 }
