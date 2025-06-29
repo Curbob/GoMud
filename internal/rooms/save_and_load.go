@@ -236,10 +236,6 @@ func SaveRoomTemplate(roomTpl Room) error {
 	return nil
 }
 
-type SaveEqualityChecker interface {
-	SkipInstanceSave(other any) bool // Should we skip due to everything looking the same?
-}
-
 // See: D. SAVING ROOMS INSTANCES
 func SaveRoomInstance(r Room) error {
 
@@ -275,12 +271,6 @@ func SaveRoomInstance(r Room) error {
 
 		rVal2 := rVal.Field(i)
 		tplVal2 := tplVal.Field(i)
-
-		if iface, ok := rVal2.Interface().(SaveEqualityChecker); ok {
-			if iface.SkipInstanceSave(tplVal2.Interface()) {
-				continue
-			}
-		}
 
 		if reflect.DeepEqual(rVal2.Interface(), tplVal2.Interface()) {
 			continue

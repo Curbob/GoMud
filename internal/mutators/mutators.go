@@ -43,33 +43,6 @@ type Mutator struct {
 	DespawnedRound uint64 `yaml:"despawnedround,omitempty"` // Track when it decayed to nothing.
 }
 
-// This is a special function used for when room instance data is saved
-// It handles checking for special equality cases that the normal reflect.DeepEqual() doesn't handle the way we want.
-func (m MutatorList) SkipInstanceSave(other any) bool {
-	m2, ok := other.(MutatorList)
-	if !ok {
-		return false
-	}
-
-	if len(m) != len(m2) { // length different?
-		return false
-	}
-
-	for i, _ := range m {
-
-		if m[i].MutatorId != m2[i].MutatorId {
-			return false
-		}
-
-		if m[i].Removable() != m2[i].Removable() {
-			return false
-		}
-
-	}
-
-	return true
-}
-
 type TextModifier struct {
 	Behavior     TextBehavior `yaml:"behavior,omitempty"`     // prepend, append or replace?
 	Text         string       `yaml:"text,omitempty"`         // The text that will be injected somehow
