@@ -4,6 +4,13 @@ crowbarAvailableRound = 0;
 const crowbar = ["crowbar", "rod", "metal", "bar"];
 const verbs = ["get", "take", "grab", "steal", "snatch"];
 
+
+function onEnter(user, room) {
+    user.GiveBuff(15, "sleep");
+    return false; // return false to prevent the "auto look"
+}
+
+
 function onCommand_look(rest, user, room) {
 
     matches = UtilFindMatchIn(rest, crowbar);

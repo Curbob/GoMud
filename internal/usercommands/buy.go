@@ -42,7 +42,7 @@ func Buy(rest string, user *users.UserRecord, room *rooms.Room, flags events.Eve
 
 			// If nobody found when clearly specified somebody, send an error and abort
 			if targetUserId == 0 && targetMobInstanceId == 0 {
-				user.SendText("Visit a merchant to buy objects.")
+				user.SendText("Visit a merchant to purchase objects or services.")
 				return true, nil
 			}
 
@@ -57,6 +57,11 @@ func Buy(rest string, user *users.UserRecord, room *rooms.Room, flags events.Eve
 
 	merchantPlayers := room.GetPlayers(rooms.FindMerchant)
 	merchantMobs := room.GetMobs(rooms.FindMerchant)
+
+	if len(merchantPlayers) == 0 && len(merchantMobs) == 0 {
+		user.SendText("Visit a merchant to purchase objects or services.")
+		return true, nil
+	}
 
 	for _, uid := range merchantPlayers {
 		if targetUserId > 0 && uid != targetUserId {
@@ -353,7 +358,6 @@ func tryPurchase(request string, user *users.UserRecord, room *rooms.Room, shopM
 
 		user.PlaySound(`purchase`, `other`)
 
-		user.Character.StoreItem(newItm)
 		events.AddToQueue(events.ItemOwnership{
 			UserId: user.UserId,
 			Item:   newItm,

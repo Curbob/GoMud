@@ -315,9 +315,6 @@ func TryCommand(cmd string, rest string, userId int, flags events.EventFlag) (bo
 			}
 		}
 
-		// Cancel any buffs they have that get cancelled based on them doing anything at all
-		user.Character.CancelBuffsWithFlag(buffs.CancelOnAction)
-
 		userDisabled = user.Character.IsDisabled()
 
 		// Check if the "rest" is an item the character has
@@ -336,6 +333,9 @@ func TryCommand(cmd string, rest string, userId int, flags events.EventFlag) (bo
 		}
 
 	}
+
+	// Cancel any buffs they have that get cancelled based on them doing anything at all
+	user.Character.CancelBuffsWithFlag(buffs.CancelOnAction)
 
 	// Experimental, not sure if will have unexpected consequences.
 	// Turn keywords for targetting self into actual string of self

@@ -13,8 +13,10 @@ description: The dim glow of a crackling hearth in one corner bathes the wooden 
 mapsymbol: I
 maplegend: Inn
 biome: city
+nouns:
+  metal rod: a crowbar leans against the hearth. It must be used as a fire poker.
 exits:
-  leave:
+  downstairs:
     roomid: 61
     exitmessage: You gather your belongings and head back towards the main room of
       the Inn.

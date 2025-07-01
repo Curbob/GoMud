@@ -7,8 +7,7 @@ groups:
 combatcommands:
   - 'callforhelp 7:guard:calls for the guards.'
 idlecommands:
-  - 'say You can <ansi fg="command">sleep</ansi> here for a bit here to refresh.'
-  - 'say If you''re hungry check the <ansi fg="command">list</ansi> of food for sale.'
+  - 'say If you''re hungry check the <ansi fg="command">list</ansi> of food and services for sale.'
 activitylevel: 10
 character:
   name: wench
@@ -19,6 +18,8 @@ character:
   spellbook:
     curepoison: 50
   shop:
+    - itemid: 102
+      quantitymax: 0
     - itemid: 30004
       quantitymax: 2
     - itemid: 30005

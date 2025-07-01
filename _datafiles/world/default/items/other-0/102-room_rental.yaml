@@ -1,0 +1,9 @@
+itemid: 102
+value: 5
+hands: 0
+name: room rental
+namesimple: room rental
+description: Rent a room in the Inn and rest up.
+type: service
+subtype: generic
+
