@@ -88,3 +88,20 @@ In all other ways, this follows the same rules as the normal `onCommand()` funct
 | room | [RoomObject](FUNCTIONS_ROOMS.md) |
 
 ---
+
+```
+function onPurchase(user ActorObject, item ItemObject, room RoomObject) {
+}
+```
+
+`onPurchase()` is called when a player successfully purchases an item in a shop, after the item is
+
+|  Argument | Explanation |
+| --- | --- |
+| user | [ActorObject](FUNCTIONS_ACTORS.md) |
+| item | [ItemObject](FUNCTIONS_ITEMS.md) |
+| room | [RoomObject](FUNCTIONS_ROOMS.md) |
+
+Returning `false` will prevent the user from being given the object. This can be useful if you want to initate a script from a purchase, but not actually grant the item to the user, such as purchasing extra lives, a ticket for travel, or renting a room.
+
+---
