@@ -38,6 +38,8 @@
 Returns an Object with key/value pairs of `ProvidedRoomId`=>`NewRoomId`
 Creates ephemeral instances of the RoomId's provided.
 
+NOTE: Ephemeral rooms clean up (delete from memory) mobs, items, etc. when no players occupy the set of created rooms.
+
 |  Argument | Explanation |
 | --- | --- |
 | RoomIds | an array of integers containing RoomId's you want instanced |
