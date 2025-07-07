@@ -14,7 +14,7 @@ import (
 
 func Status(rest string, user *users.UserRecord, room *rooms.Room, flags events.EventFlag) (bool, error) {
 
-	//possibleStatuses := []string{`strength`, `speed`, `smarts`, `vitality`, `mysticism`, `perception`}
+	statNames := user.Character.Stats.GetStatInfoNames()
 
 	if rest != `` {
 
@@ -32,8 +32,7 @@ func Status(rest string, user *users.UserRecord, room *rooms.Room, flags events.
 			user.SendText(tplTxt)
 		}
 
-		// TODO: use GetStatInfoNames to populate the list of stat names.
-		question := cmdPrompt.Ask(`Increase which?`, []string{`strength`, `speed`, `smarts`, `vitality`, `mysticism`, `perception`, `quit`}, `quit`)
+		question := cmdPrompt.Ask(`Increase which?`, append(statNames, `quit`), `quit`)
 		if !question.Done {
 			return true, nil
 		}
@@ -43,8 +42,7 @@ func Status(rest string, user *users.UserRecord, room *rooms.Room, flags events.
 			return true, nil
 		}
 
-		// TODO: use GetStatInfoNames to populate the list of stat names.
-		match, closeMatch := util.FindMatchIn(question.Response, []string{`strength`, `speed`, `smarts`, `vitality`, `mysticism`, `perception`}...)
+		match, closeMatch := util.FindMatchIn(question.Response, statNames...)
 
 		question.RejectResponse() // Always reset this question, since we want to keep reusing it.
 
@@ -62,32 +60,9 @@ func Status(rest string, user *users.UserRecord, room *rooms.Room, flags events.
 		after := 0
 		spent := 0
 
-		switch selection {
-		case `strength`:
-			before = user.Character.Stats.Get("Strength").Value - user.Character.Stats.Get("Strength").Mods
-			user.Character.Stats.Get("Strength").Training += 1
-			spent = 1
-		case `speed`:
-			before = user.Character.Stats.Get(".Speed.").Value - user.Character.Stats.Get(".Speed.").Mods
-			user.Character.Stats.Get(".Speed.").Training += 1
-			spent = 1
-		case `smarts`:
-			before = user.Character.Stats.Get(".Smarts.").Value - user.Character.Stats.Get(".Smarts.").Mods
-			user.Character.Stats.Get(".Smarts.").Training += 1
-			spent = 1
-		case `vitality`:
-			before = user.Character.Stats.Get(".Vitality.").Value - user.Character.Stats.Get(".Vitality.").Mods
-			user.Character.Stats.Get(".Vitality.").Training += 1
-			spent = 1
-		case `mysticism`:
-			before = user.Character.Stats.Get(".Mysticism.").Value - user.Character.Stats.Get(".Mysticism.").Mods
-			user.Character.Stats.Get(".Mysticism.").Training += 1
-			spent = 1
-		case `perception`:
-			before = user.Character.Stats.Get(".Perception.").Value - user.Character.Stats.Get(".Perception.").Mods
-			user.Character.Stats.Get(".Perception.").Training += 1
-			spent = 1
-		}
+		before = user.Character.Stats.Get(selection).Value - user.Character.Stats.Get(selection).Mods
+		user.Character.Stats.Get(selection).Training += 1
+		spent = 1
 
 		if spent > 0 {
 			after = before + 1
