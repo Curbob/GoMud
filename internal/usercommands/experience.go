@@ -90,30 +90,32 @@ func Experience(rest string, user *users.UserRecord, room *rooms.Room, flags eve
 
 		stats := []string{`str`, `spd`, `smt`, `vit`, `mys`, `per`}
 
+		// TODO: Need to allow for this stat list to be dynamic
 		oldG := map[string]int{
-			`str`: mockChar.Stats.Strength.GainsForLevel(startLevel - 1),
-			`spd`: mockChar.Stats.Speed.GainsForLevel(startLevel - 1),
-			`smt`: mockChar.Stats.Smarts.GainsForLevel(startLevel - 1),
-			`vit`: mockChar.Stats.Vitality.GainsForLevel(startLevel - 1),
-			`mys`: mockChar.Stats.Mysticism.GainsForLevel(startLevel - 1),
-			`per`: mockChar.Stats.Perception.GainsForLevel(startLevel - 1),
+			`str`: mockChar.Stats.Get("Strength").GainsForLevel(startLevel - 1),
+			`spd`: mockChar.Stats.Get("Speed").GainsForLevel(startLevel - 1),
+			`smt`: mockChar.Stats.Get("Smarts").GainsForLevel(startLevel - 1),
+			`vit`: mockChar.Stats.Get("Vitality").GainsForLevel(startLevel - 1),
+			`mys`: mockChar.Stats.Get("Mysticism").GainsForLevel(startLevel - 1),
+			`per`: mockChar.Stats.Get("Perception").GainsForLevel(startLevel - 1),
 		}
 
-		newG := map[string]int{}
 		totalG := map[string]int{}
 		for _, stat := range stats {
 			totalG[stat] = oldG[stat]
 		}
 
+		// TODO: newG is never used
+		newG := map[string]int{}
 		for i := startLevel; i <= endLevel; i++ {
 
 			newG = map[string]int{
-				`str`: mockChar.Stats.Strength.GainsForLevel(i),
-				`spd`: mockChar.Stats.Speed.GainsForLevel(i),
-				`smt`: mockChar.Stats.Smarts.GainsForLevel(i),
-				`vit`: mockChar.Stats.Vitality.GainsForLevel(i),
-				`mys`: mockChar.Stats.Mysticism.GainsForLevel(i),
-				`per`: mockChar.Stats.Perception.GainsForLevel(i),
+				`str`: mockChar.Stats.Get("Strength").GainsForLevel(i),
+				`spd`: mockChar.Stats.Get("Speed").GainsForLevel(i),
+				`smt`: mockChar.Stats.Get("Smarts").GainsForLevel(i),
+				`vit`: mockChar.Stats.Get("Vitality").GainsForLevel(i),
+				`mys`: mockChar.Stats.Get("Mysticism").GainsForLevel(i),
+				`per`: mockChar.Stats.Get("Perception").GainsForLevel(i),
 			}
 
 			tnlXP := mockChar.XPTL(i) - mockChar.XPTL(i-1)

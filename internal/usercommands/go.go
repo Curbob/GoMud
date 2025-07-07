@@ -288,13 +288,13 @@ func Go(rest string, user *users.UserRecord, room *rooms.Room, flags events.Even
 						continue
 					}
 
-					speedDelta := mob.Character.Stats.Speed.ValueAdj - user.Character.Stats.Speed.ValueAdj
+					speedDelta := mob.Character.Stats.Get("Speed").ValueAdj - user.Character.Stats.Get("Speed").ValueAdj
 					if speedDelta < 1 {
 						speedDelta = 1
 					}
 
 					// Chance that a mob follows the player
-					targetVal := 20 + mob.Character.Stats.Perception.ValueAdj + speedDelta
+					targetVal := 20 + mob.Character.Stats.Get("Perception").ValueAdj + speedDelta
 
 					roll := util.Rand(100)
 

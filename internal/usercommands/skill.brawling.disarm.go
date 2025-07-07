@@ -56,7 +56,7 @@ func Disarm(rest string, user *users.UserRecord, room *rooms.Room, flags events.
 				return true, nil
 			}
 
-			chanceIn100 := (user.Character.Stats.Speed.ValueAdj + user.Character.Stats.Smarts.ValueAdj) - (m.Character.Stats.Strength.ValueAdj + m.Character.Stats.Perception.ValueAdj)
+			chanceIn100 := (user.Character.Stats.Get("Speed").ValueAdj + user.Character.Stats.Get("Smarts").ValueAdj) - (m.Character.Stats.Get("Strength").ValueAdj + m.Character.Stats.Get("Perception").ValueAdj)
 			if chanceIn100 < 0 {
 				chanceIn100 = 0
 			}
@@ -103,7 +103,7 @@ func Disarm(rest string, user *users.UserRecord, room *rooms.Room, flags events.
 				return true, nil
 			}
 
-			chanceIn100 := (user.Character.Stats.Speed.ValueAdj + user.Character.Stats.Smarts.ValueAdj) - (u.Character.Stats.Strength.ValueAdj + u.Character.Stats.Perception.ValueAdj)
+			chanceIn100 := (user.Character.Stats.Get("Speed").ValueAdj + user.Character.Stats.Get("Smarts").ValueAdj) - (u.Character.Stats.Get("Strength").ValueAdj + u.Character.Stats.Get("Perception").ValueAdj)
 			if chanceIn100 < 0 {
 				chanceIn100 = 0
 			}

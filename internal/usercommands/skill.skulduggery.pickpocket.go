@@ -63,7 +63,7 @@ func Pickpocket(rest string, user *users.UserRecord, room *rooms.Room, flags eve
 				levelDelta = 1
 			}
 
-			chanceIn100 := (user.Character.Stats.Speed.ValueAdj+user.Character.Stats.Smarts.ValueAdj+user.Character.Stats.Perception.ValueAdj)/3 - m.Character.Stats.Perception.ValueAdj
+			chanceIn100 := (user.Character.Stats.Get("Speed").ValueAdj+user.Character.Stats.Get("Smarts").ValueAdj+user.Character.Stats.Get("Perception").ValueAdj)/3 - m.Character.Stats.Get("Perception").ValueAdj
 			chanceIn100 /= levelDelta
 			if chanceIn100 < 0 {
 				chanceIn100 = 1
@@ -160,7 +160,7 @@ func Pickpocket(rest string, user *users.UserRecord, room *rooms.Room, flags eve
 				levelDelta = 1
 			}
 
-			chanceIn100 := (user.Character.Stats.Speed.ValueAdj+user.Character.Stats.Smarts.ValueAdj+user.Character.Stats.Perception.ValueAdj)/3 - p.Character.Stats.Perception.ValueAdj
+			chanceIn100 := (user.Character.Stats.Get("Speed").ValueAdj+user.Character.Stats.Get("Smarts").ValueAdj+user.Character.Stats.Get("Perception").ValueAdj)/3 - p.Character.Stats.Get("Perception").ValueAdj
 			chanceIn100 /= levelDelta
 			if chanceIn100 < 0 {
 				chanceIn100 = 1

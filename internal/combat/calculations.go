@@ -24,10 +24,10 @@ func PowerRanking(atkChar characters.Character, defChar characters.Character) fl
 		pct += 0.4 * float64(atkDmg) / float64(defDmg)
 	}
 
-	if defChar.Stats.Speed.ValueAdj == 0 {
+	if defChar.Stats.Get("Speed").ValueAdj == 0 {
 		pct += 0.3
 	} else {
-		pct += 0.3 * float64(atkChar.Stats.Speed.ValueAdj) / float64(defChar.Stats.Speed.ValueAdj)
+		pct += 0.3 * float64(atkChar.Stats.Get("Speed").ValueAdj) / float64(defChar.Stats.Get("Speed").ValueAdj)
 	}
 
 	if defChar.HealthMax.Value == 0 {

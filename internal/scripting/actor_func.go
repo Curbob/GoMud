@@ -73,32 +73,33 @@ func (a ScriptActor) GetLevel() int {
 	return a.characterRecord.Level
 }
 
+// TODO: Need to allow for this stat list to be dynamic
 func (a ScriptActor) GetStat(statName string) int {
 
 	statName = strings.ToLower(statName)
 
 	if strings.HasPrefix(statName, "st") {
-		return a.characterRecord.Stats.Strength.ValueAdj
+		return a.characterRecord.Stats.Get("Strength").ValueAdj
 	}
 
 	if strings.HasPrefix(statName, "sp") {
-		return a.characterRecord.Stats.Speed.ValueAdj
+		return a.characterRecord.Stats.Get("Speed").ValueAdj
 	}
 
 	if strings.HasPrefix(statName, "sm") {
-		return a.characterRecord.Stats.Smarts.ValueAdj
+		return a.characterRecord.Stats.Get("Smarts").ValueAdj
 	}
 
 	if strings.HasPrefix(statName, "vi") {
-		return a.characterRecord.Stats.Vitality.ValueAdj
+		return a.characterRecord.Stats.Get("Vitality").ValueAdj
 	}
 
 	if strings.HasPrefix(statName, "my") {
-		return a.characterRecord.Stats.Mysticism.ValueAdj
+		return a.characterRecord.Stats.Get("Mysticism").ValueAdj
 	}
 
 	if strings.HasPrefix(statName, "pe") {
-		return a.characterRecord.Stats.Perception.ValueAdj
+		return a.characterRecord.Stats.Get("Perception").ValueAdj
 	}
 
 	return 0

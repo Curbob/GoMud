@@ -143,9 +143,9 @@ func Enchant(rest string, user *users.UserRecord, room *rooms.Room, flags events
 		*/
 
 		chanceToDestroy := 50
-		chanceToDestroy -= skillLevel * 10                              // 10-40% reduction
-		chanceToDestroy += int(matchItem.Enchantments) * 20             // 20% greater chance for each enchantment.
-		chanceToDestroy -= user.Character.Stats.Mysticism.ValueAdj >> 2 // 1% less chance for each 4 mysticism points
+		chanceToDestroy -= skillLevel * 10                                     // 10-40% reduction
+		chanceToDestroy += int(matchItem.Enchantments) * 20                    // 20% greater chance for each enchantment.
+		chanceToDestroy -= user.Character.Stats.Get("Mysticism").ValueAdj >> 2 // 1% less chance for each 4 mysticism points
 
 		if onlyConsider {
 			user.SendText(
@@ -168,12 +168,12 @@ func Enchant(rest string, user *users.UserRecord, room *rooms.Room, flags events
 
 		// At skill level 1, can enchant only weapons
 		if matchItem.GetSpec().Type == items.Weapon {
-			damageBonus = int(math.Ceil(math.Sqrt(float64(user.Character.Stats.Mysticism.ValueAdj))))
+			damageBonus = int(math.Ceil(math.Sqrt(float64(user.Character.Stats.Get("Mysticism").ValueAdj))))
 		}
 
 		// At skill level 2, can enchant weapons and armor
 		if skillLevel >= 2 && matchItem.GetSpec().Subtype == items.Wearable {
-			defenseBonus = int(math.Ceil(math.Sqrt(float64(user.Character.Stats.Mysticism.ValueAdj))))
+			defenseBonus = int(math.Ceil(math.Sqrt(float64(user.Character.Stats.Get("Mysticism").ValueAdj))))
 		}
 
 		// At skill level 3, can  provide stat bonuses
@@ -184,7 +184,7 @@ func Enchant(rest string, user *users.UserRecord, room *rooms.Room, flags events
 			for i := 0; i < bonusCt; i++ {
 				// select a random stat
 				chosenStat := allStats[util.Rand(len(allStats))]
-				statBonus[chosenStat] = int(math.Ceil(math.Sqrt(float64(user.Character.Stats.Mysticism.ValueAdj))))
+				statBonus[chosenStat] = int(math.Ceil(math.Sqrt(float64(user.Character.Stats.Get("Mysticism").ValueAdj))))
 			}
 		}
 

@@ -1390,24 +1390,12 @@ func (c *Character) RecalculateStats() {
 		for _, statName := range c.Stats.GetStatInfoNames() {
 			c.Stats.Get(statName).Base = raceInfo.Stats.Get(statName).Base
 		}
-		// c.Stats.Get("Strength").Base = raceInfo.Stats.Get("Strength").Base
-		// c.Stats.Get("Speed").Base = raceInfo.Stats.Get("Speed").Base
-		// c.Stats.Get("Smarts").Base = raceInfo.Stats.Get("Smarts").Base
-		// c.Stats.Get("Vitality").Base = raceInfo.Stats.Get("Vitality").Base
-		// c.Stats.Get("Mysticism").Base = raceInfo.Stats.Get("Mysticism").Base
-		// c.Stats.Get("Perception").Base = raceInfo.Stats.Get("Perception").Base
 	}
 
 	// Add any mods for equipment
 	for _, statName := range c.Stats.GetStatInfoNames() {
 		c.Stats.Get(statName).Mods = c.StatMod(statName)
 	}
-	// c.Stats.Get("Strength").Mods = c.StatMod(string(statmods.Strength))
-	// c.Stats.Get("Speed").Mods = c.StatMod(string(statmods.Speed))
-	// c.Stats.Get("Smarts").Mods = c.StatMod(string(statmods.Smarts))
-	// c.Stats.Get("Vitality").Mods = c.StatMod(string(statmods.Vitality))
-	// c.Stats.Get("Mysticism").Mods = c.StatMod(string(statmods.Mysticism))
-	// c.Stats.Get("Perception").Mods = c.StatMod(string(statmods.Perception))
 
 	// Recalculate stats
 	// Stats are basically:
@@ -1415,12 +1403,6 @@ func (c *Character) RecalculateStats() {
 	for _, statName := range c.Stats.GetStatInfoNames() {
 		c.Stats.Get(statName).Recalculate(c.Level)
 	}
-	// c.Stats.Get("Strength").Recalculate(c.Level)
-	// c.Stats.Get("Speed").Recalculate(c.Level)
-	// c.Stats.Get("Smarts").Recalculate(c.Level)
-	// c.Stats.Get("Vitality").Recalculate(c.Level)
-	// c.Stats.Get("Mysticism").Recalculate(c.Level)
-	// c.Stats.Get("Perception").Recalculate(c.Level)
 
 	// Set HP/MP maxes
 	// This relies on the above stats so has to be calculated afterwards

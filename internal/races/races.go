@@ -96,12 +96,9 @@ func (r *Race) Validate() error {
 	r.Size = Size(strings.ToLower(string(r.Size))) // Sometimes a mismatching CaSe value is provided.
 
 	// Recalculate stats, based on level one because this is actually the baseline for the race
-	r.Stats.Strength.Recalculate(1)
-	r.Stats.Speed.Recalculate(1)
-	r.Stats.Smarts.Recalculate(1)
-	r.Stats.Vitality.Recalculate(1)
-	r.Stats.Mysticism.Recalculate(1)
-	r.Stats.Perception.Recalculate(1)
+	for _, statName := range r.Stats.GetStatInfoNames() {
+		r.Stats.Get(statName).Recalculate(1)
+	}
 
 	if r.Damage.Attacks < 1 && r.Damage.DiceCount > 0 && r.Damage.SideCount > 0 {
 		r.Damage.Attacks = 1

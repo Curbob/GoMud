@@ -44,7 +44,7 @@ func Search(rest string, user *users.UserRecord, room *rooms.Room, flags events.
 	}
 
 	// 10% + 1% for every 2 smarts
-	searchOddsIn100 := 10 + int(math.Ceil(float64(user.Character.Stats.Perception.ValueAdj)/2))
+	searchOddsIn100 := 10 + int(math.Ceil(float64(user.Character.Stats.Get("Perception").ValueAdj)/2))
 
 	user.SendText("You snoop around for a bit...\n")
 	room.SendText(
