@@ -23,6 +23,24 @@ import (
 
 var (
 	funcMap = template.FuncMap{
+		"charStatBase": func(char *characters.Character, name string) int {
+			return char.Stats.Get(name).Base
+		},
+		"charStatTraining": func(char *characters.Character, name string) int {
+			return char.Stats.Get(name).Training
+		},
+		"charStatMods": func(char *characters.Character, name string) int {
+			return char.Stats.Get(name).Mods
+		},
+		"charStatValue": func(char *characters.Character, name string) int {
+			return char.Stats.Get(name).Value
+		},
+		"charStatValueAdj": func(char *characters.Character, name string) int {
+			return char.Stats.Get(name).ValueAdj
+		},
+		"charStatRacial": func(char *characters.Character, name string) int {
+			return char.Stats.Get(name).Racial
+		},
 		"pad":       pad,
 		"padLeft":   padLeft,
 		"padRight":  padRight,

@@ -1372,6 +1372,8 @@ func (c *Character) StatMod(statName string) int {
 }
 
 // returns true if something has changed.
+// TODO: [nitpick] There are many repetitive Get("X") calls; consider iterating over a slice of stat names or using a helper to apply updates in a loop for readability.
+
 func (c *Character) RecalculateStats() {
 
 	// Make sure racial base stats are set
