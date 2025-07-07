@@ -35,7 +35,15 @@ func (s *Statistics) GetStatInfoNames() []string {
 
 // Get returns a pointer to the StatInfo for the given name.
 func (s *Statistics) Get(name string) *StatInfo {
-	switch strings.ToLower(name) {
+	key := strings.ToLower(name)
+
+	// TODO: When we load the stats from a file, we need to check the map
+	// if stat, ok := s.Stats[key]; ok {
+	// 	copy := stat
+	// 	return &copy
+	// }
+
+	switch key {
 	case "strength":
 		return &s.Strength
 	case "speed":
@@ -48,9 +56,9 @@ func (s *Statistics) Get(name string) *StatInfo {
 		return &s.Mysticism
 	case "perception":
 		return &s.Perception
-	default:
-		return &StatInfo{}
 	}
+
+	return &StatInfo{}
 }
 
 // When saving to a file, we don't need to write all the properties that we calculate.
