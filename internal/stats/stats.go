@@ -1,6 +1,9 @@
 package stats
 
-import "math"
+import (
+	"math"
+	"strings"
+)
 
 const (
 	BaseModFactor         = 0.3333333334 // How much of a scaling to aply to levels before multiplying by racial stat
@@ -14,6 +17,40 @@ type Statistics struct {
 	Vitality   StatInfo `yaml:"vitality,omitempty"`   // Health and stamina (health capacity)
 	Mysticism  StatInfo `yaml:"mysticism,omitempty"`  // Magic and mana (magic capacity)
 	Perception StatInfo `yaml:"perception,omitempty"` // How well you notice things
+}
+
+// GetStatInfoNames returns a list of all stat names in the order they are defined.
+// TODO: This should be a representation of the stats in the game, not hardcoded.
+func (s *Statistics) GetStatInfoNames() []string {
+	names := []string{
+		"Strength",
+		"Speed",
+		"Smarts",
+		"Vitality",
+		"Mysticism",
+		"Perception",
+	}
+	return names
+}
+
+// Get returns a pointer to the StatInfo for the given name.
+func (s *Statistics) Get(name string) *StatInfo {
+	switch strings.ToLower(name) {
+	case "strength":
+		return &s.Strength
+	case "speed":
+		return &s.Speed
+	case "smarts":
+		return &s.Smarts
+	case "vitality":
+		return &s.Vitality
+	case "mysticism":
+		return &s.Mysticism
+	case "perception":
+		return &s.Perception
+	default:
+		return &StatInfo{}
+	}
 }
 
 // When saving to a file, we don't need to write all the properties that we calculate.

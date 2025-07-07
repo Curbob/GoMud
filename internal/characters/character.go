@@ -206,7 +206,7 @@ func (c *Character) GetBaseCastSuccessChance(spellId string) int {
 	}
 	targetNumber += proficiency
 
-	targetNumber += int(math.Floor(float64(c.Stats.Mysticism.ValueAdj) / 5))
+	targetNumber += int(math.Floor(float64(c.Stats.Get("Mysticism").ValueAdj) / 5))
 
 	// add by any stat mods for casting, or casting school
 	// 0-xx
@@ -222,7 +222,7 @@ func (c *Character) GetBaseCastSuccessChance(spellId string) int {
 }
 
 func (c *Character) CarryCapacity() int {
-	return 5 + c.Stats.Strength.ValueAdj/3
+	return 5 + c.Stats.Get("Strength").ValueAdj/3
 }
 
 func (c *Character) DeductActionPoints(amount int) bool {
@@ -367,9 +367,9 @@ func (c *Character) GetDefaultDiceRoll() (attacks int, dCount int, dSides int, b
 	bonus = raceInfo.Damage.BonusDamage
 	buffOnCrit = raceInfo.Damage.CritBuffIds
 
-	dCount += int(math.Floor((float64(c.Stats.Speed.ValueAdj) / 50)))
-	dSides += int(math.Floor((float64(c.Stats.Strength.ValueAdj) / 12)))
-	bonus += int(math.Floor((float64(c.Stats.Perception.ValueAdj) / 25)))
+	dCount += int(math.Floor((float64(c.Stats.Get("Speed").ValueAdj) / 50)))
+	dSides += int(math.Floor((float64(c.Stats.Get("Strength").ValueAdj) / 12)))
+	bonus += int(math.Floor((float64(c.Stats.Get("Perception").ValueAdj) / 25)))
 
 	if dCount < raceInfo.Damage.DiceCount {
 		dCount = raceInfo.Damage.DiceCount
@@ -958,7 +958,7 @@ func (c *Character) GetMaxCharmedCreatures() int {
 }
 
 func (c *Character) GetMemoryCapacity() int {
-	memCap := c.GetSkillLevel(skills.Map) * c.Stats.Smarts.ValueAdj
+	memCap := c.GetSkillLevel(skills.Map) * c.Stats.Get("Smarts").ValueAdj
 	if memCap < 0 {
 		memCap = 0
 	}
@@ -966,7 +966,7 @@ func (c *Character) GetMemoryCapacity() int {
 }
 
 func (c *Character) GetMapSprawlCapacity() int {
-	sprawlCap := c.GetSkillLevel(skills.Map) + (c.Stats.Smarts.ValueAdj >> 2)
+	sprawlCap := c.GetSkillLevel(skills.Map) + (c.Stats.Get("Smarts").ValueAdj >> 2)
 	if sprawlCap < 0 {
 		sprawlCap = 0
 	}
@@ -1256,7 +1256,7 @@ func (c *Character) ApplyManaChange(manaChange int) int {
 }
 
 func (c *Character) BarterPrice(startPrice int) int {
-	factor := (float64(c.Stats.Perception.ValueAdj) / 3) / 100 // 100 = 33% discount, 0 = 0% discount, 300 = 100% discount
+	factor := (float64(c.Stats.Get("Perception").ValueAdj) / 3) / 100 // 100 = 33% discount, 0 = 0% discount, 300 = 100% discount
 	if factor > .75 {
 		factor = .75
 	}
@@ -1308,12 +1308,12 @@ func (c *Character) LevelUp() (bool, stats.Statistics) {
 
 	var statsDelta stats.Statistics = c.Stats
 
-	statsDelta.Strength.Value -= statsBefore.Strength.Value
-	statsDelta.Speed.Value -= statsBefore.Speed.Value
-	statsDelta.Smarts.Value -= statsBefore.Smarts.Value
-	statsDelta.Vitality.Value -= statsBefore.Vitality.Value
-	statsDelta.Mysticism.Value -= statsBefore.Mysticism.Value
-	statsDelta.Perception.Value -= statsBefore.Perception.Value
+	statsDelta.Get("Strength").Value -= statsBefore.Get("Strength").Value
+	statsDelta.Get("Speed").Value -= statsBefore.Get("Speed").Value
+	statsDelta.Get("Smarts").Value -= statsBefore.Get("Smarts").Value
+	statsDelta.Get("Vitality").Value -= statsBefore.Get("Vitality").Value
+	statsDelta.Get("Mysticism").Value -= statsBefore.Get("Mysticism").Value
+	statsDelta.Get("Perception").Value -= statsBefore.Get("Perception").Value
 
 	c.Health = c.HealthMax.Value
 	c.Mana = c.ManaMax.Value
@@ -1340,7 +1340,7 @@ func (c *Character) Heal(hp int, mana int) (int, int) {
 func (c *Character) HealthPerRound() int {
 	return 1 + c.StatMod(string(statmods.HealthRecovery))
 	/*
-		healAmt := math.Round(float64(c.Stats.Vitality.ValueAdj)/8) +
+		healAmt := math.Round(float64(c.Stats.Get("Vitality").ValueAdj)/8) +
 			math.Round(float64(c.Level)/12) +
 			1.0
 
@@ -1351,7 +1351,7 @@ func (c *Character) HealthPerRound() int {
 func (c *Character) ManaPerRound() int {
 	return 1 + c.StatMod(string(statmods.ManaRecovery))
 	/*
-		healAmt := math.Round(float64(c.Stats.Mysticism.ValueAdj)/8) +
+		healAmt := math.Round(float64(c.Stats.Get("Mysticism").ValueAdj)/8) +
 			math.Round(float64(c.Level)/12) +
 			1.0
 
@@ -1361,9 +1361,9 @@ func (c *Character) ManaPerRound() int {
 
 // Where 1000 = a full round
 func (c *Character) MovementCost() int {
-	modifier := 3                                // by default they should be able to move 3 times per round.
-	modifier += int(c.Level / 15)                // Every 15 levels, get an extra movement.
-	modifier += int(c.Stats.Speed.ValueAdj / 15) // Every 15 speed, get an extra movement
+	modifier := 3                                       // by default they should be able to move 3 times per round.
+	modifier += int(c.Level / 15)                       // Every 15 levels, get an extra movement.
+	modifier += int(c.Stats.Get("Speed").ValueAdj / 15) // Every 15 speed, get an extra movement
 	return int(1000 / modifier)
 }
 
@@ -1385,43 +1385,43 @@ func (c *Character) RecalculateStats() {
 		if c.TNLScale == 0 {
 			c.TNLScale = 1.0
 		}
-		c.Stats.Strength.Base = raceInfo.Stats.Strength.Base
-		c.Stats.Speed.Base = raceInfo.Stats.Speed.Base
-		c.Stats.Smarts.Base = raceInfo.Stats.Smarts.Base
-		c.Stats.Vitality.Base = raceInfo.Stats.Vitality.Base
-		c.Stats.Mysticism.Base = raceInfo.Stats.Mysticism.Base
-		c.Stats.Perception.Base = raceInfo.Stats.Perception.Base
+		c.Stats.Get("Strength").Base = raceInfo.Stats.Get("Strength").Base
+		c.Stats.Get("Speed").Base = raceInfo.Stats.Get("Speed").Base
+		c.Stats.Get("Smarts").Base = raceInfo.Stats.Get("Smarts").Base
+		c.Stats.Get("Vitality").Base = raceInfo.Stats.Get("Vitality").Base
+		c.Stats.Get("Mysticism").Base = raceInfo.Stats.Get("Mysticism").Base
+		c.Stats.Get("Perception").Base = raceInfo.Stats.Get("Perception").Base
 	}
 
 	// Add any mods for equipment
-	c.Stats.Strength.Mods = c.StatMod(string(statmods.Strength))
-	c.Stats.Speed.Mods = c.StatMod(string(statmods.Speed))
-	c.Stats.Smarts.Mods = c.StatMod(string(statmods.Smarts))
-	c.Stats.Vitality.Mods = c.StatMod(string(statmods.Vitality))
-	c.Stats.Mysticism.Mods = c.StatMod(string(statmods.Mysticism))
-	c.Stats.Perception.Mods = c.StatMod(string(statmods.Perception))
+	c.Stats.Get("Strength").Mods = c.StatMod(string(statmods.Strength))
+	c.Stats.Get("Speed").Mods = c.StatMod(string(statmods.Speed))
+	c.Stats.Get("Smarts").Mods = c.StatMod(string(statmods.Smarts))
+	c.Stats.Get("Vitality").Mods = c.StatMod(string(statmods.Vitality))
+	c.Stats.Get("Mysticism").Mods = c.StatMod(string(statmods.Mysticism))
+	c.Stats.Get("Perception").Mods = c.StatMod(string(statmods.Perception))
 
 	// Recalculate stats
 	// Stats are basically:
 	// level*base + training + mods
-	c.Stats.Strength.Recalculate(c.Level)
-	c.Stats.Speed.Recalculate(c.Level)
-	c.Stats.Smarts.Recalculate(c.Level)
-	c.Stats.Vitality.Recalculate(c.Level)
-	c.Stats.Mysticism.Recalculate(c.Level)
-	c.Stats.Perception.Recalculate(c.Level)
+	c.Stats.Get("Strength").Recalculate(c.Level)
+	c.Stats.Get("Speed").Recalculate(c.Level)
+	c.Stats.Get("Smarts").Recalculate(c.Level)
+	c.Stats.Get("Vitality").Recalculate(c.Level)
+	c.Stats.Get("Mysticism").Recalculate(c.Level)
+	c.Stats.Get("Perception").Recalculate(c.Level)
 
 	// Set HP/MP maxes
 	// This relies on the above stats so has to be calculated afterwards
 	c.HealthMax.Mods = 5 +
 		c.StatMod(string(statmods.HealthMax)) + // Any sort of spell buffs etc. are just direct modifiers
 		c.Level + // For every level you get 1 hp
-		c.Stats.Vitality.ValueAdj*4 // for every vitality you get 3hp
+		c.Stats.Get("Vitality").ValueAdj*4 // for every vitality you get 3hp
 
 	c.ManaMax.Mods = 4 +
 		c.StatMod(string(statmods.ManaMax)) + // Any sort of spell buffs etc. are just direct modifiers
 		c.Level + // For every level you get 1 mp
-		c.Stats.Mysticism.ValueAdj*3 // for every Mysticism you get 2mp
+		c.Stats.Get("Mysticism").ValueAdj*3 // for every Mysticism you get 2mp
 
 	// Set max action points
 	c.ActionPointsMax.Mods = 200 // hard coded for now
@@ -1445,17 +1445,17 @@ func (c *Character) RecalculateStats() {
 	if c.userId != 0 {
 		changed := false
 		// return true if something has changed.
-		if beforeStats.Strength.ValueAdj != c.Stats.Strength.ValueAdj {
+		if beforeStats.Get("Strength").ValueAdj != c.Stats.Get("Strength").ValueAdj {
 			changed = true
-		} else if beforeStats.Speed.ValueAdj != c.Stats.Speed.ValueAdj {
+		} else if beforeStats.Get("Speed").ValueAdj != c.Stats.Get("Speed").ValueAdj {
 			changed = true
-		} else if beforeStats.Smarts.ValueAdj != c.Stats.Smarts.ValueAdj {
+		} else if beforeStats.Get("Smarts").ValueAdj != c.Stats.Get("Smarts").ValueAdj {
 			changed = true
-		} else if beforeStats.Vitality.ValueAdj != c.Stats.Vitality.ValueAdj {
+		} else if beforeStats.Get("Vitality").ValueAdj != c.Stats.Get("Vitality").ValueAdj {
 			changed = true
-		} else if beforeStats.Mysticism.ValueAdj != c.Stats.Mysticism.ValueAdj {
+		} else if beforeStats.Get("Mysticism").ValueAdj != c.Stats.Get("Mysticism").ValueAdj {
 			changed = true
-		} else if beforeStats.Perception.ValueAdj != c.Stats.Perception.ValueAdj {
+		} else if beforeStats.Get("Perception").ValueAdj != c.Stats.Get("Perception").ValueAdj {
 			changed = true
 		} else if beforeHealthMax != c.HealthMax {
 			changed = true
@@ -1481,17 +1481,17 @@ func (c *Character) AutoTrain() {
 
 		switch util.Rand(6) {
 		case 0:
-			c.Stats.Strength.Training++
+			c.Stats.Get("Strength").Training++
 		case 1:
-			c.Stats.Speed.Training++
+			c.Stats.Get("Speed").Training++
 		case 2:
-			c.Stats.Smarts.Training++
+			c.Stats.Get("Smarts").Training++
 		case 3:
-			c.Stats.Vitality.Training++
+			c.Stats.Get("Vitality").Training++
 		case 4:
-			c.Stats.Mysticism.Training++
+			c.Stats.Get("Mysticism").Training++
 		case 5:
-			c.Stats.Perception.Training++
+			c.Stats.Get("Perception").Training++
 		}
 
 		c.StatPoints--
