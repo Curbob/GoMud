@@ -32,9 +32,24 @@ func (rbc *RoundBasedCombat) registerCommands() {
 	rbc.plug.AddMobCommand("attack", rbc.mobAttackCommand, false)
 	rbc.plug.AddMobCommand("flee", rbc.mobFleeCommand, false)
 
-	if mudlog.IsInitialized() {
-		mudlog.Info("Combat Commands", "action", "registered", "module", "combat-rounds")
-	}
+	mudlog.Info("Combat Commands", "action", "registered", "module", "combat-rounds")
+}
+
+// unregisterCommands removes all combat-related commands
+func (rbc *RoundBasedCombat) unregisterCommands() {
+	// Remove user commands
+	rbc.plug.RemoveUserCommand("attack")
+	rbc.plug.RemoveUserCommand("kill")
+	rbc.plug.RemoveUserCommand("flee")
+	rbc.plug.RemoveUserCommand("consider")
+	rbc.plug.RemoveUserCommand("combatinfo")
+	rbc.plug.RemoveUserCommand("config")
+
+	// Remove mob commands
+	rbc.plug.RemoveMobCommand("attack")
+	rbc.plug.RemoveMobCommand("flee")
+
+	mudlog.Info("Combat Commands", "action", "unregistered", "module", "combat-rounds")
 }
 
 // fleeCommand handles player flee commands

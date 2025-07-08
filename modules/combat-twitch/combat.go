@@ -71,6 +71,9 @@ func (tc *TwitchCombat) Shutdown() error {
 		}
 	}
 
+	// Unregister commands
+	tc.unregisterCommands()
+
 	mudlog.Info("Combat System", "module", "combat-twitch", "status", "shutdown")
 	return nil
 }

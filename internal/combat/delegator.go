@@ -20,9 +20,7 @@ import (
 func AttackPlayerVsMob(user *users.UserRecord, mob *mobs.Mob) AttackResult {
 	// Validate inputs
 	if user == nil || mob == nil {
-		if mudlog.IsInitialized() {
-			mudlog.Error("AttackPlayerVsMob", "error", "nil combatant", "user", user != nil, "mob", mob != nil)
-		}
+		mudlog.Error("AttackPlayerVsMob", "error", "nil combatant", "user", user != nil, "mob", mob != nil)
 		return AttackResult{
 			Hit:              false,
 			MessagesToSource: []string{"Combat error: invalid target"},

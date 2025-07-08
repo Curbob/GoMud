@@ -35,6 +35,21 @@ func (tc *TwitchCombat) registerCommands() {
 	mudlog.Info("Combat Commands", "action", "registered", "module", "combat-twitch")
 }
 
+// unregisterCommands removes all combat-related commands
+func (tc *TwitchCombat) unregisterCommands() {
+	// Remove user commands
+	tc.plug.RemoveUserCommand("attack")
+	tc.plug.RemoveUserCommand("kill")
+	tc.plug.RemoveUserCommand("consider")
+	tc.plug.RemoveUserCommand("combatinfo")
+	tc.plug.RemoveUserCommand("config")
+
+	// Remove mob commands
+	tc.plug.RemoveMobCommand("attack")
+
+	mudlog.Info("Combat Commands", "action", "unregistered", "module", "combat-twitch")
+}
+
 // attackCommand handles player attack commands
 func (tc *TwitchCombat) attackCommand(rest string, user *users.UserRecord, room *rooms.Room, flags events.EventFlag) (bool, error) {
 	// Check balance

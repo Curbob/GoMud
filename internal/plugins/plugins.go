@@ -283,6 +283,20 @@ func (p *Plugin) AddMobCommand(command string, handlerFunc mobcommands.MobComman
 
 }
 
+// RemoveUserCommand removes a previously registered user command
+func (p *Plugin) RemoveUserCommand(command string) {
+	if p.Callbacks.userCommands != nil {
+		delete(p.Callbacks.userCommands, command)
+	}
+}
+
+// RemoveMobCommand removes a previously registered mob command
+func (p *Plugin) RemoveMobCommand(command string) {
+	if p.Callbacks.mobCommands != nil {
+		delete(p.Callbacks.mobCommands, command)
+	}
+}
+
 // Adds an embedded file system to the plugin
 func (p *Plugin) AttachFileSystem(f embed.FS) error {
 

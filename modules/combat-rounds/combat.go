@@ -28,9 +28,7 @@ func NewRoundBasedCombat(plug *plugins.Plugin) *RoundBasedCombat {
 
 // Initialize sets up the combat system
 func (rbc *RoundBasedCombat) Initialize() error {
-	if mudlog.IsInitialized() {
-		mudlog.Info("Combat System", "module", "combat-rounds", "action", "initializing commands")
-	}
+	mudlog.Info("Combat System", "module", "combat-rounds", "action", "initializing commands")
 
 	// Register combat commands
 	rbc.registerCommands()
@@ -61,6 +59,9 @@ func (rbc *RoundBasedCombat) Shutdown() error {
 		return err
 	}
 	mudlog.Info("Combat System", "module", "combat-rounds", "action", "timer stopped")
+
+	// Unregister commands
+	rbc.unregisterCommands()
 
 	rbc.active = false
 	if mudlog.IsInitialized() {

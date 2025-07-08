@@ -23,7 +23,7 @@ func NewBaseTimer(name string, updateFunc func()) *BaseTimer {
 	return &BaseTimer{
 		name:       name,
 		updateFunc: updateFunc,
-		stopChan:   make(chan bool),
+		// stopChan created in Start() as buffered channel
 	}
 }
 
@@ -45,9 +45,7 @@ func (bt *BaseTimer) Start() error {
 	bt.wg.Add(1)
 	go bt.runUpdateLoop()
 
-	if mudlog.IsInitialized() {
-		mudlog.Info("BaseTimer started", "name", bt.name)
-	}
+	mudlog.Info("BaseTimer started", "name", bt.name)
 	return nil
 }
 
@@ -85,15 +83,11 @@ func (bt *BaseTimer) Stop() error {
 	select {
 	case <-done:
 		// Timer stopped cleanly
-		if mudlog.IsInitialized() {
-			mudlog.Info("BaseTimer stopped", "name", bt.name)
-		}
+		mudlog.Info("BaseTimer stopped", "name", bt.name)
 	case <-time.After(2 * time.Second):
 		// Timeout - log warning and continue
-		if mudlog.IsInitialized() {
-			mudlog.Error("BaseTimer stop timeout", "name", bt.name,
-				"message", "Timer goroutine did not stop within 2 seconds")
-		}
+		mudlog.Error("BaseTimer stop timeout", "name", bt.name,
+			"message", "Timer goroutine did not stop within 2 seconds")
 	}
 
 	return nil

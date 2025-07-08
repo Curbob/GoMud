@@ -28,10 +28,8 @@ func RegisterCombatSystem(name string, system ICombatSystem) error {
 	}
 
 	combatRegistry[name] = system
-	// Only log if mudlog is initialized (it might not be during tests)
-	if mudlog.IsInitialized() {
-		mudlog.Info("Combat Registry", "action", "registered", "system", name)
-	}
+	// NOTE: Cannot use mudlog here as this may be called during init()
+	// before mudlog is initialized. Logging happens later when systems are activated.
 	return nil
 }
 
@@ -79,10 +77,7 @@ func SetActiveCombatSystem(name string) error {
 	// Shutdown current system if active (outside of lock)
 	if oldSystem != nil {
 		if err := oldSystem.Shutdown(); err != nil {
-			// Only log if mudlog is initialized (it might not be during tests)
-			if mudlog.IsInitialized() {
-				mudlog.Error("Combat Registry", "action", "shutdown failed", "system", oldName, "error", err)
-			}
+			mudlog.Error("Combat Registry", "action", "shutdown failed", "system", oldName, "error", err)
 			// Continue anyway - we don't want to block switching due to shutdown errors
 		}
 	}
@@ -189,11 +184,13 @@ func ClearRegistry() {
 }
 
 // InitializeRegistry sets up the combat registry event handlers
+// ARCHITECTURAL NOTE: This must be called explicitly from main() rather than
+// using init() to avoid event handler registration during init phase, which
+// could cause initialization order issues. The combat system needs the event
+// system to be fully initialized before registering handlers.
 func InitializeRegistry() {
 	events.RegisterListener(SwitchCombatSystemEvent{}, handleCombatSystemSwitch)
-	if mudlog.IsInitialized() {
-		mudlog.Info("Combat Registry", "action", "event handler registered")
-	}
+	mudlog.Info("Combat Registry", "action", "event handler registered")
 }
 
 // handleCombatSystemSwitch processes combat system switch events
@@ -236,7 +233,11 @@ func handleCombatSystemSwitch(e events.Event) events.ListenerReturn {
 		return events.Continue
 	}
 
-	// Save the combat system to the main config
+	// ARCHITECTURAL NOTE: Combat configuration is integrated into the main config
+	// rather than using plugin-specific config. This is intentional as combat
+	// is a core system that needs to be initialized before plugins are loaded.
+	// The active combat system must be persisted globally to ensure correct
+	// initialization on server restart.
 	if err := configs.SetVal("GamePlay.Combat.Style", evt.NewSystem); err != nil {
 		user.SendText(fmt.Sprintf(`<ansi fg="red">Failed to save combat system setting: %s</ansi>`, err.Error()))
 	}

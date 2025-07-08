@@ -55,7 +55,11 @@ func NewRoundBasedTimer(c *RoundBasedCombat) *RoundBasedTimer {
 
 // Start implements ICombatTimer
 func (rt *RoundBasedTimer) Start() error {
-	// Defer registration to avoid deadlock when called from event handler
+	// ARCHITECTURAL NOTE: Event registration is deferred to prevent deadlocks
+	// The combat system switching uses events, and registering listeners during
+	// event processing (when combat system initializes) would cause a deadlock
+	// in the event system. This pattern is unique to combat modules due to their
+	// dynamic initialization/shutdown during runtime.
 	go func() {
 		// Small delay to ensure we're out of the event handler
 		time.Sleep(1 * time.Millisecond)
