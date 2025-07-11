@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/GoMudEngine/GoMud/internal/configs"
 	"github.com/GoMudEngine/GoMud/internal/connections"
 	"github.com/GoMudEngine/GoMud/internal/events"
 	"github.com/GoMudEngine/GoMud/internal/mudlog"
@@ -58,6 +59,7 @@ func init() {
 
 	gmcpModule.plug.ExportFunction(`SendGMCPEvent`, gmcpModule.sendGMCPEvent)
 	gmcpModule.plug.ExportFunction(`IsMudlet`, gmcpModule.IsMudletExportedFunction)
+	gmcpModule.plug.ExportFunction(`TriggerRoomUpdate`, gmcpModule.triggerRoomUpdate)
 
 	gmcpModule.plug.Callbacks.SetIACHandler(gmcpModule.HandleIAC)
 	gmcpModule.plug.Callbacks.SetOnNetConnect(gmcpModule.onNetConnect)
@@ -65,6 +67,11 @@ func init() {
 	events.RegisterListener(GMCPOut{}, gmcpModule.dispatchGMCP)
 	events.RegisterListener(events.PlayerSpawn{}, gmcpModule.handlePlayerJoin)
 
+	// Initialize the combat cooldown timer system
+	InitCombatCooldownTimer()
+
+	// Note: Other combat GMCP modules (CombatStatus, CombatTarget, CombatEnemies, CombatDamage)
+	// are initialized via their own init() functions
 }
 
 func isGMCPEnabled(connectionId uint64) bool {
@@ -120,7 +127,7 @@ type GMCPSettings struct {
 		IsMudlet bool // Knowing whether is a mudlet client can be useful, since Mudlet hates certain ANSI/Escape codes.
 	}
 	GMCPAccepted   bool           // Do they accept GMCP data?
-	EnabledModules map[string]int // What modules/versions are accepted? Might not be used properly by clients.
+	EnabledModules map[string]int // Legacy field - Core.Supports.Set is ignored, kept for compatibility
 }
 
 func (gs *GMCPSettings) IsMudlet() bool {
@@ -168,6 +175,14 @@ func (g *GMCPModule) sendGMCPEvent(userId int, moduleName string, payload any) {
 	events.AddToQueue(evt)
 }
 
+func (g *GMCPModule) triggerRoomUpdate(userId int) {
+	// This triggers a full room update, sending all room sub-nodes
+	events.AddToQueue(GMCPRoomUpdate{
+		UserId:     userId,
+		Identifier: `Room.Info`,
+	})
+}
+
 func (g *GMCPModule) handlePlayerJoin(e events.Event) events.ListenerReturn {
 
 	evt, typeOk := e.(events.PlayerSpawn)
@@ -180,6 +195,13 @@ func (g *GMCPModule) handlePlayerJoin(e events.Event) events.ListenerReturn {
 		g.cache.Add(evt.ConnectionId, GMCPSettings{})
 		// Send request to enable GMCP
 		g.sendGMCPEnableRequest(evt.ConnectionId)
+	}
+
+	// Send full GMCP update on player spawn (login/reconnect/respawn)
+	// This ensures the UI has all structures available to create visuals
+	if evt.UserId > 0 {
+		SendFullGMCPUpdate(evt.UserId)
+		mudlog.Info("GMCP", "type", "PlayerSpawn", "action", "Full GMCP sent on login", "userId", evt.UserId)
 	}
 
 	return events.Continue
@@ -363,6 +385,69 @@ func (g *GMCPModule) HandleIAC(connectionId uint64, iacCmd []byte) bool {
 				mudlog.Debug("GMCP LOGIN", "username", decoded.Name, "password", strings.Repeat(`*`, len(decoded.Password)))
 			}
 
+		case `GMCP`:
+			// Handle GMCP refresh request
+			payloadStr := string(payload)
+
+			// Find the user ID associated with this connection
+			userId := 0
+			for _, user := range users.GetAllActiveUsers() {
+				if user.ConnectionId() == connectionId {
+					userId = user.UserId
+					break
+				}
+			}
+
+			if userId > 0 {
+				switch {
+				case payloadStr == `SendFullPayload`:
+					// Send full GMCP refresh
+					SendFullGMCPUpdate(userId)
+					mudlog.Info("GMCP", "type", "GMCP", "action", "Full refresh requested", "userId", userId)
+
+				case strings.HasPrefix(payloadStr, `Send`):
+					// Handle individual node requests like "SendCharInventoryBackpack"
+					// Remove "Send" prefix and convert to dot notation
+					nodePath := payloadStr[4:] // Remove "Send"
+
+					// Convert camelCase to dot notation
+					// SendCharInventoryBackpack -> Char.Inventory.Backpack
+					var dotPath strings.Builder
+					for i, char := range nodePath {
+						if i > 0 && char >= 'A' && char <= 'Z' {
+							dotPath.WriteRune('.')
+						}
+						dotPath.WriteRune(char)
+					}
+
+					identifier := dotPath.String()
+					mudlog.Info("GMCP", "type", "GMCP", "action", "Node refresh requested", "userId", userId, "node", identifier)
+
+					// Trigger appropriate update based on the module
+					if strings.HasPrefix(identifier, "Char") {
+						events.AddToQueue(GMCPCharUpdate{UserId: userId, Identifier: identifier})
+					} else if strings.HasPrefix(identifier, "Room") {
+						events.AddToQueue(GMCPRoomUpdate{UserId: userId, Identifier: identifier})
+					} else if strings.HasPrefix(identifier, "Party") {
+						events.AddToQueue(GMCPPartyUpdate{UserId: userId, Identifier: identifier})
+					} else if strings.HasPrefix(identifier, "Game") {
+						events.AddToQueue(GMCPGameUpdate{UserId: userId, Identifier: identifier})
+					} else if strings.HasPrefix(identifier, "Comm") {
+						// For Comm.Channel, send an empty structure
+						events.AddToQueue(GMCPOut{
+							UserId: userId,
+							Module: `Comm.Channel`,
+							Payload: map[string]string{
+								"channel": "",
+								"sender":  "",
+								"source":  "",
+								"text":    "",
+							},
+						})
+					}
+				}
+			}
+
 		// Handle Discord-related messages
 		default:
 			// Check if it's a Discord message
@@ -446,6 +531,9 @@ func (g *GMCPModule) dispatchGMCP(e events.Event) events.ListenerReturn {
 		}
 	}
 
+	// Legacy Core.Supports.Set filtering removed - send all GMCP modules
+	// The client's Core.Supports.Set has no bearing on what modules we send
+
 	switch v := gmcp.Payload.(type) {
 	case []byte:
 
@@ -521,4 +609,222 @@ func (g *GMCPModule) dispatchGMCP(e events.Event) events.ListenerReturn {
 	}
 
 	return events.Continue
+}
+
+// SendFullGMCPUpdate sends all GMCP modules data to a specific user
+// This is useful when a client needs to resync all GMCP data
+func SendFullGMCPUpdate(userId int) {
+	if userId < 1 {
+		return
+	}
+
+	// Make sure they have GMCP enabled
+	user := users.GetByUserId(userId)
+	if user == nil {
+		return
+	}
+
+	if !isGMCPEnabled(user.ConnectionId()) {
+		return
+	}
+
+	// Trigger updates for all modules using the consistent event pattern
+
+	// Char module - sends all character sub-nodes
+	events.AddToQueue(GMCPCharUpdate{UserId: userId, Identifier: `Char`})
+
+	// Room module - sends all room sub-nodes
+	events.AddToQueue(GMCPRoomUpdate{UserId: userId, Identifier: `Room`})
+
+	// Send Room.Wrongdir with empty data to establish the structure
+	events.AddToQueue(GMCPOut{
+		UserId:  userId,
+		Module:  `Room.Wrongdir`,
+		Payload: map[string]string{"dir": ""},
+	})
+
+	// Party module - sends all party sub-nodes
+	events.AddToQueue(GMCPPartyUpdate{UserId: userId, Identifier: `Party`})
+
+	// Game module - sends all game sub-nodes
+	events.AddToQueue(GMCPGameUpdate{UserId: userId, Identifier: `Game`})
+
+	// Combat module - send all combat status nodes
+	// Send current combat status
+	events.AddToQueue(GMCPCombatStatusUpdate{UserId: userId})
+
+	// Send combat target (if any)
+	events.AddToQueue(GMCPCombatTargetUpdate{UserId: userId})
+
+	// Send combat enemies list
+	events.AddToQueue(GMCPCombatEnemiesUpdate{UserId: userId})
+
+	// Send combat cooldown timer with default values
+	timingConfig := configs.GetTimingConfig()
+	events.AddToQueue(GMCPCombatCooldownUpdate{
+		UserId:          userId,
+		CooldownSeconds: 0.0,
+		MaxSeconds:      float64(timingConfig.RoundSeconds),
+		NameActive:      "Combat Round",
+		NameIdle:        "Ready",
+	})
+
+	// Send empty damage structure to establish it
+	events.AddToQueue(GMCPOut{
+		UserId: userId,
+		Module: `Char.Combat.Damage`,
+		Payload: map[string]interface{}{
+			"amount": 0,
+			"type":   "",
+			"source": "",
+			"target": "",
+		},
+	})
+
+	// Send Room.Remove.Player with empty data to establish the structure
+	events.AddToQueue(GMCPOut{
+		UserId:  userId,
+		Module:  `Room.Remove.Player`,
+		Payload: map[string]string{"name": ""},
+	})
+
+	// Send Room.Remove.Npc with empty data to establish the structure
+	events.AddToQueue(GMCPOut{
+		UserId:  userId,
+		Module:  `Room.Remove.Npc`,
+		Payload: map[string]interface{}{"id": "", "name": ""},
+	})
+
+	// Send Room.Remove.Item with empty data to establish the structure
+	events.AddToQueue(GMCPOut{
+		UserId:  userId,
+		Module:  `Room.Remove.Item`,
+		Payload: map[string]interface{}{"id": "", "name": ""},
+	})
+
+	// Send Room.Add.Player with empty data to establish the structure
+	events.AddToQueue(GMCPOut{
+		UserId:  userId,
+		Module:  `Room.Add.Player`,
+		Payload: map[string]string{"name": ""},
+	})
+
+	// Send Room.Add.Npc with empty data to establish the structure
+	events.AddToQueue(GMCPOut{
+		UserId: userId,
+		Module: `Room.Add.Npc`,
+		Payload: map[string]interface{}{
+			"id":            "",
+			"name":          "",
+			"threat_level":  "",
+			"targeting_you": false,
+		},
+	})
+
+	// Send Room.Add.Item with empty data to establish the structure
+	events.AddToQueue(GMCPOut{
+		UserId:  userId,
+		Module:  `Room.Add.Item`,
+		Payload: map[string]interface{}{"id": "", "name": "", "quest_flag": false},
+	})
+
+	// Send all combat event structures with expected fields
+	events.AddToQueue(GMCPOut{
+		UserId: userId,
+		Module: `Char.Combat.Started`,
+		Payload: map[string]interface{}{
+			"role":         "",
+			"target_id":    0,
+			"target_type":  "",
+			"target_name":  "",
+			"initiated_by": "",
+		},
+	})
+
+	events.AddToQueue(GMCPOut{
+		UserId: userId,
+		Module: `Char.Combat.Ended`,
+		Payload: map[string]interface{}{
+			"reason":   "",
+			"duration": 0,
+		},
+	})
+
+	events.AddToQueue(GMCPOut{
+		UserId: userId,
+		Module: `Char.Combat.DamageDealt`,
+		Payload: map[string]interface{}{
+			"target_id":       0,
+			"target_type":     "",
+			"target_name":     "",
+			"amount":          0,
+			"damage_type":     "",
+			"weapon_name":     "",
+			"spell_name":      "",
+			"is_critical":     false,
+			"is_killing_blow": false,
+		},
+	})
+
+	events.AddToQueue(GMCPOut{
+		UserId: userId,
+		Module: `Char.Combat.DamageReceived`,
+		Payload: map[string]interface{}{
+			"source_id":       0,
+			"source_type":     "",
+			"source_name":     "",
+			"amount":          0,
+			"damage_type":     "",
+			"weapon_name":     "",
+			"spell_name":      "",
+			"is_critical":     false,
+			"is_killing_blow": false,
+		},
+	})
+
+	events.AddToQueue(GMCPOut{
+		UserId: userId,
+		Module: `Char.Combat.AttackMissed`,
+		Payload: map[string]interface{}{
+			"defender_id":   0,
+			"defender_type": "",
+			"defender_name": "",
+			"avoid_type":    "",
+			"weapon_name":   "",
+		},
+	})
+
+	events.AddToQueue(GMCPOut{
+		UserId: userId,
+		Module: `Char.Combat.AttackAvoided`,
+		Payload: map[string]interface{}{
+			"attacker_id":   0,
+			"attacker_type": "",
+			"attacker_name": "",
+			"avoid_type":    "",
+			"weapon_name":   "",
+		},
+	})
+
+	events.AddToQueue(GMCPOut{
+		UserId: userId,
+		Module: `Char.Combat.Fled`,
+		Payload: map[string]interface{}{
+			"direction":    "",
+			"success":      false,
+			"prevented_by": "",
+		},
+	})
+
+	// Comm module - send channel structure with all fields
+	events.AddToQueue(GMCPOut{
+		UserId: userId,
+		Module: `Comm.Channel`,
+		Payload: map[string]string{
+			"channel": "",
+			"sender":  "",
+			"source":  "",
+			"text":    "",
+		},
+	})
 }

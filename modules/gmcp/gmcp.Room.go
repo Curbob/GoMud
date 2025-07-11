@@ -36,6 +36,7 @@ func init() {
 	events.RegisterListener(events.RoomChange{}, g.roomChangeHandler)
 	events.RegisterListener(events.PlayerDespawn{}, g.despawnHandler)
 	events.RegisterListener(GMCPRoomUpdate{}, g.buildAndSendGMCPPayload)
+	events.RegisterListener(events.ItemOwnership{}, g.itemOwnershipHandler)
 
 }
 
@@ -86,7 +87,8 @@ func (g *GMCPRoomModule) despawnHandler(e events.Event) events.ListenerReturn {
 
 		events.AddToQueue(GMCPOut{
 			UserId:  uid,
-			Payload: fmt.Sprintf(`Room.RemovePlayer "%s"`, evt.CharacterName),
+			Module:  `Room.Remove.Player`,
+			Payload: map[string]string{"name": evt.CharacterName},
 		})
 
 	}
@@ -104,10 +106,6 @@ func (g *GMCPRoomModule) roomChangeHandler(e events.Event) events.ListenerReturn
 
 	// Send updates to players in old/new rooms for
 	// players or npcs (whichever changed)
-	updateId := `Room.Info.Contents.Players`
-	if evt.MobInstanceId > 0 {
-		updateId = `Room.Info.Contents.Npcs`
-	}
 
 	if evt.FromRoomId != 0 {
 		if oldRoom := rooms.LoadRoom(evt.FromRoomId); oldRoom != nil {
@@ -115,10 +113,23 @@ func (g *GMCPRoomModule) roomChangeHandler(e events.Event) events.ListenerReturn
 				if uId == evt.UserId {
 					continue
 				}
-				events.AddToQueue(GMCPRoomUpdate{
-					UserId:     uId,
-					Identifier: updateId,
-				})
+
+				// Send Room.Remove message for the departure
+				if evt.MobInstanceId > 0 {
+					// NPC left the room
+					if mob := mobs.GetInstance(evt.MobInstanceId); mob != nil {
+						events.AddToQueue(GMCPOut{
+							UserId: uId,
+							Module: `Room.Remove.Npc`,
+							Payload: map[string]interface{}{
+								"id":   mob.ShorthandId(),
+								"name": mob.Character.Name,
+							},
+						})
+					}
+				} else {
+					// Player left the room - already handled by despawnHandler
+				}
 			}
 		}
 	}
@@ -129,10 +140,55 @@ func (g *GMCPRoomModule) roomChangeHandler(e events.Event) events.ListenerReturn
 				if uId == evt.UserId {
 					continue
 				}
-				events.AddToQueue(GMCPRoomUpdate{
-					UserId:     uId,
-					Identifier: updateId,
-				})
+
+				// Send Room.Add message for the new arrival
+				if evt.MobInstanceId > 0 {
+					// NPC entered the room
+					if mob := mobs.GetInstance(evt.MobInstanceId); mob != nil {
+						// Determine threat level for this viewer
+						threatLevel := "peaceful"
+						targetingYou := false
+
+						viewer := users.GetByUserId(uId)
+						if viewer != nil {
+							if mob.Character.Aggro != nil {
+								if mob.Character.Aggro.UserId == uId {
+									threatLevel = "fighting"
+									targetingYou = true
+								} else {
+									threatLevel = "aggressive"
+								}
+							} else if mob.Hostile ||
+								(len(mob.Groups) > 0 && mobs.IsHostile(mob.Groups[0], uId)) ||
+								mob.HatesRace(viewer.Character.Race()) ||
+								mob.HatesAlignment(viewer.Character.Alignment) {
+								threatLevel = "hostile"
+							}
+						}
+
+						events.AddToQueue(GMCPOut{
+							UserId: uId,
+							Module: `Room.Add.Npc`,
+							Payload: map[string]interface{}{
+								"id":            mob.ShorthandId(),
+								"name":          mob.Character.Name,
+								"threat_level":  threatLevel,
+								"targeting_you": targetingYou,
+							},
+						})
+					}
+				} else {
+					// Player entered the room
+					if user := users.GetByUserId(evt.UserId); user != nil {
+						events.AddToQueue(GMCPOut{
+							UserId: uId,
+							Module: `Room.Add.Player`,
+							Payload: map[string]string{
+								"name": user.Character.Name,
+							},
+						})
+					}
+				}
 			}
 		}
 	}
@@ -174,41 +230,57 @@ func (g *GMCPRoomModule) buildAndSendGMCPPayload(e events.Event) events.Listener
 	}
 
 	if len(evt.Identifier) >= 4 {
+		// Normalize the identifier (handle case variations)
+		identifierParts := strings.Split(strings.ToLower(evt.Identifier), `.`)
+		for i := 0; i < len(identifierParts); i++ {
+			identifierParts[i] = strings.Title(identifierParts[i])
+		}
 
-		for _, identifier := range strings.Split(evt.Identifier, `,`) {
+		requestedId := strings.Join(identifierParts, `.`)
 
-			identifier = strings.TrimSpace(identifier)
+		payload, moduleName := g.GetRoomNode(user, requestedId)
 
-			identifierParts := strings.Split(strings.ToLower(identifier), `.`)
-			for i := 0; i < len(identifierParts); i++ {
-				identifierParts[i] = strings.Title(identifierParts[i])
-			}
-
-			requestedId := strings.Join(identifierParts, `.`)
-
-			payload, moduleName := g.GetRoomNode(user, requestedId)
-
+		if payload != nil && moduleName != "" {
 			events.AddToQueue(GMCPOut{
 				UserId:  evt.UserId,
 				Module:  moduleName,
 				Payload: payload,
 			})
-
 		}
-
 	}
 
 	return events.Continue
 }
 
+// sendAllRoomNodes sends all Room nodes as individual GMCP messages
+func (g *GMCPRoomModule) sendAllRoomNodes(user *users.UserRecord) {
+	// Send each node individually
+	// Note: Room.Info.Basic contains the static room information (id, name, area, etc)
+	// Room.Info.Exits is separated since exits can change (locks, secrets discovered)
+	// Room.Info.Contents.* are the most dynamic and change frequently
+	events.AddToQueue(GMCPRoomUpdate{UserId: user.UserId, Identifier: `Room.Info.Basic`})
+	events.AddToQueue(GMCPRoomUpdate{UserId: user.UserId, Identifier: `Room.Info.Exits`})
+	events.AddToQueue(GMCPRoomUpdate{UserId: user.UserId, Identifier: `Room.Info.Contents.Players`})
+	events.AddToQueue(GMCPRoomUpdate{UserId: user.UserId, Identifier: `Room.Info.Contents.Npcs`})
+	events.AddToQueue(GMCPRoomUpdate{UserId: user.UserId, Identifier: `Room.Info.Contents.Items`})
+	events.AddToQueue(GMCPRoomUpdate{UserId: user.UserId, Identifier: `Room.Info.Contents.Containers`})
+}
+
 func (g *GMCPRoomModule) GetRoomNode(user *users.UserRecord, gmcpModule string) (data any, moduleName string) {
 
-	all := gmcpModule == `Room.Info`
+	// Handle both "Room" and "Room.Info" as requests for all room data
+	all := gmcpModule == `Room` || gmcpModule == `Room.Info`
+
+	// If requesting all, we'll handle it differently by queuing individual messages
+	if all {
+		g.sendAllRoomNodes(user)
+		return nil, ""
+	}
 
 	// Get the new room data... abort if doesn't exist.
 	room := rooms.LoadRoom(user.Character.RoomId)
 	if room == nil {
-		return GMCPRoomModule_Payload{}, `Room.Info`
+		return nil, ""
 	}
 
 	payload := GMCPRoomModule_Payload{}
@@ -222,7 +294,7 @@ func (g *GMCPRoomModule) GetRoomNode(user *users.UserRecord, gmcpModule string) 
 	////////////////////////////////////////////////
 	// Room.Contents.Containers
 	////////////////////////////////////////////////
-	if all || g.wantsGMCPPayload(`Room.Info.Contents.Containers`, gmcpModule) {
+	if g.wantsGMCPPayload(`Room.Info.Contents.Containers`, gmcpModule) {
 
 		payload.Contents.Containers = []GMCPRoomModule_Payload_Contents_Container{}
 		for name, container := range room.Containers {
@@ -249,7 +321,7 @@ func (g *GMCPRoomModule) GetRoomNode(user *users.UserRecord, gmcpModule string) 
 	////////////////////////////////////////////////
 	// Room.Contents.Items
 	////////////////////////////////////////////////
-	if all || g.wantsGMCPPayload(`Room.Info.Contents.Items`, gmcpModule) {
+	if g.wantsGMCPPayload(`Room.Info.Contents.Items`, gmcpModule) {
 		payload.Contents.Items = []GMCPRoomModule_Payload_Contents_Item{}
 		for _, itm := range room.Items {
 			payload.Contents.Items = append(payload.Contents.Items, GMCPRoomModule_Payload_Contents_Item{
@@ -267,7 +339,7 @@ func (g *GMCPRoomModule) GetRoomNode(user *users.UserRecord, gmcpModule string) 
 	////////////////////////////////////////////////
 	// Room.Contents.Players
 	////////////////////////////////////////////////
-	if all || g.wantsGMCPPayload(`Room.Info.Contents.Players`, gmcpModule) {
+	if g.wantsGMCPPayload(`Room.Info.Contents.Players`, gmcpModule) {
 		payload.Contents.Players = []GMCPRoomModule_Payload_Contents_Character{}
 		for _, uId := range room.GetPlayers() {
 
@@ -285,11 +357,13 @@ func (g *GMCPRoomModule) GetRoomNode(user *users.UserRecord, gmcpModule string) 
 				continue
 			}
 
+			// Players are always shown as peaceful to other players
 			payload.Contents.Players = append(payload.Contents.Players, GMCPRoomModule_Payload_Contents_Character{
-				Id:         u.ShorthandId(),
-				Name:       u.Character.Name,
-				Adjectives: u.Character.GetAdjectives(),
-				Aggro:      u.Character.Aggro != nil,
+				Id:           u.ShorthandId(),
+				Name:         u.Character.Name,
+				Adjectives:   u.Character.GetAdjectives(),
+				ThreatLevel:  "peaceful",
+				TargetingYou: false,
 			})
 		}
 
@@ -301,7 +375,7 @@ func (g *GMCPRoomModule) GetRoomNode(user *users.UserRecord, gmcpModule string) 
 	////////////////////////////////////////////////
 	// Room.Contents.Npcs
 	////////////////////////////////////////////////
-	if all || g.wantsGMCPPayload(`Room.Info.Contents.Npcs`, gmcpModule) {
+	if g.wantsGMCPPayload(`Room.Info.Contents.Npcs`, gmcpModule) {
 		payload.Contents.Npcs = []GMCPRoomModule_Payload_Contents_Character{}
 		for _, mIId := range room.GetMobs() {
 			mob := mobs.GetInstance(mIId)
@@ -313,11 +387,31 @@ func (g *GMCPRoomModule) GetRoomNode(user *users.UserRecord, gmcpModule string) 
 				continue
 			}
 
+			// Determine threat level and targeting status
+			threatLevel := "peaceful"
+			targetingYou := false
+
+			// Check if mob is targeting this user
+			if mob.Character.Aggro != nil {
+				if mob.Character.Aggro.UserId == user.UserId {
+					threatLevel = "fighting"
+					targetingYou = true
+				} else {
+					threatLevel = "aggressive"
+				}
+			} else if mob.Hostile ||
+				(len(mob.Groups) > 0 && mobs.IsHostile(mob.Groups[0], user.UserId)) ||
+				mob.HatesRace(user.Character.Race()) ||
+				mob.HatesAlignment(user.Character.Alignment) {
+				threatLevel = "hostile"
+			}
+
 			c := GMCPRoomModule_Payload_Contents_Character{
-				Id:         mob.ShorthandId(),
-				Name:       mob.Character.Name,
-				Adjectives: mob.Character.GetAdjectives(),
-				Aggro:      mob.Character.Aggro != nil,
+				Id:           mob.ShorthandId(),
+				Name:         mob.Character.Name,
+				Adjectives:   mob.Character.GetAdjectives(),
+				ThreatLevel:  threatLevel,
+				TargetingYou: targetingYou,
 			}
 
 			if len(mob.QuestFlags) > 0 {
@@ -346,7 +440,7 @@ func (g *GMCPRoomModule) GetRoomNode(user *users.UserRecord, gmcpModule string) 
 	// Room.Info
 	// Note: This populates the root Room.Info data
 	////////////////////////////////////////////////
-	if all || g.wantsGMCPPayload(`Room.Info`, gmcpModule) {
+	if g.wantsGMCPPayload(`Room.Info.Basic`, gmcpModule) || g.wantsGMCPPayload(`Room.Info.Exits`, gmcpModule) {
 
 		// Basic details
 		payload.Id = room.RoomId
@@ -366,8 +460,7 @@ func (g *GMCPRoomModule) GetRoomNode(user *users.UserRecord, gmcpModule string) 
 		}
 
 		// set exits
-		payload.Exits = map[string]int{}
-		payload.ExitsV2 = map[string]GMCPRoomModule_Payload_Contents_ExitInfo{}
+		payload.Exits = map[string]GMCPRoomModule_Payload_Contents_ExitInfo{}
 
 		for exitName, exitInfo := range room.Exits {
 
@@ -384,9 +477,7 @@ func (g *GMCPRoomModule) GetRoomNode(user *users.UserRecord, gmcpModule string) 
 				//continue
 			}
 
-			payload.Exits[exitName] = exitInfo.RoomId
-
-			// Form the "exitV2"
+			// Build the exit info
 			deltaX, deltaY, deltaZ := 0, 0, 0
 			if len(exitInfo.MapDirection) > 0 {
 				deltaX, deltaY, deltaZ = mapper.GetDelta(exitInfo.MapDirection)
@@ -399,6 +490,7 @@ func (g *GMCPRoomModule) GetRoomNode(user *users.UserRecord, gmcpModule string) 
 				DeltaX:  deltaX,
 				DeltaY:  deltaY,
 				DeltaZ:  deltaZ,
+				Status:  "open",
 				Details: []string{},
 			}
 
@@ -407,8 +499,11 @@ func (g *GMCPRoomModule) GetRoomNode(user *users.UserRecord, gmcpModule string) 
 			}
 
 			if exitInfo.HasLock() {
-
-				exitV2.Details = append(exitV2.Details, `locked`)
+				// Check if the lock is currently locked
+				if exitInfo.Lock.IsLocked() {
+					exitV2.Status = "locked"
+					exitV2.Details = append(exitV2.Details, `locked`)
+				}
 
 				lockId := fmt.Sprintf(`%d-%s`, room.RoomId, exitName)
 				haskey, hascombo := user.Character.HasKey(lockId, int(exitInfo.Lock.Difficulty))
@@ -422,7 +517,7 @@ func (g *GMCPRoomModule) GetRoomNode(user *users.UserRecord, gmcpModule string) 
 				}
 			}
 
-			payload.ExitsV2[exitName] = exitV2
+			payload.Exits[exitName] = exitV2
 		}
 		// end exits
 
@@ -446,14 +541,65 @@ func (g *GMCPRoomModule) GetRoomNode(user *users.UserRecord, gmcpModule string) 
 		}
 		// end room details
 
+		// Return specific nodes if requested
+		if gmcpModule == `Room.Info.Basic` {
+			// Basic room info without exits (static data that rarely changes)
+			basicPayload := map[string]interface{}{
+				"id":          payload.Id,
+				"name":        payload.Name,
+				"area":        payload.Area,
+				"environment": payload.Environment,
+				"coordinates": payload.Coordinates,
+				"details":     payload.Details,
+			}
+			return basicPayload, `Room.Info.Basic`
+		}
+
+		if gmcpModule == `Room.Info.Exits` {
+			// Exits can change when locks are opened or secrets discovered
+			exitsPayload := map[string]interface{}{
+				"exits": payload.Exits,
+			}
+			return exitsPayload, `Room.Info.Exits`
+		}
 	}
 
-	// If we reached this point and Char wasn't requested, we have a problem.
-	if !all {
-		mudlog.Error(`gmcp.Room`, `error`, `Bad module requested`, `module`, gmcpModule)
+	// Handle Room.Wrongdir request
+	if gmcpModule == `Room.Wrongdir` {
+		// Return empty structure to match what we send during gameplay
+		return map[string]string{"dir": ""}, `Room.Wrongdir`
 	}
 
-	return payload, `Room.Info`
+	// Handle Room.Add requests
+	if gmcpModule == `Room.Add.Player` {
+		return map[string]string{"name": ""}, `Room.Add.Player`
+	}
+	if gmcpModule == `Room.Add.Npc` {
+		return map[string]interface{}{
+			"id":            "",
+			"name":          "",
+			"threat_level":  "",
+			"targeting_you": false,
+		}, `Room.Add.Npc`
+	}
+	if gmcpModule == `Room.Add.Item` {
+		return map[string]interface{}{"id": "", "name": "", "quest_flag": false}, `Room.Add.Item`
+	}
+
+	// Handle Room.Remove requests
+	if gmcpModule == `Room.Remove.Player` {
+		return map[string]string{"name": ""}, `Room.Remove.Player`
+	}
+	if gmcpModule == `Room.Remove.Npc` {
+		return map[string]interface{}{"id": "", "name": ""}, `Room.Remove.Npc`
+	}
+	if gmcpModule == `Room.Remove.Item` {
+		return map[string]interface{}{"id": "", "name": ""}, `Room.Remove.Item`
+	}
+
+	// If we reached this point, we have a problem.
+	mudlog.Error(`gmcp.Room`, `error`, `Bad module requested`, `module`, gmcpModule)
+	return nil, ""
 }
 
 // wantsGMCPPayload(`Room.Info.Contents`, `Room.Info`)
@@ -475,22 +621,22 @@ func (g *GMCPRoomModule) wantsGMCPPayload(packageToConsider string, packageReque
 }
 
 type GMCPRoomModule_Payload struct {
-	Id          int                                                 `json:"num"`
+	Id          int                                                 `json:"id"`
 	Name        string                                              `json:"name"`
 	Area        string                                              `json:"area"`
 	Environment string                                              `json:"environment"`
-	Coordinates string                                              `json:"coords"`
-	Exits       map[string]int                                      `json:"exits"`
-	ExitsV2     map[string]GMCPRoomModule_Payload_Contents_ExitInfo `json:"exitsv2"`
+	Coordinates string                                              `json:"coordinates"`
+	Exits       map[string]GMCPRoomModule_Payload_Contents_ExitInfo `json:"exits"`
 	Details     []string                                            `json:"details"`
-	Contents    GMCPRoomModule_Payload_Contents                     `json:"Contents"`
+	Contents    GMCPRoomModule_Payload_Contents                     `json:"contents"`
 }
 
 type GMCPRoomModule_Payload_Contents_ExitInfo struct {
-	RoomId  int      `json:"num"`
-	DeltaX  int      `json:"dx"`
-	DeltaY  int      `json:"dy"`
-	DeltaZ  int      `json:"dz"`
+	RoomId  int      `json:"room_id"`
+	DeltaX  int      `json:"delta_x"`
+	DeltaY  int      `json:"delta_y"`
+	DeltaZ  int      `json:"delta_z"`
+	Status  string   `json:"status"` // "open", "locked", "blocked"
 	Details []string `json:"details"`
 }
 
@@ -498,18 +644,19 @@ type GMCPRoomModule_Payload_Contents_ExitInfo struct {
 // Room.Contents
 // /////////////////
 type GMCPRoomModule_Payload_Contents struct {
-	Players    []GMCPRoomModule_Payload_Contents_Character `json:"Players"`
-	Npcs       []GMCPRoomModule_Payload_Contents_Character `json:"Npcs"`
-	Items      []GMCPRoomModule_Payload_Contents_Item      `json:"Items"`
-	Containers []GMCPRoomModule_Payload_Contents_Container `json:"Containers"`
+	Players    []GMCPRoomModule_Payload_Contents_Character `json:"players"`
+	Npcs       []GMCPRoomModule_Payload_Contents_Character `json:"npcs"`
+	Items      []GMCPRoomModule_Payload_Contents_Item      `json:"items"`
+	Containers []GMCPRoomModule_Payload_Contents_Container `json:"containers"`
 }
 
 type GMCPRoomModule_Payload_Contents_Character struct {
-	Id         string   `json:"id"`
-	Name       string   `json:"name"`
-	Adjectives []string `json:"adjectives"`
-	Aggro      bool     `json:"aggro"`
-	QuestFlag  bool     `json:"quest_flag"`
+	Id           string   `json:"id"`
+	Name         string   `json:"name"`
+	Adjectives   []string `json:"adjectives"`
+	QuestFlag    bool     `json:"quest_flag"`
+	ThreatLevel  string   `json:"threat_level"`  // "peaceful", "hostile", "aggressive", "fighting"
+	TargetingYou bool     `json:"targeting_you"` // true if this mob has you as aggro target
 }
 
 type GMCPRoomModule_Payload_Contents_Item struct {
@@ -521,7 +668,58 @@ type GMCPRoomModule_Payload_Contents_Item struct {
 type GMCPRoomModule_Payload_Contents_Container struct {
 	Name         string `json:"name"`
 	Locked       bool   `json:"locked"`
-	HasKey       bool   `json:"haskey"`
-	HasPickCombo bool   `json:"haspickcombo"`
+	HasKey       bool   `json:"has_key"`
+	HasPickCombo bool   `json:"has_pick_combo"`
 	Usable       bool   `json:"usable"`
+}
+
+func (g *GMCPRoomModule) itemOwnershipHandler(e events.Event) events.ListenerReturn {
+	evt, typeOk := e.(events.ItemOwnership)
+	if !typeOk {
+		return events.Continue
+	}
+
+	// We need to determine if this is a room-related item change
+	// When a user drops an item: UserId > 0 and Gained = false
+	// When a user picks up an item: UserId > 0 and Gained = true
+
+	if evt.UserId > 0 {
+		user := users.GetByUserId(evt.UserId)
+		if user == nil {
+			return events.Continue
+		}
+
+		room := rooms.LoadRoom(user.Character.RoomId)
+		if room == nil {
+			return events.Continue
+		}
+
+		// Send updates to all players in the room
+		for _, uid := range room.GetPlayers() {
+			if !evt.Gained {
+				// User dropped item (item added to room)
+				events.AddToQueue(GMCPOut{
+					UserId: uid,
+					Module: `Room.Add.Item`,
+					Payload: map[string]interface{}{
+						"id":         evt.Item.ShorthandId(),
+						"name":       evt.Item.Name(),
+						"quest_flag": evt.Item.GetSpec().QuestToken != ``,
+					},
+				})
+			} else {
+				// User picked up item (item removed from room)
+				events.AddToQueue(GMCPOut{
+					UserId: uid,
+					Module: `Room.Remove.Item`,
+					Payload: map[string]interface{}{
+						"id":   evt.Item.ShorthandId(),
+						"name": evt.Item.Name(),
+					},
+				})
+			}
+		}
+	}
+
+	return events.Continue
 }
