@@ -803,6 +803,9 @@ func (r *Room) RemoveMob(mobInstanceId int) {
 
 	r.MarkVisited(mobInstanceId, VisitorMob, 1)
 
+	// Clean up any combat involving this mob before removing it
+	r.RemoveMobFromCombatPool(mobInstanceId)
+
 	mobLen := len(r.mobs)
 	for i := 0; i < mobLen; i++ {
 		if r.mobs[i] == mobInstanceId {
@@ -2198,7 +2201,6 @@ func (r *Room) Validate() error {
 		}
 	}
 
-
 	// Make sure all items are validated (and have uids)
 	for i := range r.Items {
 		r.Items[i].Validate()
@@ -2308,4 +2310,29 @@ func (r *Room) CanPvp(attUser *users.UserRecord, defUser *users.UserRecord) erro
 	}
 
 	return nil
+}
+
+// RemoveMobFromCombatPool removes a mob from all combat in the room
+// This clears aggro for any users or mobs that were targeting this mob
+func (r *Room) RemoveMobFromCombatPool(mobInstanceId int) {
+	// Clear aggro for any players in the room targeting this mob
+	for _, userId := range r.players {
+		if user := users.GetByUserId(userId); user != nil {
+			if user.Character.Aggro != nil && user.Character.Aggro.MobInstanceId == mobInstanceId {
+				user.Character.Aggro = nil
+			}
+		}
+	}
+
+	// Clear aggro for any mobs in the room targeting this mob
+	for _, mId := range r.mobs {
+		if mId == mobInstanceId {
+			continue // Skip the mob being removed
+		}
+		if mob := mobs.GetInstance(mId); mob != nil {
+			if mob.Character.Aggro != nil && mob.Character.Aggro.MobInstanceId == mobInstanceId {
+				mob.Character.Aggro = nil
+			}
+		}
+	}
 }
