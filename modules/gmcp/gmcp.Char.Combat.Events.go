@@ -1,0 +1,232 @@
+package gmcp
+
+import (
+	"fmt"
+
+	"github.com/GoMudEngine/GoMud/internal/events"
+	"github.com/GoMudEngine/GoMud/internal/users"
+)
+
+// GMCPCombatEvent is a generic GMCP event for combat notifications
+type GMCPCombatEvent struct {
+	UserId    int
+	EventType string
+	Data      map[string]interface{}
+}
+
+func (g GMCPCombatEvent) Type() string { return `GMCPCombatEvent` }
+
+func init() {
+	// Register listener for GMCP combat events
+	events.RegisterListener(GMCPCombatEvent{}, handleCombatEvent)
+
+	// Register listeners for all combat events
+	events.RegisterListener(events.CombatStarted{}, handleCombatStarted)
+	events.RegisterListener(events.CombatEnded{}, handleCombatEnded)
+	events.RegisterListener(events.DamageDealt{}, handleDamageDealt)
+	events.RegisterListener(events.AttackAvoided{}, handleAttackAvoided)
+	events.RegisterListener(events.CombatantFled{}, handleCombatantFled)
+}
+
+// handleCombatEvent sends GMCP combat events
+func handleCombatEvent(e events.Event) events.ListenerReturn {
+	evt, typeOk := e.(GMCPCombatEvent)
+	if !typeOk {
+		return events.Continue
+	}
+
+	if evt.UserId < 1 {
+		return events.Continue
+	}
+
+	user := users.GetByUserId(evt.UserId)
+	if user == nil {
+		return events.Continue
+	}
+
+	if !isGMCPEnabled(user.ConnectionId()) {
+		return events.Continue
+	}
+
+	// Send the GMCP update
+	events.AddToQueue(GMCPOut{
+		UserId:  evt.UserId,
+		Module:  fmt.Sprintf("Char.Combat.%s", evt.EventType),
+		Payload: evt.Data,
+	})
+
+	return events.Continue
+}
+
+// handleCombatStarted sends GMCP notification when combat begins
+func handleCombatStarted(e events.Event) events.ListenerReturn {
+	evt, typeOk := e.(events.CombatStarted)
+	if !typeOk {
+		return events.Continue
+	}
+
+	// Send to attacker if they're a player
+	if evt.AttackerType == "player" {
+		events.AddToQueue(GMCPCombatEvent{
+			UserId:    evt.AttackerId,
+			EventType: "Started",
+			Data: map[string]interface{}{
+				"role":        "attacker",
+				"targetId":    evt.DefenderId,
+				"targetType":  evt.DefenderType,
+				"targetName":  evt.DefenderName,
+				"initiatedBy": evt.InitiatedBy,
+			},
+		})
+	}
+
+	// Send to defender if they're a player
+	if evt.DefenderType == "player" {
+		events.AddToQueue(GMCPCombatEvent{
+			UserId:    evt.DefenderId,
+			EventType: "Started",
+			Data: map[string]interface{}{
+				"role":         "defender",
+				"attackerId":   evt.AttackerId,
+				"attackerType": evt.AttackerType,
+				"attackerName": evt.AttackerName,
+				"initiatedBy":  evt.InitiatedBy,
+			},
+		})
+	}
+
+	return events.Continue
+}
+
+// handleCombatEnded sends GMCP notification when combat ends
+func handleCombatEnded(e events.Event) events.ListenerReturn {
+	evt, typeOk := e.(events.CombatEnded)
+	if !typeOk {
+		return events.Continue
+	}
+
+	// Only send to players
+	if evt.EntityType == "player" {
+		events.AddToQueue(GMCPCombatEvent{
+			UserId:    evt.EntityId,
+			EventType: "Ended",
+			Data: map[string]interface{}{
+				"reason":   evt.Reason,
+				"duration": evt.Duration,
+			},
+		})
+	}
+
+	return events.Continue
+}
+
+// handleDamageDealt sends GMCP notification for damage events
+func handleDamageDealt(e events.Event) events.ListenerReturn {
+	evt, typeOk := e.(events.DamageDealt)
+	if !typeOk {
+		return events.Continue
+	}
+
+	// Send to source if they're a player
+	if evt.SourceType == "player" {
+		events.AddToQueue(GMCPCombatEvent{
+			UserId:    evt.SourceId,
+			EventType: "DamageDealt",
+			Data: map[string]interface{}{
+				"targetId":      evt.TargetId,
+				"targetType":    evt.TargetType,
+				"targetName":    evt.TargetName,
+				"amount":        evt.Amount,
+				"damageType":    evt.DamageType,
+				"weaponName":    evt.WeaponName,
+				"spellName":     evt.SpellName,
+				"isCritical":    evt.IsCritical,
+				"isKillingBlow": evt.IsKillingBlow,
+			},
+		})
+	}
+
+	// Send to target if they're a player
+	if evt.TargetType == "player" {
+		events.AddToQueue(GMCPCombatEvent{
+			UserId:    evt.TargetId,
+			EventType: "DamageReceived",
+			Data: map[string]interface{}{
+				"sourceId":      evt.SourceId,
+				"sourceType":    evt.SourceType,
+				"sourceName":    evt.SourceName,
+				"amount":        evt.Amount,
+				"damageType":    evt.DamageType,
+				"weaponName":    evt.WeaponName,
+				"spellName":     evt.SpellName,
+				"isCritical":    evt.IsCritical,
+				"isKillingBlow": evt.IsKillingBlow,
+			},
+		})
+	}
+
+	return events.Continue
+}
+
+// handleAttackAvoided sends GMCP notification for avoided attacks
+func handleAttackAvoided(e events.Event) events.ListenerReturn {
+	evt, typeOk := e.(events.AttackAvoided)
+	if !typeOk {
+		return events.Continue
+	}
+
+	// Send to attacker if they're a player
+	if evt.AttackerType == "player" {
+		events.AddToQueue(GMCPCombatEvent{
+			UserId:    evt.AttackerId,
+			EventType: "AttackMissed",
+			Data: map[string]interface{}{
+				"defenderId":   evt.DefenderId,
+				"defenderType": evt.DefenderType,
+				"defenderName": evt.DefenderName,
+				"avoidType":    evt.AvoidType,
+				"weaponName":   evt.WeaponName,
+			},
+		})
+	}
+
+	// Send to defender if they're a player
+	if evt.DefenderType == "player" {
+		events.AddToQueue(GMCPCombatEvent{
+			UserId:    evt.DefenderId,
+			EventType: "AttackAvoided",
+			Data: map[string]interface{}{
+				"attackerId":   evt.AttackerId,
+				"attackerType": evt.AttackerType,
+				"attackerName": evt.AttackerName,
+				"avoidType":    evt.AvoidType,
+				"weaponName":   evt.WeaponName,
+			},
+		})
+	}
+
+	return events.Continue
+}
+
+// handleCombatantFled sends GMCP notification when someone flees
+func handleCombatantFled(e events.Event) events.ListenerReturn {
+	evt, typeOk := e.(events.CombatantFled)
+	if !typeOk {
+		return events.Continue
+	}
+
+	// Only send to players
+	if evt.EntityType == "player" {
+		events.AddToQueue(GMCPCombatEvent{
+			UserId:    evt.EntityId,
+			EventType: "Fled",
+			Data: map[string]interface{}{
+				"direction":   evt.Direction,
+				"success":     evt.Success,
+				"preventedBy": evt.PreventedBy,
+			},
+		})
+	}
+
+	return events.Continue
+}

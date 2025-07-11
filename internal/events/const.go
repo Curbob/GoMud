@@ -24,4 +24,5 @@ const (
 	CmdBlockInput              EventFlag = 0b00001000                      // This command when started sets user input to blocking all commands that don't AllowWhenDowned.
 	CmdUnBlockInput            EventFlag = 0b00010000                      // When this command finishes, it will make sure user input is not blocked.
 	CmdBlockInputUntilComplete EventFlag = CmdBlockInput | CmdUnBlockInput // SHortcut to include both in one command
+	CmdNoRoomGMCP              EventFlag = 0b00100000                      // Skip GMCP room updates for this command (used to prevent duplicate sends)
 )

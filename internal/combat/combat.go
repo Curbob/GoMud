@@ -9,6 +9,7 @@ import (
 	"github.com/GoMudEngine/GoMud/internal/buffs"
 	"github.com/GoMudEngine/GoMud/internal/characters"
 	"github.com/GoMudEngine/GoMud/internal/configs"
+	"github.com/GoMudEngine/GoMud/internal/events"
 	"github.com/GoMudEngine/GoMud/internal/items"
 	"github.com/GoMudEngine/GoMud/internal/mobs"
 	"github.com/GoMudEngine/GoMud/internal/mudlog"
@@ -37,15 +38,61 @@ func AttackPlayerVsMob(user *users.UserRecord, mob *mobs.Mob) AttackResult {
 		user.WimpyCheck()
 	}
 
+	oldHealth := mob.Character.Health
 	mob.Character.ApplyHealthChange(attackResult.DamageToTarget * -1)
+	newHealth := mob.Character.Health
+
+	// Fire MobVitalsChanged event if health changed
+	if oldHealth != newHealth {
+		events.AddToQueue(events.MobVitalsChanged{
+			MobId:      mob.InstanceId,
+			OldHealth:  oldHealth,
+			NewHealth:  newHealth,
+			OldMana:    mob.Character.Mana,
+			NewMana:    mob.Character.Mana,
+			ChangeType: "damage",
+		})
+	}
 
 	// Remember who has hit him
 	mob.Character.TrackPlayerDamage(user.UserId, attackResult.DamageToTarget)
 
+	// Fire combat events
 	if attackResult.Hit {
 		user.PlaySound(`hit-other`, `combat`)
+
+		// Fire DamageDealt event if damage was actually dealt
+		if attackResult.DamageToTarget > 0 {
+			// Use priority 10 for damage events to ensure they're processed quickly
+			events.AddToQueue(events.DamageDealt{
+				SourceId:      user.UserId,
+				SourceType:    "player",
+				SourceName:    user.Character.Name,
+				TargetId:      mob.InstanceId,
+				TargetType:    "mob",
+				TargetName:    mob.Character.Name,
+				Amount:        attackResult.DamageToTarget,
+				DamageType:    "physical",
+				WeaponName:    getWeaponName(user.Character),
+				SpellName:     "",
+				IsCritical:    attackResult.Crit,
+				IsKillingBlow: mob.Character.Health <= 0,
+			}, 10)
+		}
 	} else {
 		user.PlaySound(`miss`, `combat`)
+
+		// Fire AttackAvoided event for misses
+		events.AddToQueue(events.AttackAvoided{
+			AttackerId:   user.UserId,
+			AttackerType: "player",
+			AttackerName: user.Character.Name,
+			DefenderId:   mob.InstanceId,
+			DefenderType: "mob",
+			DefenderName: mob.Character.Name,
+			AvoidType:    "miss",
+			WeaponName:   getWeaponName(user.Character),
+		})
 	}
 
 	return attackResult
@@ -66,11 +113,42 @@ func AttackPlayerVsPlayer(userAtk *users.UserRecord, userDef *users.UserRecord) 
 		userDef.WimpyCheck()
 	}
 
+	// Fire combat events
 	if attackResult.Hit {
 		userAtk.PlaySound(`hit-other`, `combat`)
 		userDef.PlaySound(`hit-self`, `combat`)
+
+		// Fire DamageDealt event if damage was actually dealt
+		if attackResult.DamageToTarget > 0 {
+			events.AddToQueue(events.DamageDealt{
+				SourceId:      userAtk.UserId,
+				SourceType:    "player",
+				SourceName:    userAtk.Character.Name,
+				TargetId:      userDef.UserId,
+				TargetType:    "player",
+				TargetName:    userDef.Character.Name,
+				Amount:        attackResult.DamageToTarget,
+				DamageType:    "physical",
+				WeaponName:    getWeaponName(userAtk.Character),
+				SpellName:     "",
+				IsCritical:    attackResult.Crit,
+				IsKillingBlow: userDef.Character.Health <= 0,
+			})
+		}
 	} else {
 		userAtk.PlaySound(`miss`, `combat`)
+
+		// Fire AttackAvoided event for misses
+		events.AddToQueue(events.AttackAvoided{
+			AttackerId:   userAtk.UserId,
+			AttackerType: "player",
+			AttackerName: userAtk.Character.Name,
+			DefenderId:   userDef.UserId,
+			DefenderType: "player",
+			DefenderName: userDef.Character.Name,
+			AvoidType:    "miss",
+			WeaponName:   getWeaponName(userAtk.Character),
+		})
 	}
 
 	return attackResult
@@ -81,15 +159,60 @@ func AttackMobVsPlayer(mob *mobs.Mob, user *users.UserRecord) AttackResult {
 
 	attackResult := calculateCombat(mob.Character, *user.Character, Mob, User)
 
+	oldHealth := mob.Character.Health
 	mob.Character.ApplyHealthChange(attackResult.DamageToSource * -1)
+	newHealth := mob.Character.Health
+
+	// Fire MobVitalsChanged event if health changed
+	if oldHealth != newHealth {
+		events.AddToQueue(events.MobVitalsChanged{
+			MobId:      mob.InstanceId,
+			OldHealth:  oldHealth,
+			NewHealth:  newHealth,
+			OldMana:    mob.Character.Mana,
+			NewMana:    mob.Character.Mana,
+			ChangeType: "damage",
+		})
+	}
 
 	if attackResult.DamageToTarget != 0 {
 		user.Character.ApplyHealthChange(attackResult.DamageToTarget * -1)
 		user.WimpyCheck()
 	}
 
+	// Fire combat events
 	if attackResult.Hit {
 		user.PlaySound(`hit-self`, `combat`)
+
+		// Fire DamageDealt event if damage was actually dealt
+		if attackResult.DamageToTarget > 0 {
+			events.AddToQueue(events.DamageDealt{
+				SourceId:      mob.InstanceId,
+				SourceType:    "mob",
+				SourceName:    mob.Character.Name,
+				TargetId:      user.UserId,
+				TargetType:    "player",
+				TargetName:    user.Character.Name,
+				Amount:        attackResult.DamageToTarget,
+				DamageType:    "physical",
+				WeaponName:    getWeaponName(&mob.Character),
+				SpellName:     "",
+				IsCritical:    attackResult.Crit,
+				IsKillingBlow: user.Character.Health <= 0,
+			})
+		}
+	} else {
+		// Fire AttackAvoided event for misses
+		events.AddToQueue(events.AttackAvoided{
+			AttackerId:   mob.InstanceId,
+			AttackerType: "mob",
+			AttackerName: mob.Character.Name,
+			DefenderId:   user.UserId,
+			DefenderType: "player",
+			DefenderName: user.Character.Name,
+			AvoidType:    "miss",
+			WeaponName:   getWeaponName(&mob.Character),
+		})
 	}
 
 	return attackResult
@@ -98,15 +221,77 @@ func AttackMobVsPlayer(mob *mobs.Mob, user *users.UserRecord) AttackResult {
 // Performs a combat round from a mob to a mob
 func AttackMobVsMob(mobAtk *mobs.Mob, mobDef *mobs.Mob) AttackResult {
 
-	attackResult := calculateCombat(mobAtk.Character, mobDef.Character, Mob, User)
+	attackResult := calculateCombat(mobAtk.Character, mobDef.Character, Mob, Mob)
 
+	// Track attacker health changes
+	oldHealthAtk := mobAtk.Character.Health
 	mobAtk.Character.ApplyHealthChange(attackResult.DamageToSource * -1)
+	newHealthAtk := mobAtk.Character.Health
+
+	if oldHealthAtk != newHealthAtk {
+		events.AddToQueue(events.MobVitalsChanged{
+			MobId:      mobAtk.InstanceId,
+			OldHealth:  oldHealthAtk,
+			NewHealth:  newHealthAtk,
+			OldMana:    mobAtk.Character.Mana,
+			NewMana:    mobAtk.Character.Mana,
+			ChangeType: "damage",
+		})
+	}
+
+	// Track defender health changes
+	oldHealthDef := mobDef.Character.Health
 	mobDef.Character.ApplyHealthChange(attackResult.DamageToTarget * -1)
+	newHealthDef := mobDef.Character.Health
+
+	if oldHealthDef != newHealthDef {
+		events.AddToQueue(events.MobVitalsChanged{
+			MobId:      mobDef.InstanceId,
+			OldHealth:  oldHealthDef,
+			NewHealth:  newHealthDef,
+			OldMana:    mobDef.Character.Mana,
+			NewMana:    mobDef.Character.Mana,
+			ChangeType: "damage",
+		})
+	}
 
 	// If attacking mob was player charmed, attribute damage done to that player
 	if charmedUserId := mobAtk.Character.GetCharmedUserId(); charmedUserId > 0 {
 		// Remember who has hit him
 		mobDef.Character.TrackPlayerDamage(charmedUserId, attackResult.DamageToTarget)
+	}
+
+	// Fire combat events
+	if attackResult.Hit {
+		// Fire DamageDealt event if damage was actually dealt
+		if attackResult.DamageToTarget > 0 {
+			events.AddToQueue(events.DamageDealt{
+				SourceId:      mobAtk.InstanceId,
+				SourceType:    "mob",
+				SourceName:    mobAtk.Character.Name,
+				TargetId:      mobDef.InstanceId,
+				TargetType:    "mob",
+				TargetName:    mobDef.Character.Name,
+				Amount:        attackResult.DamageToTarget,
+				DamageType:    "physical",
+				WeaponName:    getWeaponName(&mobAtk.Character),
+				SpellName:     "",
+				IsCritical:    attackResult.Crit,
+				IsKillingBlow: mobDef.Character.Health <= 0,
+			})
+		}
+	} else {
+		// Fire AttackAvoided event for misses
+		events.AddToQueue(events.AttackAvoided{
+			AttackerId:   mobAtk.InstanceId,
+			AttackerType: "mob",
+			AttackerName: mobAtk.Character.Name,
+			DefenderId:   mobDef.InstanceId,
+			DefenderType: "mob",
+			DefenderName: mobDef.Character.Name,
+			AvoidType:    "miss",
+			WeaponName:   getWeaponName(&mobAtk.Character),
+		})
 	}
 
 	return attackResult
@@ -505,6 +690,7 @@ func calculateCombat(sourceChar characters.Character, targetChar characters.Char
 
 				attackResult.DamageToSource += attackSourceDamage
 				attackResult.DamageToSourceReduction += attackSourceReduction
+
 			}
 
 			if util.RollDice(1, 5) == 1 { // 20% chance to join
@@ -600,4 +786,16 @@ func Crits(sourceChar characters.Character, targetChar characters.Character) boo
 	util.LogRoll(`Crits`, critRoll, critChance)
 
 	return critRoll < critChance
+}
+
+// Helper functions for combat events
+
+// getWeaponName safely gets the weapon name from a character
+func getWeaponName(char *characters.Character) string {
+	if char.Equipment.Weapon.ItemId > 0 {
+		return char.Equipment.Weapon.DisplayName()
+	}
+	// Return unarmed name from race
+	raceInfo := races.GetRace(char.RaceId)
+	return raceInfo.UnarmedName
 }

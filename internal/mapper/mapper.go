@@ -998,15 +998,15 @@ func PreCacheMaps() {
 func validateRoomBiomes() {
 	missingBiomeCount := 0
 	invalidBiomeCount := 0
-	
+
 	for _, roomId := range rooms.GetAllRoomIds() {
 		room := rooms.LoadRoom(roomId)
 		if room == nil {
 			continue
 		}
-		
+
 		originalBiome := room.Biome
-		
+
 		// Check if room has no biome
 		if originalBiome == "" {
 			zoneBiome := rooms.GetZoneBiome(room.Zone)
@@ -1022,7 +1022,7 @@ func validateRoomBiomes() {
 			}
 		}
 	}
-	
+
 	if missingBiomeCount > 0 || invalidBiomeCount > 0 {
 		mudlog.Info("Biome validation complete", "missing", missingBiomeCount, "invalid", invalidBiomeCount)
 	}
