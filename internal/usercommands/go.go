@@ -141,7 +141,7 @@ func Go(rest string, user *users.UserRecord, room *rooms.Room, flags events.Even
 					// Send GMCP message
 					if f, ok := GetExportedFunction(`SendGMCPEvent`); ok {
 						if gmcpSendFunc, ok := f.(func(int, string, any)); ok { // make sure the func definition is `func(int, string, any)`
-							gmcpSendFunc(user.UserId, `Room.WrongDir`, fmt.Sprintf(`"%s"`, exitName))
+							gmcpSendFunc(user.UserId, `Room.Wrongdir`, map[string]string{"dir": exitName})
 						}
 					}
 
@@ -348,7 +348,7 @@ func Go(rest string, user *users.UserRecord, room *rooms.Room, flags events.Even
 			handled = true
 
 			if doLook, err := scripting.TryRoomScriptEvent(`onEnter`, user.UserId, destRoom.RoomId); err != nil || doLook {
-				Look(``, user, destRoom, events.CmdSecretly)
+				Look(``, user, destRoom, events.CmdSecretly|events.CmdNoRoomGMCP)
 			}
 
 			room.PlaySound(`room-exit`, `movement`, user.UserId)
@@ -366,7 +366,7 @@ func Go(rest string, user *users.UserRecord, room *rooms.Room, flags events.Even
 			// Send GMCP message
 			if f, ok := GetExportedFunction(`SendGMCPEvent`); ok {
 				if gmcpSendFunc, ok := f.(func(int, string, any)); ok { // make sure the func definition is `func(int, string, any)`
-					gmcpSendFunc(user.UserId, `Room.WrongDir`, fmt.Sprintf(`"%s"`, rest))
+					gmcpSendFunc(user.UserId, `Room.Wrongdir`, map[string]string{"dir": rest})
 				}
 			}
 
