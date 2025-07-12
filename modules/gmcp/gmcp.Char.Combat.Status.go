@@ -1,9 +1,15 @@
+// Package gmcp handles Combat Status updates for GMCP.
+//
+// Tracks combat state changes (entering/leaving combat) and sends updates only when state changes.
+// Uses round-based checks with immediate updates on vitals changes for accurate HP snapshots.
 package gmcp
 
 import (
+	"fmt"
 	"sync"
 
 	"github.com/GoMudEngine/GoMud/internal/events"
+	"github.com/GoMudEngine/GoMud/internal/mudlog"
 	"github.com/GoMudEngine/GoMud/internal/users"
 )
 
@@ -32,30 +38,21 @@ func init() {
 	events.RegisterListener(GMCPCombatStatusUpdate{}, handleCombatStatusUpdate)
 
 	// Register listeners for events that should trigger immediate status updates
-	events.RegisterListener(events.PlayerSpawn{}, handlePlayerSpawn)
-	events.RegisterListener(events.PlayerDespawn{}, handlePlayerDespawn)
-	events.RegisterListener(events.NewRound{}, handleNewRound)
-	events.RegisterListener(events.CharacterVitalsChanged{}, handleVitalsChanged)
+	events.RegisterListener(events.PlayerSpawn{}, handleStatusPlayerSpawn)
+	events.RegisterListener(events.PlayerDespawn{}, handleStatusPlayerDespawn)
+	events.RegisterListener(events.NewRound{}, handleStatusNewRound)
+	events.RegisterListener(events.CharacterVitalsChanged{}, handleStatusVitalsChanged)
 }
 
 func handleCombatStatusUpdate(e events.Event) events.ListenerReturn {
 	evt, typeOk := e.(GMCPCombatStatusUpdate)
 	if !typeOk {
+		mudlog.Error("GMCPCombatStatus", "action", "handleCombatStatusUpdate", "error", "type assertion failed", "expectedType", "GMCPCombatStatusUpdate", "actualType", fmt.Sprintf("%T", e))
 		return events.Continue
 	}
 
-	if evt.UserId < 1 {
-		return events.Continue
-	}
-
-	// Make sure they have GMCP enabled
-	user := users.GetByUserId(evt.UserId)
-	if user == nil {
-		return events.Continue
-	}
-
-	if !isGMCPEnabled(user.ConnectionId()) {
-		// Don't cancel, just skip - the event might be useful for other listeners
+	_, valid := validateUserForGMCP(evt.UserId, "GMCPCombatStatus")
+	if !valid {
 		return events.Continue
 	}
 
@@ -69,7 +66,6 @@ func handleCombatStatusUpdate(e events.Event) events.ListenerReturn {
 		payload["round_number"] = evt.RoundNumber
 	}
 
-	// Send the GMCP update
 	events.AddToQueue(GMCPOut{
 		UserId:  evt.UserId,
 		Module:  "Char.Combat.Status",
@@ -80,9 +76,10 @@ func handleCombatStatusUpdate(e events.Event) events.ListenerReturn {
 }
 
 // handlePlayerSpawn sends initial combat status on login
-func handlePlayerSpawn(e events.Event) events.ListenerReturn {
+func handleStatusPlayerSpawn(e events.Event) events.ListenerReturn {
 	evt, typeOk := e.(events.PlayerSpawn)
 	if !typeOk {
+		mudlog.Error("GMCPCombatStatus", "action", "handlePlayerSpawn", "error", "type assertion failed", "expectedType", "events.PlayerSpawn", "actualType", fmt.Sprintf("%T", e))
 		return events.Continue
 	}
 
@@ -91,13 +88,16 @@ func handlePlayerSpawn(e events.Event) events.ListenerReturn {
 	}
 
 	// Check if user has aggro
-	inCombat := false
-	if user := users.GetByUserId(evt.UserId); user != nil {
-		inCombat = user.Character.Aggro != nil
-		stateMutex.Lock()
-		userCombatState[evt.UserId] = inCombat
-		stateMutex.Unlock()
+	user := users.GetByUserId(evt.UserId)
+	if user == nil {
+		mudlog.Warn("GMCPCombatStatus", "action", "handlePlayerSpawn", "issue", "user not found on spawn", "userId", evt.UserId)
+		return events.Continue
 	}
+
+	inCombat := user.Character.Aggro != nil
+	stateMutex.Lock()
+	userCombatState[evt.UserId] = inCombat
+	stateMutex.Unlock()
 
 	// Send initial combat status
 	sendCombatStatusUpdate(evt.UserId, inCombat, 0)
@@ -106,9 +106,10 @@ func handlePlayerSpawn(e events.Event) events.ListenerReturn {
 }
 
 // handlePlayerDespawn cleans up tracking when player leaves
-func handlePlayerDespawn(e events.Event) events.ListenerReturn {
+func handleStatusPlayerDespawn(e events.Event) events.ListenerReturn {
 	evt, typeOk := e.(events.PlayerDespawn)
 	if !typeOk {
+		mudlog.Error("GMCPCombatStatus", "action", "handlePlayerDespawn", "error", "type assertion failed", "expectedType", "events.PlayerDespawn", "actualType", fmt.Sprintf("%T", e))
 		return events.Continue
 	}
 
@@ -125,9 +126,10 @@ func handlePlayerDespawn(e events.Event) events.ListenerReturn {
 }
 
 // handleNewRound checks for combat state changes each round
-func handleNewRound(e events.Event) events.ListenerReturn {
+func handleStatusNewRound(e events.Event) events.ListenerReturn {
 	evt, typeOk := e.(events.NewRound)
 	if !typeOk {
+		mudlog.Error("GMCPCombatStatus", "action", "handleNewRound", "error", "type assertion failed", "expectedType", "events.NewRound", "actualType", fmt.Sprintf("%T", e))
 		return events.Continue
 	}
 
@@ -135,26 +137,38 @@ func handleNewRound(e events.Event) events.ListenerReturn {
 	for _, userId := range users.GetOnlineUserIds() {
 		user := users.GetByUserId(userId)
 		if user == nil {
+			// Clean up stale state if user no longer exists
+			stateMutex.Lock()
+			if _, exists := userCombatState[userId]; exists {
+				delete(userCombatState, userId)
+				delete(lastRoundNumber, userId)
+				mudlog.Warn("GMCPCombatStatus", "action", "handleNewRound", "issue", "user not found, cleaning up stale state", "userId", userId)
+			}
+			stateMutex.Unlock()
 			continue
 		}
 
 		currentlyInCombat := user.Character.Aggro != nil
 
-		stateMutex.Lock()
+		stateMutex.RLock()
 		wasInCombat := userCombatState[userId]
+		stateMutex.RUnlock()
 
-		// Update state and round number
-		if currentlyInCombat != wasInCombat {
-			userCombatState[userId] = currentlyInCombat
-		}
-		if currentlyInCombat {
-			lastRoundNumber[userId] = evt.RoundNumber
+		// Update state and round number if needed
+		if currentlyInCombat != wasInCombat || currentlyInCombat {
+			stateMutex.Lock()
+			if currentlyInCombat != wasInCombat {
+				userCombatState[userId] = currentlyInCombat
+			}
+			if currentlyInCombat {
+				lastRoundNumber[userId] = evt.RoundNumber
+			}
+			stateMutex.Unlock()
 		}
 
 		// Only send updates when combat state changes (entering/leaving combat)
 		// HP updates will come from CharacterVitalsChanged events after damage
 		needsUpdate := currentlyInCombat != wasInCombat
-		stateMutex.Unlock()
 
 		if needsUpdate {
 			// Send immediate update only for state changes
@@ -173,9 +187,10 @@ func handleNewRound(e events.Event) events.ListenerReturn {
 }
 
 // handleVitalsChanged sends immediate updates when character vitals change
-func handleVitalsChanged(e events.Event) events.ListenerReturn {
+func handleStatusVitalsChanged(e events.Event) events.ListenerReturn {
 	evt, typeOk := e.(events.CharacterVitalsChanged)
 	if !typeOk {
+		mudlog.Error("GMCPCombatStatus", "action", "handleVitalsChanged", "error", "type assertion failed", "expectedType", "events.CharacterVitalsChanged", "actualType", fmt.Sprintf("%T", e))
 		return events.Continue
 	}
 
@@ -186,19 +201,31 @@ func handleVitalsChanged(e events.Event) events.ListenerReturn {
 
 	user := users.GetByUserId(evt.UserId)
 	if user == nil {
+		// Clean up stale state if user no longer exists
+		stateMutex.Lock()
+		if _, exists := userCombatState[evt.UserId]; exists {
+			delete(userCombatState, evt.UserId)
+			delete(lastRoundNumber, evt.UserId)
+			mudlog.Warn("GMCPCombatStatus", "action", "handleVitalsChanged", "issue", "user not found, cleaning up stale state", "userId", evt.UserId)
+		}
+		stateMutex.Unlock()
 		return events.Continue
 	}
 
 	currentlyInCombat := user.Character.Aggro != nil
 
-	stateMutex.Lock()
+	stateMutex.RLock()
 	wasInCombat := userCombatState[evt.UserId]
 	stateChanged := currentlyInCombat != wasInCombat
-	if stateChanged {
-		userCombatState[evt.UserId] = currentlyInCombat
-	}
 	roundNum := lastRoundNumber[evt.UserId]
-	stateMutex.Unlock()
+	stateMutex.RUnlock()
+
+	// Update state if changed
+	if stateChanged {
+		stateMutex.Lock()
+		userCombatState[evt.UserId] = currentlyInCombat
+		stateMutex.Unlock()
+	}
 
 	// Send updates on state changes AND during combat (for pre-round HP snapshot)
 	if stateChanged || currentlyInCombat {
@@ -221,6 +248,13 @@ func handleVitalsChanged(e events.Event) events.ListenerReturn {
 
 // sendCombatStatusUpdate sends a combat status update for a user
 func sendCombatStatusUpdate(userId int, inCombat bool, roundNumber uint64) {
+	// Validate user exists before sending update
+	user := users.GetByUserId(userId)
+	if user == nil {
+		mudlog.Warn("GMCPCombatStatus", "action", "sendCombatStatusUpdate", "issue", "attempted to send update for non-existent user", "userId", userId)
+		return
+	}
+
 	// Send directly instead of queuing to ensure consistent ordering
 	update := GMCPCombatStatusUpdate{
 		UserId:      userId,

@@ -37,6 +37,7 @@ func init() {
 	events.RegisterListener(events.PlayerDespawn{}, g.despawnHandler)
 	events.RegisterListener(GMCPRoomUpdate{}, g.buildAndSendGMCPPayload)
 	events.RegisterListener(events.ItemOwnership{}, g.itemOwnershipHandler)
+	events.RegisterListener(events.ExitLockChanged{}, g.exitLockChangedHandler)
 
 }
 
@@ -486,34 +487,35 @@ func (g *GMCPRoomModule) GetRoomNode(user *users.UserRecord, gmcpModule string) 
 			}
 
 			exitV2 := GMCPRoomModule_Payload_Contents_ExitInfo{
-				RoomId:  exitInfo.RoomId,
-				DeltaX:  deltaX,
-				DeltaY:  deltaY,
-				DeltaZ:  deltaZ,
-				Status:  "open",
-				Details: []string{},
+				RoomId: exitInfo.RoomId,
+				DeltaX: deltaX,
+				DeltaY: deltaY,
+				DeltaZ: deltaZ,
 			}
 
-			if exitInfo.Secret {
-				exitV2.Details = append(exitV2.Details, `secret`)
-			}
-
+			// Only add details for exits with doors/locks
 			if exitInfo.HasLock() {
+				exitV2.Details = make(map[string]interface{})
+				exitV2.Details["type"] = "door"
+				exitV2.Details["name"] = exitName
+				
 				// Check if the lock is currently locked
 				if exitInfo.Lock.IsLocked() {
-					exitV2.Status = "locked"
-					exitV2.Details = append(exitV2.Details, `locked`)
+					exitV2.Details["state"] = "locked"
+				} else {
+					// Unlocked doors can be walked through freely
+					exitV2.Details["state"] = "open"
 				}
-
+				
 				lockId := fmt.Sprintf(`%d-%s`, room.RoomId, exitName)
 				haskey, hascombo := user.Character.HasKey(lockId, int(exitInfo.Lock.Difficulty))
-
+				
 				if haskey {
-					exitV2.Details = append(exitV2.Details, `player_has_key`)
+					exitV2.Details["hasKey"] = true
 				}
-
+				
 				if hascombo {
-					exitV2.Details = append(exitV2.Details, `player_has_pick_combo`)
+					exitV2.Details["hasPicked"] = true
 				}
 			}
 
@@ -556,11 +558,8 @@ func (g *GMCPRoomModule) GetRoomNode(user *users.UserRecord, gmcpModule string) 
 		}
 
 		if gmcpModule == `Room.Info.Exits` {
-			// Exits can change when locks are opened or secrets discovered
-			exitsPayload := map[string]interface{}{
-				"exits": payload.Exits,
-			}
-			return exitsPayload, `Room.Info.Exits`
+			// Return exits directly without the redundant "exits" wrapper
+			return payload.Exits, `Room.Info.Exits`
 		}
 	}
 
@@ -632,12 +631,11 @@ type GMCPRoomModule_Payload struct {
 }
 
 type GMCPRoomModule_Payload_Contents_ExitInfo struct {
-	RoomId  int      `json:"room_id"`
-	DeltaX  int      `json:"delta_x"`
-	DeltaY  int      `json:"delta_y"`
-	DeltaZ  int      `json:"delta_z"`
-	Status  string   `json:"status"` // "open", "locked", "blocked"
-	Details []string `json:"details"`
+	RoomId  int                    `json:"room_id"`
+	DeltaX  int                    `json:"delta_x"`
+	DeltaY  int                    `json:"delta_y"`
+	DeltaZ  int                    `json:"delta_z"`
+	Details map[string]interface{} `json:"details,omitempty"` // Only populated for special exits
 }
 
 // /////////////////
@@ -719,6 +717,27 @@ func (g *GMCPRoomModule) itemOwnershipHandler(e events.Event) events.ListenerRet
 				})
 			}
 		}
+	}
+
+	return events.Continue
+}
+
+func (g *GMCPRoomModule) exitLockChangedHandler(e events.Event) events.ListenerReturn {
+	evt, typeOk := e.(events.ExitLockChanged)
+	if !typeOk {
+		mudlog.Error("Event", "Expected Type", "ExitLockChanged", "Actual Type", e.Type())
+		return events.Cancel
+	}
+
+	// Load the room where the exit changed
+	room := rooms.LoadRoom(evt.RoomId)
+	if room == nil {
+		return events.Continue
+	}
+
+	// Send exit updates to all players in the room
+	for _, userId := range room.GetPlayers() {
+		events.AddToQueue(GMCPRoomUpdate{UserId: userId, Identifier: `Room.Info.Exits`})
 	}
 
 	return events.Continue
