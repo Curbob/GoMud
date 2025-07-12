@@ -1,8 +1,14 @@
+// Package gmcp handles Combat Damage notification updates for GMCP.
+//
+// Stateless module that immediately forwards damage/healing events to players.
+// No deduplication needed as each damage event is meaningful.
 package gmcp
 
 import (
+	"fmt"
+
 	"github.com/GoMudEngine/GoMud/internal/events"
-	"github.com/GoMudEngine/GoMud/internal/users"
+	"github.com/GoMudEngine/GoMud/internal/mudlog"
 )
 
 // GMCPCombatDamageUpdate is sent when damage or healing occurs
@@ -23,25 +29,18 @@ func init() {
 
 	// Keep the internal event for backward compatibility
 	events.RegisterListener(GMCPCombatDamageUpdate{}, handleCombatDamageUpdate)
+	
 }
 
 func handleCombatDamageUpdate(e events.Event) events.ListenerReturn {
 	evt, typeOk := e.(GMCPCombatDamageUpdate)
 	if !typeOk {
+		mudlog.Error("GMCPCombatDamage", "action", "handleCombatDamageUpdate", "error", "type assertion failed", "expectedType", "GMCPCombatDamageUpdate", "actualType", fmt.Sprintf("%T", e))
 		return events.Continue
 	}
 
-	if evt.UserId < 1 {
-		return events.Continue
-	}
-
-	// Make sure they have GMCP enabled
-	user := users.GetByUserId(evt.UserId)
-	if user == nil {
-		return events.Continue
-	}
-
-	if !isGMCPEnabled(user.ConnectionId()) {
+	_, valid := validateUserForGMCP(evt.UserId, "GMCPCombatDamage")
+	if !valid {
 		return events.Continue
 	}
 
@@ -53,7 +52,6 @@ func handleCombatDamageUpdate(e events.Event) events.ListenerReturn {
 		"target": evt.Target,
 	}
 
-	// Send the GMCP update immediately
 	events.AddToQueue(GMCPOut{
 		UserId:  evt.UserId,
 		Module:  "Char.Combat.Damage",
@@ -67,6 +65,7 @@ func handleCombatDamageUpdate(e events.Event) events.ListenerReturn {
 func handleDamageDealtForGMCP(e events.Event) events.ListenerReturn {
 	evt, typeOk := e.(events.DamageDealt)
 	if !typeOk {
+		mudlog.Error("GMCPCombatDamage", "action", "handleDamageDealtForGMCP", "error", "type assertion failed", "expectedType", "events.DamageDealt", "actualType", fmt.Sprintf("%T", e))
 		return events.Continue
 	}
 
@@ -99,6 +98,7 @@ func handleDamageDealtForGMCP(e events.Event) events.ListenerReturn {
 func handleHealingReceivedForGMCP(e events.Event) events.ListenerReturn {
 	evt, typeOk := e.(events.HealingReceived)
 	if !typeOk {
+		mudlog.Error("GMCPCombatDamage", "action", "handleHealingReceivedForGMCP", "error", "type assertion failed", "expectedType", "events.HealingReceived", "actualType", fmt.Sprintf("%T", e))
 		return events.Continue
 	}
 
@@ -119,8 +119,14 @@ func handleHealingReceivedForGMCP(e events.Event) events.ListenerReturn {
 // SendCombatDamage sends a damage/healing update
 // This is exported so it can be called from combat code
 func SendCombatDamage(userId int, amount int, damageType string, source string, target string) {
-	// Send the update directly for immediate processing
-	handleCombatDamageUpdate(GMCPCombatDamageUpdate{
+	// Validate user exists before sending damage update
+	_, valid := validateUserForGMCP(userId, "GMCPCombatDamage")
+	if !valid {
+		return
+	}
+
+	// Queue the update event
+	events.AddToQueue(GMCPCombatDamageUpdate{
 		UserId:     userId,
 		Amount:     amount,
 		DamageType: damageType,
@@ -128,3 +134,4 @@ func SendCombatDamage(userId int, amount int, damageType string, source string, 
 		Target:     target,
 	})
 }
+
