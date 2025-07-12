@@ -861,6 +861,12 @@ func (r *Room) SetExitLock(exitName string, locked bool) {
 		}
 	}
 
+	// Fire event for exit lock state change
+	events.AddToQueue(events.ExitLockChanged{
+		RoomId:   r.RoomId,
+		ExitName: exitName,
+		Locked:   locked,
+	})
 }
 
 func (r *Room) GetExitInfo(exitName string) (exitInfo exit.RoomExit, ok bool) {

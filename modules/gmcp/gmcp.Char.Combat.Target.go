@@ -1,3 +1,9 @@
+// Package gmcp handles Combat Target updates for GMCP.
+//
+// Tracks the player's current combat target and HP changes, sending updates only when:
+// - Target changes (different mob or cleared)
+// - Target HP changes (damage/healing)
+// - Target dies or moves away
 package gmcp
 
 import (
@@ -6,6 +12,7 @@ import (
 
 	"github.com/GoMudEngine/GoMud/internal/events"
 	"github.com/GoMudEngine/GoMud/internal/mobs"
+	"github.com/GoMudEngine/GoMud/internal/mudlog"
 	"github.com/GoMudEngine/GoMud/internal/rooms"
 	"github.com/GoMudEngine/GoMud/internal/users"
 )
@@ -44,25 +51,20 @@ func init() {
 	events.RegisterListener(events.MobVitalsChanged{}, handleTargetMobVitalsChanged)
 	events.RegisterListener(events.MobDeath{}, handleTargetMobDeath)
 	events.RegisterListener(events.RoomChange{}, handleTargetRoomChange)
+	
+	// Clean up when player disconnects
+	events.RegisterListener(events.PlayerDespawn{}, handleTargetPlayerDespawn)
 }
 
 func handleCombatTargetUpdate(e events.Event) events.ListenerReturn {
 	evt, typeOk := e.(GMCPCombatTargetUpdate)
 	if !typeOk {
+		mudlog.Error("GMCPCombatTarget", "action", "handleCombatTargetUpdate", "error", "type assertion failed", "expectedType", "GMCPCombatTargetUpdate", "actualType", fmt.Sprintf("%T", e))
 		return events.Continue
 	}
 
-	if evt.UserId < 1 {
-		return events.Continue
-	}
-
-	// Make sure they have GMCP enabled
-	user := users.GetByUserId(evt.UserId)
-	if user == nil {
-		return events.Continue
-	}
-
-	if !isGMCPEnabled(user.ConnectionId()) {
+	_, valid := validateUserForGMCP(evt.UserId, "GMCPCombatTarget")
+	if !valid {
 		return events.Continue
 	}
 
@@ -80,7 +82,6 @@ func handleCombatTargetUpdate(e events.Event) events.ListenerReturn {
 		payload["hp_max"] = ""
 	}
 
-	// Send the GMCP update
 	events.AddToQueue(GMCPOut{
 		UserId:  evt.UserId,
 		Module:  "Char.Combat.Target",
@@ -94,13 +95,21 @@ func handleCombatTargetUpdate(e events.Event) events.ListenerReturn {
 func handleTargetNewRound(e events.Event) events.ListenerReturn {
 	_, typeOk := e.(events.NewRound)
 	if !typeOk {
+		mudlog.Error("GMCPCombatTarget", "action", "handleTargetNewRound", "error", "type assertion failed", "expectedType", "events.NewRound", "actualType", fmt.Sprintf("%T", e))
 		return events.Continue
 	}
 
 	// Check all online users for target changes
 	for _, userId := range users.GetOnlineUserIds() {
-		user := users.GetByUserId(userId)
-		if user == nil {
+		user, valid := validateUserForGMCP(userId, "GMCPCombatTarget")
+		if !valid {
+			// Clean up stale target tracking
+			targetMutex.Lock()
+			if _, exists := userTargets[userId]; exists {
+				delete(userTargets, userId)
+				delete(lastTargetHP, userId)
+			}
+			targetMutex.Unlock()
 			continue
 		}
 
@@ -145,6 +154,7 @@ func handleTargetNewRound(e events.Event) events.ListenerReturn {
 func handleTargetVitalsChanged(e events.Event) events.ListenerReturn {
 	evt, typeOk := e.(events.CharacterVitalsChanged)
 	if !typeOk {
+		mudlog.Error("GMCPCombatTarget", "action", "handleTargetVitalsChanged", "error", "type assertion failed", "expectedType", "events.CharacterVitalsChanged", "actualType", fmt.Sprintf("%T", e))
 		return events.Continue
 	}
 
@@ -154,7 +164,20 @@ func handleTargetVitalsChanged(e events.Event) events.ListenerReturn {
 	}
 
 	user := users.GetByUserId(evt.UserId)
-	if user == nil || user.Character.Aggro == nil {
+	if user == nil {
+		// Clean up stale target tracking if user no longer exists
+		targetMutex.Lock()
+		if _, exists := userTargets[evt.UserId]; exists {
+			delete(userTargets, evt.UserId)
+			delete(lastTargetHP, evt.UserId)
+			mudlog.Warn("GMCPCombatTarget", "action", "handleTargetVitalsChanged", "issue", "user not found, cleaning up stale target tracking", "userId", evt.UserId)
+		}
+		targetMutex.Unlock()
+		return events.Continue
+	}
+
+	if user.Character.Aggro == nil {
+		// Not in combat - this is normal flow, not an error
 		return events.Continue
 	}
 
@@ -171,6 +194,7 @@ func handleTargetVitalsChanged(e events.Event) events.ListenerReturn {
 func handleTargetMobVitalsChanged(e events.Event) events.ListenerReturn {
 	evt, typeOk := e.(events.MobVitalsChanged)
 	if !typeOk {
+		mudlog.Error("GMCPCombatTarget", "action", "handleTargetMobVitalsChanged", "error", "type assertion failed", "expectedType", "events.MobVitalsChanged", "actualType", fmt.Sprintf("%T", e))
 		return events.Continue
 	}
 
@@ -184,6 +208,17 @@ func handleTargetMobVitalsChanged(e events.Event) events.ListenerReturn {
 
 	for userId, targetId := range userTargetsCopy {
 		if targetId == evt.MobId {
+			// Validate user still exists before sending update
+			user := users.GetByUserId(userId)
+			if user == nil {
+				// Clean up stale target tracking
+				targetMutex.Lock()
+				delete(userTargets, userId)
+				delete(lastTargetHP, userId)
+				targetMutex.Unlock()
+				mudlog.Warn("GMCPCombatTarget", "action", "handleTargetMobVitalsChanged", "issue", "user not found, cleaning up stale target tracking", "userId", userId)
+				continue
+			}
 			// This mob is someone's target, send update
 			sendTargetUpdate(userId)
 		}
@@ -196,6 +231,7 @@ func handleTargetMobVitalsChanged(e events.Event) events.ListenerReturn {
 func handleTargetMobDeath(e events.Event) events.ListenerReturn {
 	evt, typeOk := e.(events.MobDeath)
 	if !typeOk {
+		mudlog.Error("GMCPCombatTarget", "action", "handleTargetMobDeath", "error", "type assertion failed", "expectedType", "events.MobDeath", "actualType", fmt.Sprintf("%T", e))
 		return events.Continue
 	}
 
@@ -209,6 +245,18 @@ func handleTargetMobDeath(e events.Event) events.ListenerReturn {
 
 	for userId, targetId := range userTargetsCopy {
 		if targetId == evt.InstanceId {
+			// Validate user still exists before sending update
+			user := users.GetByUserId(userId)
+			if user == nil {
+				// Clean up stale target tracking
+				targetMutex.Lock()
+				delete(userTargets, userId)
+				delete(lastTargetHP, userId)
+				targetMutex.Unlock()
+				mudlog.Warn("GMCPCombatTarget", "action", "handleTargetMobDeath", "issue", "user not found, cleaning up stale target tracking", "userId", userId)
+				continue
+			}
+
 			// Their target died, clear it
 			targetMutex.Lock()
 			delete(userTargets, userId)
@@ -233,6 +281,7 @@ func handleTargetMobDeath(e events.Event) events.ListenerReturn {
 func handleTargetRoomChange(e events.Event) events.ListenerReturn {
 	evt, typeOk := e.(events.RoomChange)
 	if !typeOk {
+		mudlog.Error("GMCPCombatTarget", "action", "handleTargetRoomChange", "error", "type assertion failed", "expectedType", "events.RoomChange", "actualType", fmt.Sprintf("%T", e))
 		return events.Continue
 	}
 
@@ -253,6 +302,12 @@ func handleTargetRoomChange(e events.Event) events.ListenerReturn {
 		if targetId == evt.MobInstanceId {
 			user := users.GetByUserId(userId)
 			if user == nil {
+				// Clean up stale target tracking
+				targetMutex.Lock()
+				delete(userTargets, userId)
+				delete(lastTargetHP, userId)
+				targetMutex.Unlock()
+				mudlog.Warn("GMCPCombatTarget", "action", "handleTargetRoomChange", "issue", "user not found, cleaning up stale target tracking", "userId", userId)
 				continue
 			}
 
@@ -277,6 +332,18 @@ func handleTargetRoomChange(e events.Event) events.ListenerReturn {
 
 // sendTargetUpdate sends current target info for a user
 func sendTargetUpdate(userId int) {
+	// Validate user exists before processing
+	user := users.GetByUserId(userId)
+	if user == nil {
+		// Clean up stale target tracking
+		targetMutex.Lock()
+		delete(userTargets, userId)
+		delete(lastTargetHP, userId)
+		targetMutex.Unlock()
+		mudlog.Warn("GMCPCombatTarget", "action", "sendTargetUpdate", "issue", "user not found, cleaning up stale target tracking", "userId", userId)
+		return
+	}
+
 	targetMutex.RLock()
 	targetId := userTargets[userId]
 	targetMutex.RUnlock()
@@ -287,14 +354,17 @@ func sendTargetUpdate(userId int) {
 
 	mob := mobs.GetInstance(targetId)
 	if mob == nil {
+		mudlog.Error("GMCPCombatTarget", "action", "sendTargetUpdate", "error", "mob lookup failed", "mobId", targetId, "userId", userId)
 		return
 	}
 
 	// Check if HP changed
-	targetMutex.Lock()
+	targetMutex.RLock()
 	lastHP := lastTargetHP[userId]
+	targetMutex.RUnlock()
 	currentHP := mob.Character.Health
 	if lastHP != currentHP {
+		targetMutex.Lock()
 		lastTargetHP[userId] = currentHP
 		targetMutex.Unlock()
 
@@ -305,8 +375,6 @@ func sendTargetUpdate(userId int) {
 			TargetHpCurrent: currentHP,
 			TargetHpMax:     int(mob.Character.HealthMax.Value),
 		})
-	} else {
-		targetMutex.Unlock()
 	}
 }
 
@@ -314,12 +382,14 @@ func sendTargetUpdate(userId int) {
 func checkForMobDamage(userId int) {
 	user := users.GetByUserId(userId)
 	if user == nil {
+		mudlog.Warn("GMCPCombatTarget", "action", "checkForMobDamage", "issue", "user not found", "userId", userId)
 		return
 	}
 
 	// Import gmcp package to use SendCombatDamage
 	room := rooms.LoadRoom(user.Character.RoomId)
 	if room == nil {
+		mudlog.Error("GMCPCombatTarget", "action", "checkForMobDamage", "error", "room lookup failed", "roomId", user.Character.RoomId, "userId", userId)
 		return
 	}
 
@@ -332,13 +402,15 @@ func checkForMobDamage(userId int) {
 
 		// Check if this mob is in combat with any player
 		if mob.Character.Aggro != nil && mob.Character.Aggro.UserId > 0 {
-			targetMutex.Lock()
+			targetMutex.RLock()
 			lastHP, tracked := mobHealthTracking[mobId]
+			targetMutex.RUnlock()
 			currentHP := mob.Character.Health
 
 			// If HP changed, send damage update
 			if tracked && lastHP != currentHP {
 				hpDiff := lastHP - currentHP
+				targetMutex.Lock()
 				mobHealthTracking[mobId] = currentHP
 				targetMutex.Unlock()
 
@@ -362,8 +434,9 @@ func checkForMobDamage(userId int) {
 						mob.Character.Name,
 					)
 				}
-			} else {
+			} else if !tracked {
 				// Start tracking this mob
+				targetMutex.Lock()
 				mobHealthTracking[mobId] = currentHP
 				targetMutex.Unlock()
 			}
@@ -376,4 +449,21 @@ func cleanupMobTracking(mobId int) {
 	targetMutex.Lock()
 	delete(mobHealthTracking, mobId)
 	targetMutex.Unlock()
+}
+
+// handleTargetPlayerDespawn cleans up when player leaves
+func handleTargetPlayerDespawn(e events.Event) events.ListenerReturn {
+	evt, typeOk := e.(events.PlayerDespawn)
+	if !typeOk {
+		mudlog.Error("GMCPCombatTarget", "action", "handleTargetPlayerDespawn", "error", "type assertion failed", "expectedType", "events.PlayerDespawn", "actualType", fmt.Sprintf("%T", e))
+		return events.Continue
+	}
+
+	// Clean up tracking maps for this user
+	targetMutex.Lock()
+	delete(userTargets, evt.UserId)
+	delete(lastTargetHP, evt.UserId)
+	targetMutex.Unlock()
+
+	return events.Continue
 }

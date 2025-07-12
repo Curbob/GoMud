@@ -1,10 +1,7 @@
 package gmcp
 
 import (
-	"bytes"
 	"encoding/json"
-	"fmt"
-	"os"
 	"strconv"
 	"strings"
 
@@ -84,6 +81,26 @@ func isGMCPEnabled(connectionId uint64) bool {
 	return false
 }
 
+// validateUserForGMCP checks if a user exists and has GMCP enabled
+// Returns the user and true if valid, nil and false otherwise
+func validateUserForGMCP(userId int, module string) (*users.UserRecord, bool) {
+	if userId < 1 {
+		return nil, false
+	}
+
+	user := users.GetByUserId(userId)
+	if user == nil {
+		mudlog.Warn(module, "action", "validateUserForGMCP", "issue", "user not found", "userId", userId)
+		return nil, false
+	}
+
+	if !isGMCPEnabled(user.ConnectionId()) {
+		return nil, false
+	}
+
+	return user, true
+}
+
 // ///////////////////
 // EVENTS
 // ///////////////////
@@ -135,6 +152,26 @@ func (gs *GMCPSettings) IsMudlet() bool {
 }
 
 /// END SETTINGS
+
+// GMCPUserCleanup is an internal event for cleaning up GMCP state
+type GMCPUserCleanup struct {
+	events.Event
+	UserId int
+}
+
+// CleanupUser removes all GMCP state for a disconnecting user
+func CleanupUser(userId int) {
+	events.AddToQueue(GMCPUserCleanup{UserId: userId})
+}
+
+// sendEmptyStructure sends an empty GMCP structure to establish the schema for clients
+func sendEmptyStructure(userId int, module string, payload interface{}) {
+	events.AddToQueue(GMCPOut{
+		UserId:  userId,
+		Module:  module,
+		Payload: payload,
+	})
+}
 
 func (g *GMCPModule) IsMudletExportedFunction(connectionId uint64) bool {
 	gmcpData, ok := g.cache.Get(connectionId)
@@ -537,16 +574,6 @@ func (g *GMCPModule) dispatchGMCP(e events.Event) events.ListenerReturn {
 	switch v := gmcp.Payload.(type) {
 	case []byte:
 
-		// DEBUG ONLY
-		// TODO: REMOVE
-		if gmcp.UserId == 1 && os.Getenv("CONSOLE_GMCP_OUTPUT") == "1" {
-			var prettyJSON bytes.Buffer
-			json.Indent(&prettyJSON, v, "", "\t")
-			fmt.Print(gmcp.Module + ` `)
-			fmt.Println(prettyJSON.String())
-		}
-
-		// Regular code follows...
 		if len(gmcp.Module) > 0 {
 			v = append([]byte(gmcp.Module+` `), v...)
 		}
@@ -559,16 +586,6 @@ func (g *GMCPModule) dispatchGMCP(e events.Event) events.ListenerReturn {
 
 	case string:
 
-		// DEBUG ONLY
-		// TODO: REMOVE
-		if gmcp.UserId == 1 && os.Getenv("CONSOLE_GMCP_OUTPUT") == "1" {
-			var prettyJSON bytes.Buffer
-			json.Indent(&prettyJSON, []byte(v), "", "\t")
-			fmt.Print(gmcp.Module + ` `)
-			fmt.Println(prettyJSON.String())
-		}
-
-		// Regular code follows...
 		if len(gmcp.Module) > 0 {
 			v = gmcp.Module + ` ` + v
 		}
@@ -586,16 +603,6 @@ func (g *GMCPModule) dispatchGMCP(e events.Event) events.ListenerReturn {
 			return events.Continue
 		}
 
-		// DEBUG ONLY
-		// TODO: REMOVE
-		if gmcp.UserId == 1 && os.Getenv("CONSOLE_GMCP_OUTPUT") == "1" {
-			var prettyJSON bytes.Buffer
-			json.Indent(&prettyJSON, payload, "", "\t")
-			fmt.Print(gmcp.Module + ` `)
-			fmt.Println(prettyJSON.String())
-		}
-
-		// Regular code follows...
 		if len(gmcp.Module) > 0 {
 			payload = append([]byte(gmcp.Module+` `), payload...)
 		}
@@ -636,12 +643,8 @@ func SendFullGMCPUpdate(userId int) {
 	// Room module - sends all room sub-nodes
 	events.AddToQueue(GMCPRoomUpdate{UserId: userId, Identifier: `Room`})
 
-	// Send Room.Wrongdir with empty data to establish the structure
-	events.AddToQueue(GMCPOut{
-		UserId:  userId,
-		Module:  `Room.Wrongdir`,
-		Payload: map[string]string{"dir": ""},
-	})
+	// Send empty structures to establish GMCP schema for clients
+	sendEmptyStructure(userId, `Room.Wrongdir`, map[string]string{"dir": ""})
 
 	// Party module - sends all party sub-nodes
 	events.AddToQueue(GMCPPartyUpdate{UserId: userId, Identifier: `Party`})
@@ -669,151 +672,89 @@ func SendFullGMCPUpdate(userId int) {
 		NameIdle:        "Ready",
 	})
 
-	// Send empty damage structure to establish it
-	events.AddToQueue(GMCPOut{
-		UserId: userId,
-		Module: `Char.Combat.Damage`,
-		Payload: map[string]interface{}{
-			"amount": 0,
-			"type":   "",
-			"source": "",
-			"target": "",
-		},
+	// Combat damage structure
+	sendEmptyStructure(userId, `Char.Combat.Damage`, map[string]interface{}{
+		"amount": 0,
+		"type":   "",
+		"source": "",
+		"target": "",
 	})
 
-	// Send Room.Remove.Player with empty data to establish the structure
-	events.AddToQueue(GMCPOut{
-		UserId:  userId,
-		Module:  `Room.Remove.Player`,
-		Payload: map[string]string{"name": ""},
+	// Room.Remove structures
+	sendEmptyStructure(userId, `Room.Remove.Player`, map[string]string{"name": ""})
+	sendEmptyStructure(userId, `Room.Remove.Npc`, map[string]interface{}{"id": "", "name": ""})
+	sendEmptyStructure(userId, `Room.Remove.Item`, map[string]interface{}{"id": "", "name": ""})
+
+	// Room.Add structures
+	sendEmptyStructure(userId, `Room.Add.Player`, map[string]string{"name": ""})
+	sendEmptyStructure(userId, `Room.Add.Npc`, map[string]interface{}{
+		"id":            "",
+		"name":          "",
+		"threat_level":  "",
+		"targeting_you": false,
+	})
+	sendEmptyStructure(userId, `Room.Add.Item`, map[string]interface{}{
+		"id": "", "name": "", "quest_flag": false,
 	})
 
-	// Send Room.Remove.Npc with empty data to establish the structure
-	events.AddToQueue(GMCPOut{
-		UserId:  userId,
-		Module:  `Room.Remove.Npc`,
-		Payload: map[string]interface{}{"id": "", "name": ""},
+	// Combat event structures
+	sendEmptyStructure(userId, `Char.Combat.Started`, map[string]interface{}{
+		"role":         "",
+		"target_id":    0,
+		"target_type":  "",
+		"target_name":  "",
+		"initiated_by": "",
 	})
 
-	// Send Room.Remove.Item with empty data to establish the structure
-	events.AddToQueue(GMCPOut{
-		UserId:  userId,
-		Module:  `Room.Remove.Item`,
-		Payload: map[string]interface{}{"id": "", "name": ""},
+	sendEmptyStructure(userId, `Char.Combat.Ended`, map[string]interface{}{
+		"reason":   "",
+		"duration": 0,
 	})
 
-	// Send Room.Add.Player with empty data to establish the structure
-	events.AddToQueue(GMCPOut{
-		UserId:  userId,
-		Module:  `Room.Add.Player`,
-		Payload: map[string]string{"name": ""},
+	sendEmptyStructure(userId, `Char.Combat.DamageDealt`, map[string]interface{}{
+		"target_id":       0,
+		"target_type":     "",
+		"target_name":     "",
+		"amount":          0,
+		"damage_type":     "",
+		"weapon_name":     "",
+		"spell_name":      "",
+		"is_critical":     false,
+		"is_killing_blow": false,
 	})
 
-	// Send Room.Add.Npc with empty data to establish the structure
-	events.AddToQueue(GMCPOut{
-		UserId: userId,
-		Module: `Room.Add.Npc`,
-		Payload: map[string]interface{}{
-			"id":            "",
-			"name":          "",
-			"threat_level":  "",
-			"targeting_you": false,
-		},
+	sendEmptyStructure(userId, `Char.Combat.DamageReceived`, map[string]interface{}{
+		"source_id":       0,
+		"source_type":     "",
+		"source_name":     "",
+		"amount":          0,
+		"damage_type":     "",
+		"weapon_name":     "",
+		"spell_name":      "",
+		"is_critical":     false,
+		"is_killing_blow": false,
 	})
 
-	// Send Room.Add.Item with empty data to establish the structure
-	events.AddToQueue(GMCPOut{
-		UserId:  userId,
-		Module:  `Room.Add.Item`,
-		Payload: map[string]interface{}{"id": "", "name": "", "quest_flag": false},
+	sendEmptyStructure(userId, `Char.Combat.AttackMissed`, map[string]interface{}{
+		"defender_id":   0,
+		"defender_type": "",
+		"defender_name": "",
+		"avoid_type":    "",
+		"weapon_name":   "",
 	})
 
-	// Send all combat event structures with expected fields
-	events.AddToQueue(GMCPOut{
-		UserId: userId,
-		Module: `Char.Combat.Started`,
-		Payload: map[string]interface{}{
-			"role":         "",
-			"target_id":    0,
-			"target_type":  "",
-			"target_name":  "",
-			"initiated_by": "",
-		},
+	sendEmptyStructure(userId, `Char.Combat.AttackAvoided`, map[string]interface{}{
+		"attacker_id":   0,
+		"attacker_type": "",
+		"attacker_name": "",
+		"avoid_type":    "",
+		"weapon_name":   "",
 	})
 
-	events.AddToQueue(GMCPOut{
-		UserId: userId,
-		Module: `Char.Combat.Ended`,
-		Payload: map[string]interface{}{
-			"reason":   "",
-			"duration": 0,
-		},
-	})
-
-	events.AddToQueue(GMCPOut{
-		UserId: userId,
-		Module: `Char.Combat.DamageDealt`,
-		Payload: map[string]interface{}{
-			"target_id":       0,
-			"target_type":     "",
-			"target_name":     "",
-			"amount":          0,
-			"damage_type":     "",
-			"weapon_name":     "",
-			"spell_name":      "",
-			"is_critical":     false,
-			"is_killing_blow": false,
-		},
-	})
-
-	events.AddToQueue(GMCPOut{
-		UserId: userId,
-		Module: `Char.Combat.DamageReceived`,
-		Payload: map[string]interface{}{
-			"source_id":       0,
-			"source_type":     "",
-			"source_name":     "",
-			"amount":          0,
-			"damage_type":     "",
-			"weapon_name":     "",
-			"spell_name":      "",
-			"is_critical":     false,
-			"is_killing_blow": false,
-		},
-	})
-
-	events.AddToQueue(GMCPOut{
-		UserId: userId,
-		Module: `Char.Combat.AttackMissed`,
-		Payload: map[string]interface{}{
-			"defender_id":   0,
-			"defender_type": "",
-			"defender_name": "",
-			"avoid_type":    "",
-			"weapon_name":   "",
-		},
-	})
-
-	events.AddToQueue(GMCPOut{
-		UserId: userId,
-		Module: `Char.Combat.AttackAvoided`,
-		Payload: map[string]interface{}{
-			"attacker_id":   0,
-			"attacker_type": "",
-			"attacker_name": "",
-			"avoid_type":    "",
-			"weapon_name":   "",
-		},
-	})
-
-	events.AddToQueue(GMCPOut{
-		UserId: userId,
-		Module: `Char.Combat.Fled`,
-		Payload: map[string]interface{}{
-			"direction":    "",
-			"success":      false,
-			"prevented_by": "",
-		},
+	sendEmptyStructure(userId, `Char.Combat.Fled`, map[string]interface{}{
+		"direction":    "",
+		"success":      false,
+		"prevented_by": "",
 	})
 
 	// Comm module - send channel structure with all fields
