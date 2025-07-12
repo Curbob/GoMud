@@ -605,3 +605,15 @@ type CombatantFled struct {
 }
 
 func (c CombatantFled) Type() string { return `CombatantFled` }
+
+// Room Events
+
+// ExitLockChanged fires when an exit's lock state changes
+type ExitLockChanged struct {
+	Event
+	RoomId   int
+	ExitName string
+	Locked   bool // true if now locked, false if now unlocked
+}
+
+func (e ExitLockChanged) Type() string { return `ExitLockChanged` }

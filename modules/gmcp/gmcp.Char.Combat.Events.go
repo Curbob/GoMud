@@ -1,10 +1,14 @@
+// Package gmcp handles Combat Event notifications for GMCP.
+//
+// Stateless event transformer that converts internal combat events into GMCP messages.
+// Each event (CombatStarted, AttackMissed, etc.) is meaningful and sent immediately.
 package gmcp
 
 import (
 	"fmt"
 
 	"github.com/GoMudEngine/GoMud/internal/events"
-	"github.com/GoMudEngine/GoMud/internal/users"
+	"github.com/GoMudEngine/GoMud/internal/mudlog"
 )
 
 // GMCPCombatEvent is a generic GMCP event for combat notifications
@@ -26,29 +30,22 @@ func init() {
 	events.RegisterListener(events.DamageDealt{}, handleDamageDealt)
 	events.RegisterListener(events.AttackAvoided{}, handleAttackAvoided)
 	events.RegisterListener(events.CombatantFled{}, handleCombatantFled)
+	
 }
 
 // handleCombatEvent sends GMCP combat events
 func handleCombatEvent(e events.Event) events.ListenerReturn {
 	evt, typeOk := e.(GMCPCombatEvent)
 	if !typeOk {
+		mudlog.Error("GMCPCombatEvents", "action", "handleCombatEvent", "error", "type assertion failed", "expectedType", "GMCPCombatEvent", "actualType", fmt.Sprintf("%T", e))
 		return events.Continue
 	}
 
-	if evt.UserId < 1 {
+	_, valid := validateUserForGMCP(evt.UserId, "GMCPCombatEvents")
+	if !valid {
 		return events.Continue
 	}
 
-	user := users.GetByUserId(evt.UserId)
-	if user == nil {
-		return events.Continue
-	}
-
-	if !isGMCPEnabled(user.ConnectionId()) {
-		return events.Continue
-	}
-
-	// Send the GMCP update
 	events.AddToQueue(GMCPOut{
 		UserId:  evt.UserId,
 		Module:  fmt.Sprintf("Char.Combat.%s", evt.EventType),
@@ -62,6 +59,7 @@ func handleCombatEvent(e events.Event) events.ListenerReturn {
 func handleCombatStarted(e events.Event) events.ListenerReturn {
 	evt, typeOk := e.(events.CombatStarted)
 	if !typeOk {
+		mudlog.Error("GMCPCombatEvents", "action", "handleCombatStarted", "error", "type assertion failed", "expectedType", "events.CombatStarted", "actualType", fmt.Sprintf("%T", e))
 		return events.Continue
 	}
 
@@ -102,6 +100,7 @@ func handleCombatStarted(e events.Event) events.ListenerReturn {
 func handleCombatEnded(e events.Event) events.ListenerReturn {
 	evt, typeOk := e.(events.CombatEnded)
 	if !typeOk {
+		mudlog.Error("GMCPCombatEvents", "action", "handleCombatEnded", "error", "type assertion failed", "expectedType", "events.CombatEnded", "actualType", fmt.Sprintf("%T", e))
 		return events.Continue
 	}
 
@@ -124,6 +123,7 @@ func handleCombatEnded(e events.Event) events.ListenerReturn {
 func handleDamageDealt(e events.Event) events.ListenerReturn {
 	evt, typeOk := e.(events.DamageDealt)
 	if !typeOk {
+		mudlog.Error("GMCPCombatEvents", "action", "handleDamageDealt", "error", "type assertion failed", "expectedType", "events.DamageDealt", "actualType", fmt.Sprintf("%T", e))
 		return events.Continue
 	}
 
@@ -172,6 +172,7 @@ func handleDamageDealt(e events.Event) events.ListenerReturn {
 func handleAttackAvoided(e events.Event) events.ListenerReturn {
 	evt, typeOk := e.(events.AttackAvoided)
 	if !typeOk {
+		mudlog.Error("GMCPCombatEvents", "action", "handleAttackAvoided", "error", "type assertion failed", "expectedType", "events.AttackAvoided", "actualType", fmt.Sprintf("%T", e))
 		return events.Continue
 	}
 
@@ -212,6 +213,7 @@ func handleAttackAvoided(e events.Event) events.ListenerReturn {
 func handleCombatantFled(e events.Event) events.ListenerReturn {
 	evt, typeOk := e.(events.CombatantFled)
 	if !typeOk {
+		mudlog.Error("GMCPCombatEvents", "action", "handleCombatantFled", "error", "type assertion failed", "expectedType", "events.CombatantFled", "actualType", fmt.Sprintf("%T", e))
 		return events.Continue
 	}
 
@@ -230,3 +232,4 @@ func handleCombatantFled(e events.Event) events.ListenerReturn {
 
 	return events.Continue
 }
+

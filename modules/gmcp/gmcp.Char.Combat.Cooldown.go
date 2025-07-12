@@ -1,3 +1,7 @@
+// Package gmcp handles Combat Cooldown timer updates for GMCP.
+//
+// Sends high-frequency timer updates (5Hz) during combat for smooth countdown animations.
+// Uses a dedicated timer that only runs when players are in combat to minimize CPU usage.
 package gmcp
 
 import (
@@ -49,12 +53,16 @@ func InitCombatCooldownTimer() {
 
 	// Register the GMCP event handler
 	events.RegisterListener(GMCPCombatCooldownUpdate{}, handleCombatCooldownUpdate)
+	
+	// Clean up when player disconnects
+	events.RegisterListener(events.PlayerDespawn{}, handleCooldownPlayerDespawn)
 }
 
 // handleNewRound updates round tracking
 func (ct *CombatCooldownTimer) handleNewRound(e events.Event) events.ListenerReturn {
 	evt, ok := e.(events.NewRound)
 	if !ok {
+		mudlog.Error("GMCPCombatCooldown", "action", "handleNewRound", "error", "type assertion failed", "expectedType", "events.NewRound", "actualType", fmt.Sprintf("%T", e))
 		return events.Continue
 	}
 
@@ -104,9 +112,8 @@ func (ct *CombatCooldownTimer) start() {
 	}
 
 	ct.running = true
-	// Reduced update frequency from 100ms to 250ms to reduce network traffic
-	// This still provides smooth updates (4 per second) while reducing load
-	ct.ticker = time.NewTicker(250 * time.Millisecond)
+	// 200ms interval provides 5 updates per second for smooth countdown animation
+	ct.ticker = time.NewTicker(200 * time.Millisecond)
 
 	go func() {
 		for {
@@ -182,30 +189,43 @@ func (ct *CombatCooldownTimer) sendUpdates() {
 
 	// Send updates
 	for _, userId := range playerIds {
-		if user := users.GetByUserId(userId); user != nil {
-			// Check if still in combat
-			if user.Character.Aggro == nil {
-				// Skip players no longer in combat
-				// They will be removed by the CombatStatus module
-				continue
-			}
-
-			// Queue cooldown update event
-			events.AddToQueue(GMCPCombatCooldownUpdate{
-				UserId:          userId,
-				CooldownSeconds: remainingSeconds,
-				MaxSeconds:      maxSeconds,
-				NameActive:      "Combat Round",
-				NameIdle:        "Ready",
-			})
+		user := users.GetByUserId(userId)
+		if user == nil {
+			// User no longer exists, clean up stale entry
+			ct.playerMutex.Lock()
+			delete(ct.players, userId)
+			ct.playerMutex.Unlock()
+			mudlog.Warn("CombatCooldownTimer", "action", "sendUpdates", "issue", "user not found, cleaning up stale entry", "userId", userId)
+			continue
 		}
-		// Note: We don't remove players here to avoid deadlock
-		// The CombatStatus module will handle removing players
+
+		// Check if still in combat
+		if user.Character.Aggro == nil {
+			// Skip players no longer in combat
+			// They will be removed by the CombatStatus module
+			continue
+		}
+
+		// Queue cooldown update event
+		events.AddToQueue(GMCPCombatCooldownUpdate{
+			UserId:          userId,
+			CooldownSeconds: remainingSeconds,
+			MaxSeconds:      maxSeconds,
+			NameActive:      "Combat Round",
+			NameIdle:        "Ready",
+		})
 	}
 }
 
 // TrackCombatPlayer starts tracking cooldown for a player entering combat
 func TrackCombatPlayer(userId int) {
+	// Validate user exists before tracking
+	user := users.GetByUserId(userId)
+	if user == nil {
+		mudlog.Warn("CombatCooldownTimer", "action", "TrackCombatPlayer", "issue", "attempted to track non-existent user", "userId", userId)
+		return
+	}
+
 	if cooldownTimer != nil {
 		cooldownTimer.AddPlayer(userId)
 	}
@@ -214,18 +234,22 @@ func TrackCombatPlayer(userId int) {
 // UntrackCombatPlayer stops tracking cooldown for a player leaving combat
 func UntrackCombatPlayer(userId int) {
 	if cooldownTimer != nil {
-		// Send final 0.0 update before removing
-		timingConfig := configs.GetTimingConfig()
-		maxSeconds := float64(timingConfig.RoundSeconds)
+		// Check if user still exists before sending final update
+		user := users.GetByUserId(userId)
+		if user != nil {
+			// Send final 0.0 update before removing
+			timingConfig := configs.GetTimingConfig()
+			maxSeconds := float64(timingConfig.RoundSeconds)
 
-		// Queue final update event
-		events.AddToQueue(GMCPCombatCooldownUpdate{
-			UserId:          userId,
-			CooldownSeconds: 0.0,
-			MaxSeconds:      maxSeconds,
-			NameActive:      "Combat Round",
-			NameIdle:        "Ready",
-		})
+			// Queue final update event
+			events.AddToQueue(GMCPCombatCooldownUpdate{
+				UserId:          userId,
+				CooldownSeconds: 0.0,
+				MaxSeconds:      maxSeconds,
+				NameActive:      "Combat Round",
+				NameIdle:        "Ready",
+			})
+		}
 
 		cooldownTimer.RemovePlayer(userId)
 	}
@@ -235,22 +259,14 @@ func UntrackCombatPlayer(userId int) {
 func handleCombatCooldownUpdate(e events.Event) events.ListenerReturn {
 	evt, typeOk := e.(GMCPCombatCooldownUpdate)
 	if !typeOk {
-		return events.Continue
-	}
-
-	if evt.UserId < 1 {
+		mudlog.Error("GMCPCombatCooldown", "action", "handleCombatCooldownUpdate", "error", "type assertion failed", "expectedType", "GMCPCombatCooldownUpdate", "actualType", fmt.Sprintf("%T", e))
 		return events.Continue
 	}
 
 	mudlog.Debug("CombatCooldownTimer", "action", "handleCombatCooldownUpdate", "userId", evt.UserId, "cooldown", evt.CooldownSeconds)
 
-	// Make sure they have GMCP enabled
-	user := users.GetByUserId(evt.UserId)
-	if user == nil {
-		return events.Continue
-	}
-
-	if !isGMCPEnabled(user.ConnectionId()) {
+	_, valid := validateUserForGMCP(evt.UserId, "GMCPCombatCooldown")
+	if !valid {
 		return events.Continue
 	}
 
@@ -262,12 +278,25 @@ func handleCombatCooldownUpdate(e events.Event) events.ListenerReturn {
 		"name_idle":    evt.NameIdle,
 	}
 
-	// Send the GMCP update
 	events.AddToQueue(GMCPOut{
 		UserId:  evt.UserId,
 		Module:  "Char.Combat.Cooldown",
 		Payload: payload,
 	})
+
+	return events.Continue
+}
+
+// handleCooldownPlayerDespawn cleans up when player leaves
+func handleCooldownPlayerDespawn(e events.Event) events.ListenerReturn {
+	evt, typeOk := e.(events.PlayerDespawn)
+	if !typeOk {
+		mudlog.Error("GMCPCombatCooldown", "action", "handleCooldownPlayerDespawn", "error", "type assertion failed", "expectedType", "events.PlayerDespawn", "actualType", fmt.Sprintf("%T", e))
+		return events.Continue
+	}
+
+	// Stop tracking cooldown for this player
+	UntrackCombatPlayer(evt.UserId)
 
 	return events.Continue
 }
