@@ -18,6 +18,7 @@ import (
 	"github.com/GoMudEngine/GoMud/internal/rooms"
 	"github.com/GoMudEngine/GoMud/internal/skills"
 	"github.com/GoMudEngine/GoMud/internal/users"
+	"github.com/GoMudEngine/GoMud/internal/util"
 )
 
 // ////////////////////////////////////////////////////////////////////
@@ -406,7 +407,7 @@ func (g *GMCPCharModule) GetCharNode(user *users.UserRecord, gmcpModule string) 
 	if g.wantsGMCPPayload(`Char.Info`, gmcpModule) {
 		payload.Info = &GMCPCharModule_Payload_Info{
 			Account:   user.Username,
-			Name:      user.Character.Name,
+			Name:      util.StripANSI(user.Character.Name),
 			Class:     skills.GetProfession(user.Character.GetAllSkillRanks()),
 			Race:      user.Character.Race(),
 			Alignment: user.Character.AlignmentName(),
@@ -464,7 +465,7 @@ func (g *GMCPCharModule) GetCharNode(user *users.UserRecord, gmcpModule string) 
 
 				e := GMCPCharModule_Enemy{
 					Id:        mob.ShorthandId(),
-					Name:      mob.Character.Name,
+					Name:      util.StripANSI(mob.Character.Name),
 					Level:     mob.Character.Level,
 					Health:    mob.Character.Health,
 					HealthMax: mob.Character.HealthMax.Value,
@@ -791,7 +792,7 @@ func newInventory_Item(itm items.Item) GMCPCharModule_Payload_Inventory_Item {
 	itmSpec := itm.GetSpec()
 	d := GMCPCharModule_Payload_Inventory_Item{
 		Id:      itm.ShorthandId(),
-		Name:    itm.Name(),
+		Name:    util.StripANSI(itm.Name()),
 		Type:    string(itmSpec.Type),
 		SubType: string(itmSpec.Subtype),
 		Uses:    itm.Uses,
