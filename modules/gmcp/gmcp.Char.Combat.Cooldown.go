@@ -53,9 +53,7 @@ func InitCombatCooldownTimer() {
 
 	// Register the GMCP event handler
 	events.RegisterListener(GMCPCombatCooldownUpdate{}, handleCombatCooldownUpdate)
-	
-	// Clean up when player disconnects
-	events.RegisterListener(events.PlayerDespawn{}, handleCooldownPlayerDespawn)
+
 }
 
 // handleNewRound updates round tracking
@@ -241,8 +239,8 @@ func UntrackCombatPlayer(userId int) {
 			timingConfig := configs.GetTimingConfig()
 			maxSeconds := float64(timingConfig.RoundSeconds)
 
-			// Queue final update event
-			events.AddToQueue(GMCPCombatCooldownUpdate{
+			// Send final update synchronously to avoid race condition
+			handleCombatCooldownUpdate(GMCPCombatCooldownUpdate{
 				UserId:          userId,
 				CooldownSeconds: 0.0,
 				MaxSeconds:      maxSeconds,
@@ -283,20 +281,6 @@ func handleCombatCooldownUpdate(e events.Event) events.ListenerReturn {
 		Module:  "Char.Combat.Cooldown",
 		Payload: payload,
 	})
-
-	return events.Continue
-}
-
-// handleCooldownPlayerDespawn cleans up when player leaves
-func handleCooldownPlayerDespawn(e events.Event) events.ListenerReturn {
-	evt, typeOk := e.(events.PlayerDespawn)
-	if !typeOk {
-		mudlog.Error("GMCPCombatCooldown", "action", "handleCooldownPlayerDespawn", "error", "type assertion failed", "expectedType", "events.PlayerDespawn", "actualType", fmt.Sprintf("%T", e))
-		return events.Continue
-	}
-
-	// Stop tracking cooldown for this player
-	UntrackCombatPlayer(evt.UserId)
 
 	return events.Continue
 }
