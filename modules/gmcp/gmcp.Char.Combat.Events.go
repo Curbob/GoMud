@@ -9,6 +9,7 @@ import (
 
 	"github.com/GoMudEngine/GoMud/internal/events"
 	"github.com/GoMudEngine/GoMud/internal/mudlog"
+	"github.com/GoMudEngine/GoMud/internal/util"
 )
 
 // GMCPCombatEvent is a generic GMCP event for combat notifications
@@ -30,7 +31,7 @@ func init() {
 	events.RegisterListener(events.DamageDealt{}, handleDamageDealt)
 	events.RegisterListener(events.AttackAvoided{}, handleAttackAvoided)
 	events.RegisterListener(events.CombatantFled{}, handleCombatantFled)
-	
+
 }
 
 // handleCombatEvent sends GMCP combat events
@@ -72,7 +73,7 @@ func handleCombatStarted(e events.Event) events.ListenerReturn {
 				"role":        "attacker",
 				"targetId":    evt.DefenderId,
 				"targetType":  evt.DefenderType,
-				"targetName":  evt.DefenderName,
+				"targetName":  util.StripANSI(evt.DefenderName),
 				"initiatedBy": evt.InitiatedBy,
 			},
 		})
@@ -87,7 +88,7 @@ func handleCombatStarted(e events.Event) events.ListenerReturn {
 				"role":         "defender",
 				"attackerId":   evt.AttackerId,
 				"attackerType": evt.AttackerType,
-				"attackerName": evt.AttackerName,
+				"attackerName": util.StripANSI(evt.AttackerName),
 				"initiatedBy":  evt.InitiatedBy,
 			},
 		})
@@ -135,11 +136,11 @@ func handleDamageDealt(e events.Event) events.ListenerReturn {
 			Data: map[string]interface{}{
 				"targetId":      evt.TargetId,
 				"targetType":    evt.TargetType,
-				"targetName":    evt.TargetName,
+				"targetName":    util.StripANSI(evt.TargetName),
 				"amount":        evt.Amount,
 				"damageType":    evt.DamageType,
-				"weaponName":    evt.WeaponName,
-				"spellName":     evt.SpellName,
+				"weaponName":    util.StripANSI(evt.WeaponName),
+				"spellName":     util.StripANSI(evt.SpellName),
 				"isCritical":    evt.IsCritical,
 				"isKillingBlow": evt.IsKillingBlow,
 			},
@@ -154,11 +155,11 @@ func handleDamageDealt(e events.Event) events.ListenerReturn {
 			Data: map[string]interface{}{
 				"sourceId":      evt.SourceId,
 				"sourceType":    evt.SourceType,
-				"sourceName":    evt.SourceName,
+				"sourceName":    util.StripANSI(evt.SourceName),
 				"amount":        evt.Amount,
 				"damageType":    evt.DamageType,
-				"weaponName":    evt.WeaponName,
-				"spellName":     evt.SpellName,
+				"weaponName":    util.StripANSI(evt.WeaponName),
+				"spellName":     util.StripANSI(evt.SpellName),
 				"isCritical":    evt.IsCritical,
 				"isKillingBlow": evt.IsKillingBlow,
 			},
@@ -184,9 +185,9 @@ func handleAttackAvoided(e events.Event) events.ListenerReturn {
 			Data: map[string]interface{}{
 				"defenderId":   evt.DefenderId,
 				"defenderType": evt.DefenderType,
-				"defenderName": evt.DefenderName,
+				"defenderName": util.StripANSI(evt.DefenderName),
 				"avoidType":    evt.AvoidType,
-				"weaponName":   evt.WeaponName,
+				"weaponName":   util.StripANSI(evt.WeaponName),
 			},
 		})
 	}
@@ -199,9 +200,9 @@ func handleAttackAvoided(e events.Event) events.ListenerReturn {
 			Data: map[string]interface{}{
 				"attackerId":   evt.AttackerId,
 				"attackerType": evt.AttackerType,
-				"attackerName": evt.AttackerName,
+				"attackerName": util.StripANSI(evt.AttackerName),
 				"avoidType":    evt.AvoidType,
-				"weaponName":   evt.WeaponName,
+				"weaponName":   util.StripANSI(evt.WeaponName),
 			},
 		})
 	}
@@ -232,4 +233,3 @@ func handleCombatantFled(e events.Event) events.ListenerReturn {
 
 	return events.Continue
 }
-
