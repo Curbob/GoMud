@@ -29,7 +29,7 @@ func init() {
 
 	// Keep the internal event for backward compatibility
 	events.RegisterListener(GMCPCombatDamageUpdate{}, handleCombatDamageUpdate)
-	
+
 }
 
 func handleCombatDamageUpdate(e events.Event) events.ListenerReturn {
@@ -134,4 +134,3 @@ func SendCombatDamage(userId int, amount int, damageType string, source string, 
 		Target:     target,
 	})
 }
-

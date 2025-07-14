@@ -227,6 +227,22 @@ func (r *mapper) RootRoomId() int {
 	return r.rootRoomId
 }
 
+// GetLowestRoomId returns the lowest room ID in the connected map area
+// This provides a stable identifier for the map regardless of which room was used to create it
+func (r *mapper) GetLowestRoomId() int {
+	if len(r.crawledRooms) == 0 {
+		return r.rootRoomId
+	}
+
+	lowestId := 0
+	for roomId := range r.crawledRooms {
+		if lowestId == 0 || roomId < lowestId {
+			lowestId = roomId
+		}
+	}
+	return lowestId
+}
+
 func (r *mapper) CrawledRoomIds() []int {
 	roomIds := []int{}
 	for roomId := range r.crawledRooms {

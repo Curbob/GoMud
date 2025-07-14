@@ -34,12 +34,8 @@ var (
 )
 
 func init() {
-	// Register listener for combat status updates
 	events.RegisterListener(GMCPCombatStatusUpdate{}, handleCombatStatusUpdate)
-
-	// Register listeners for events that should trigger immediate status updates
 	events.RegisterListener(events.PlayerSpawn{}, handleStatusPlayerSpawn)
-	events.RegisterListener(events.PlayerDespawn{}, handleStatusPlayerDespawn)
 	events.RegisterListener(events.NewRound{}, handleStatusNewRound)
 	events.RegisterListener(events.CharacterVitalsChanged{}, handleStatusVitalsChanged)
 }
@@ -105,24 +101,12 @@ func handleStatusPlayerSpawn(e events.Event) events.ListenerReturn {
 	return events.Continue
 }
 
-// handlePlayerDespawn cleans up tracking when player leaves
-func handleStatusPlayerDespawn(e events.Event) events.ListenerReturn {
-	evt, typeOk := e.(events.PlayerDespawn)
-	if !typeOk {
-		mudlog.Error("GMCPCombatStatus", "action", "handlePlayerDespawn", "error", "type assertion failed", "expectedType", "events.PlayerDespawn", "actualType", fmt.Sprintf("%T", e))
-		return events.Continue
-	}
-
-	// Clean up tracking maps
+// cleanupCombatStatus removes all status tracking for a user
+func cleanupCombatStatus(userId int) {
 	stateMutex.Lock()
-	delete(userCombatState, evt.UserId)
-	delete(lastRoundNumber, evt.UserId)
+	delete(userCombatState, userId)
+	delete(lastRoundNumber, userId)
 	stateMutex.Unlock()
-
-	// Stop cooldown tracking
-	UntrackCombatPlayer(evt.UserId)
-
-	return events.Continue
 }
 
 // handleNewRound checks for combat state changes each round
@@ -133,11 +117,31 @@ func handleStatusNewRound(e events.Event) events.ListenerReturn {
 		return events.Continue
 	}
 
-	// Check all online users for combat state changes
-	for _, userId := range users.GetOnlineUserIds() {
+	// Only check users who are in combat or were recently in combat
+	stateMutex.RLock()
+	trackedUsers := make([]int, 0, len(userCombatState))
+	for userId := range userCombatState {
+		trackedUsers = append(trackedUsers, userId)
+	}
+	stateMutex.RUnlock()
+
+	// Also add any users currently in combat (in case they're not tracked yet)
+	for _, userId := range GetUsersInCombat() {
+		found := false
+		for _, tracked := range trackedUsers {
+			if tracked == userId {
+				found = true
+				break
+			}
+		}
+		if !found {
+			trackedUsers = append(trackedUsers, userId)
+		}
+	}
+
+	for _, userId := range trackedUsers {
 		user := users.GetByUserId(userId)
 		if user == nil {
-			// Clean up stale state if user no longer exists
 			stateMutex.Lock()
 			if _, exists := userCombatState[userId]; exists {
 				delete(userCombatState, userId)
@@ -173,13 +177,6 @@ func handleStatusNewRound(e events.Event) events.ListenerReturn {
 		if needsUpdate {
 			// Send immediate update only for state changes
 			sendCombatStatusUpdate(userId, currentlyInCombat, evt.RoundNumber)
-
-			// Update cooldown tracking
-			if currentlyInCombat {
-				TrackCombatPlayer(userId)
-			} else {
-				UntrackCombatPlayer(userId)
-			}
 		}
 	}
 
@@ -201,7 +198,6 @@ func handleStatusVitalsChanged(e events.Event) events.ListenerReturn {
 
 	user := users.GetByUserId(evt.UserId)
 	if user == nil {
-		// Clean up stale state if user no longer exists
 		stateMutex.Lock()
 		if _, exists := userCombatState[evt.UserId]; exists {
 			delete(userCombatState, evt.UserId)
@@ -248,20 +244,17 @@ func handleStatusVitalsChanged(e events.Event) events.ListenerReturn {
 
 // sendCombatStatusUpdate sends a combat status update for a user
 func sendCombatStatusUpdate(userId int, inCombat bool, roundNumber uint64) {
-	// Validate user exists before sending update
 	user := users.GetByUserId(userId)
 	if user == nil {
 		mudlog.Warn("GMCPCombatStatus", "action", "sendCombatStatusUpdate", "issue", "attempted to send update for non-existent user", "userId", userId)
 		return
 	}
 
-	// Send directly instead of queuing to ensure consistent ordering
 	update := GMCPCombatStatusUpdate{
 		UserId:      userId,
 		InCombat:    inCombat,
 		RoundNumber: roundNumber,
 	}
 
-	// Process the update immediately
 	handleCombatStatusUpdate(update)
 }
