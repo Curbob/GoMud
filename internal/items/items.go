@@ -168,6 +168,69 @@ func (i *Item) Validate() {
 
 }
 
+// ItemLookData contains all the data needed for the look-item template
+type ItemLookData struct {
+	Item          *Item
+	ItemSpec      ItemSpec
+	Location      string // "in your backpack", "you are wearing"
+	IsWeapon      bool
+	IsReadable    bool
+	IsDrinkable   bool
+	IsEdible      bool
+	IsLockpicks   bool
+	IsKey         bool
+	IsWearable    bool
+	IsUsable      bool
+	WeaponHands   int
+	WeaponType    string // "claws", "shooting", etc.
+	WaitRounds    int
+	HasUses       bool
+	UsesRemaining int
+	MaxUses       int
+	IsCursed      bool
+	IsEnchanted   bool
+	EnchantLevel  int
+}
+
+// GetLookData returns data structure for template-based item descriptions
+func (i *Item) GetLookData(location string) ItemLookData {
+	iSpec := i.GetSpec()
+
+	data := ItemLookData{
+		Item:          i,
+		ItemSpec:      iSpec,
+		Location:      location,
+		IsWeapon:      iSpec.Type == Weapon,
+		IsReadable:    iSpec.Type == Readable,
+		IsDrinkable:   iSpec.Subtype == Drinkable,
+		IsEdible:      iSpec.Subtype == Edible,
+		IsLockpicks:   iSpec.Type == Lockpicks,
+		IsKey:         iSpec.Type == Key,
+		IsWearable:    iSpec.Subtype == Wearable,
+		IsUsable:      iSpec.Subtype == Usable,
+		HasUses:       iSpec.Uses > 0,
+		UsesRemaining: i.Uses,
+		MaxUses:       iSpec.Uses,
+		IsCursed:      i.IsCursed(),
+		IsEnchanted:   i.Enchantments > 0,
+		EnchantLevel:  int(i.Enchantments),
+	}
+
+	if data.IsWeapon {
+		data.WeaponHands = iSpec.Hands
+		data.WaitRounds = iSpec.WaitRounds
+
+		switch iSpec.Subtype {
+		case Claws:
+			data.WeaponType = "claws"
+		case Shooting:
+			data.WeaponType = "shooting"
+		}
+	}
+
+	return data
+}
+
 func (i *Item) GetLongDescription() string {
 
 	iSpec := i.GetSpec()

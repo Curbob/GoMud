@@ -1,0 +1,44 @@
+{{/* Screenreader-friendly template for looking at mobs */}}
+{{ .Character.Name }}{{ if .IsCharmed }} (charmed by {{ .CharmedBy }}){{ end }}{{ if .IsShop }} (merchant){{ end }}
+
+Description:
+{{ .Character.GetDescription }}
+
+Health Status: {{ .HealthStatus }}
+{{- $hasEquipment := false }}
+{{- if and (not .Equipment.Weapon.IsDisabled) (gt .Equipment.Weapon.ItemId 0) }}{{ $hasEquipment = true }}{{ end }}
+{{- if and (not .Equipment.Offhand.IsDisabled) (gt .Equipment.Offhand.ItemId 0) }}{{ $hasEquipment = true }}{{ end }}
+{{- if and (not .Equipment.Head.IsDisabled) (gt .Equipment.Head.ItemId 0) }}{{ $hasEquipment = true }}{{ end }}
+{{- if and (not .Equipment.Neck.IsDisabled) (gt .Equipment.Neck.ItemId 0) }}{{ $hasEquipment = true }}{{ end }}
+{{- if and (not .Equipment.Body.IsDisabled) (gt .Equipment.Body.ItemId 0) }}{{ $hasEquipment = true }}{{ end }}
+{{- if and (not .Equipment.Belt.IsDisabled) (gt .Equipment.Belt.ItemId 0) }}{{ $hasEquipment = true }}{{ end }}
+{{- if and (not .Equipment.Gloves.IsDisabled) (gt .Equipment.Gloves.ItemId 0) }}{{ $hasEquipment = true }}{{ end }}
+{{- if and (not .Equipment.Ring.IsDisabled) (gt .Equipment.Ring.ItemId 0) }}{{ $hasEquipment = true }}{{ end }}
+{{- if and (not .Equipment.Legs.IsDisabled) (gt .Equipment.Legs.ItemId 0) }}{{ $hasEquipment = true }}{{ end }}
+{{- if and (not .Equipment.Feet.IsDisabled) (gt .Equipment.Feet.ItemId 0) }}{{ $hasEquipment = true }}{{ end }}
+{{- if $hasEquipment }}
+
+Equipment:
+{{ if and (not .Equipment.Weapon.IsDisabled) (gt .Equipment.Weapon.ItemId 0) }}Weapon: {{ .Equipment.Weapon.NameSimple }}
+{{ end -}}
+{{- if and (not .Equipment.Offhand.IsDisabled) (gt .Equipment.Offhand.ItemId 0) }}Offhand: {{ .Equipment.Offhand.NameSimple }}
+{{ end -}}
+{{- if and (not .Equipment.Head.IsDisabled) (gt .Equipment.Head.ItemId 0) }}Head: {{ .Equipment.Head.NameSimple }}
+{{ end -}}
+{{- if and (not .Equipment.Neck.IsDisabled) (gt .Equipment.Neck.ItemId 0) }}Neck: {{ .Equipment.Neck.NameSimple }}
+{{ end -}}
+{{- if and (not .Equipment.Body.IsDisabled) (gt .Equipment.Body.ItemId 0) }}Body: {{ .Equipment.Body.NameSimple }}
+{{ end -}}
+{{- if and (not .Equipment.Belt.IsDisabled) (gt .Equipment.Belt.ItemId 0) }}Belt: {{ .Equipment.Belt.NameSimple }}
+{{ end -}}
+{{- if and (not .Equipment.Gloves.IsDisabled) (gt .Equipment.Gloves.ItemId 0) }}Gloves: {{ .Equipment.Gloves.NameSimple }}
+{{ end -}}
+{{- if and (not .Equipment.Ring.IsDisabled) (gt .Equipment.Ring.ItemId 0) }}Ring: {{ .Equipment.Ring.NameSimple }}
+{{ end -}}
+{{- if and (not .Equipment.Legs.IsDisabled) (gt .Equipment.Legs.ItemId 0) }}Legs: {{ .Equipment.Legs.NameSimple }}
+{{ end -}}
+{{- if and (not .Equipment.Feet.IsDisabled) (gt .Equipment.Feet.ItemId 0) }}Feet: {{ .Equipment.Feet.NameSimple }}
+{{ end -}}
+{{- end }}
+
+Carrying: {{ .CarryingStatus }} objects

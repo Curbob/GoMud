@@ -1,0 +1,37 @@
+{{/* Screenreader-friendly template for looking at items */}}
+You look at the {{ .Item.Name }} {{ .Location }}:
+
+{{ .ItemSpec.Description }}
+{{- if .IsReadable }}
+You should probably read this.
+{{- else if .IsDrinkable }}
+You could probably drink this.
+{{- else if .IsEdible }}
+You could probably eat this.
+{{- else if .IsLockpicks }}
+These are used with the picklock command.
+{{- else if .IsKey }}
+When you find the right door, keys are added to your keyring automatically.
+{{- else if .IsWearable }}
+It looks like wearable {{ .ItemSpec.Type }} equipment.
+{{- end }}
+{{- if .IsWeapon }}
+It looks like a {{ .WeaponHands }}-Handed weapon.
+{{- if eq .WeaponType "claws" }}
+It looks like a claws weapon. These can be dual wielded without training.
+{{- else if eq .WeaponType "shooting" }}
+This can fired into adjacent areas. (help shoot)
+{{- end }}
+{{- if gt .WaitRounds 0 }}
+It requires an extra {{ .WaitRounds }} round(s) between attacks.
+{{- end }}
+{{- end }}
+{{- if .HasUses }}
+It has {{ .UsesRemaining }}/{{ .MaxUses }} uses remaining.
+{{- end }}
+{{- if .IsCursed }}
+It's CURSED! Once equipped, it cannot be removed without magical help.
+{{- end }}
+{{- if .IsEnchanted }}
+It glows with a magical aura (enchantment level {{ .EnchantLevel }}).
+{{- end }}
