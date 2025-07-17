@@ -708,6 +708,59 @@ func (m *Mob) GetScriptPath() string {
 	return util.FilePath(fullScriptPath)
 }
 
+// MobLookData contains all the data needed for the look-mob template
+type MobLookData struct {
+	Mob            *Mob
+	Character      *characters.Character
+	HealthStatus   string
+	Equipment      *characters.Worn
+	ItemCount      int
+	CarryingStatus string // "no", "a few", "several", "lots of"
+	IsCharmed      bool
+	IsShop         bool
+	CharmedBy      string // charmer's name if applicable
+}
+
+// GetLookData returns data structure for template-based mob descriptions
+func (m *Mob) GetLookData(charmerName string) MobLookData {
+	data := MobLookData{
+		Mob:       m,
+		Character: &m.Character,
+		Equipment: &m.Character.Equipment,
+		IsCharmed: m.Character.IsCharmed(),
+		IsShop:    m.HasShop(),
+		CharmedBy: charmerName,
+	}
+
+	// Calculate health status
+	healthPct := int(math.Ceil((float64(m.Character.Health) / float64(m.Character.HealthMax.Value)) * 100))
+	if healthPct >= 100 {
+		data.HealthStatus = m.Character.Name + " is in perfect health."
+	} else if healthPct >= 80 {
+		data.HealthStatus = m.Character.Name + " has a few scratches."
+	} else if healthPct >= 50 {
+		data.HealthStatus = m.Character.Name + " has some cuts and bruises."
+	} else if healthPct >= 15 {
+		data.HealthStatus = m.Character.Name + " looks to be in pretty bad shape."
+	} else {
+		data.HealthStatus = m.Character.Name + " looks like they're about to die!"
+	}
+
+	// Calculate carrying status
+	data.ItemCount = len(m.Character.Items)
+	if data.ItemCount == 0 {
+		data.CarryingStatus = "no"
+	} else if data.ItemCount < 4 {
+		data.CarryingStatus = "a few"
+	} else if data.ItemCount < 7 {
+		data.CarryingStatus = "several"
+	} else {
+		data.CarryingStatus = "lots of"
+	}
+
+	return data
+}
+
 func ReduceHostility() {
 
 	for groupName, group := range mobsHatePlayers {
