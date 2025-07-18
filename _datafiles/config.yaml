@@ -326,29 +326,40 @@ Integrations:
 
 ################################################################################
 #
-#   TEXT FORMATS
-#   Basic text strings that occur often, and may need customization
+#   USER INTERFACE
+#   Visual preferences and text formatting options
 #
 ################################################################################
-TextFormats:
-  # - Prompt -
-  #   Default prompt formatting.
-  #   See: "help prompt" in game to learn more about this.
-  Prompt: '{8}[{t} {T} {255}HP:{hp}{8}/{HP} {255}MP:{13}{mp}{8}/{13}{MP}{8}]{239}{h}{8}:'
-  # - TimeFormat -
-  #   When real world time is shown, what format should be used?
-  #   This uses a Go time format string, which is kinda weird.
-  #   See: https://go.dev/src/time/format.go
-  Time: 'Monday, 02-Jan-2006 3:04:05PM'
-  # - TimeFormatShort -
-  #   Same as TimeFormat, but shorter form
-  TimeShort: 'Jan 2 ''06 3:04PM'
-  # - EnterRoomMessageWrapper -
-  #   Decorate entrance text with this. Put a %s where the message should be.
-  EnterRoomMessageWrapper: "   <ansi fg=\"enters-message\"> >>> </ansi>%s\n"
-  # - ExitRoomMessageWrapper -
-  #   Decorate exit text with this. Put a %s where the message should be.
-  ExitRoomMessageWrapper: "   <ansi fg=\"leaves-message\"> >>> </ansi>%s\n"
+UserInterface:
+  # - Formats -
+  #   Text format strings that control how various messages appear
+  Formats:
+    # - Prompt -
+    #   Default prompt formatting.
+    #   See: "help prompt" in game to learn more about this.
+    Prompt: '{8}[{t} {T} {255}HP:{hp}{8}/{HP} {255}MP:{13}{mp}{8}/{13}{MP}{8}]{239}{h}{8}:'
+    # - Time -
+    #   When real world time is shown, what format should be used?
+    #   This uses a Go time format string, which is kinda weird.
+    #   See: https://go.dev/src/time/format.go
+    Time: 'Monday, 02-Jan-2006 3:04:05PM'
+    # - TimeShort -
+    #   Same as Time, but shorter form
+    TimeShort: 'Jan 2 ''06 3:04PM'
+    # - EnterRoomMessageWrapper -
+    #   Decorate entrance text with this. Put a %s where the message should be.
+    EnterRoomMessageWrapper: "   <ansi fg=\"enters-message\"> >>> </ansi>%s\n"
+    # - ExitRoomMessageWrapper -
+    #   Decorate exit text with this. Put a %s where the message should be.
+    ExitRoomMessageWrapper: "   <ansi fg=\"leaves-message\"> >>> </ansi>%s\n"
+  # - Display -
+  #   Visual display preferences
+  Display:
+    # - ShowEmptyEquipmentSlots -
+    #   Whether to show empty equipment slots when looking at characters/mobs
+    #   true = show all slots including empty ones (traditional MUD style)
+    #   false = only show equipped items (cleaner display)
+    ShowEmptyEquipmentSlots: true
 
 ################################################################################
 #

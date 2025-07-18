@@ -2198,7 +2198,6 @@ func (r *Room) Validate() error {
 		}
 	}
 
-
 	// Make sure all items are validated (and have uids)
 	for i := range r.Items {
 		r.Items[i].Validate()
