@@ -194,6 +194,13 @@ type ItemLookData struct {
 
 // GetLookData returns data structure for template-based item descriptions
 func (i *Item) GetLookData(location string) ItemLookData {
+	// Defensive check for nil item
+	if i == nil {
+		return ItemLookData{
+			Location: location,
+		}
+	}
+
 	iSpec := i.GetSpec()
 
 	data := ItemLookData{

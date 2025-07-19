@@ -723,6 +723,15 @@ type MobLookData struct {
 
 // GetLookData returns data structure for template-based mob descriptions
 func (m *Mob) GetLookData(charmerName string) MobLookData {
+	// Defensive check for nil mob
+	if m == nil {
+		return MobLookData{
+			CharmedBy:      charmerName,
+			HealthStatus:   "Unknown health status.",
+			CarryingStatus: "unknown",
+		}
+	}
+
 	data := MobLookData{
 		Mob:       m,
 		Character: &m.Character,
@@ -732,18 +741,22 @@ func (m *Mob) GetLookData(charmerName string) MobLookData {
 		CharmedBy: charmerName,
 	}
 
-	// Calculate health status
-	healthPct := int(math.Ceil((float64(m.Character.Health) / float64(m.Character.HealthMax.Value)) * 100))
-	if healthPct >= 100 {
-		data.HealthStatus = m.Character.Name + " is in perfect health."
-	} else if healthPct >= 80 {
-		data.HealthStatus = m.Character.Name + " has a few scratches."
-	} else if healthPct >= 50 {
-		data.HealthStatus = m.Character.Name + " has some cuts and bruises."
-	} else if healthPct >= 15 {
-		data.HealthStatus = m.Character.Name + " looks to be in pretty bad shape."
+	// Calculate health status with defensive checks
+	if m.Character.HealthMax.Value <= 0 {
+		data.HealthStatus = m.Character.Name + " appears to be in an unknown state."
 	} else {
-		data.HealthStatus = m.Character.Name + " looks like they're about to die!"
+		healthPct := int(math.Ceil((float64(m.Character.Health) / float64(m.Character.HealthMax.Value)) * 100))
+		if healthPct >= 100 {
+			data.HealthStatus = m.Character.Name + " is in perfect health."
+		} else if healthPct >= 80 {
+			data.HealthStatus = m.Character.Name + " has a few scratches."
+		} else if healthPct >= 50 {
+			data.HealthStatus = m.Character.Name + " has some cuts and bruises."
+		} else if healthPct >= 15 {
+			data.HealthStatus = m.Character.Name + " looks to be in pretty bad shape."
+		} else {
+			data.HealthStatus = m.Character.Name + " looks like they're about to die!"
+		}
 	}
 
 	// Calculate carrying status

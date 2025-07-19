@@ -192,18 +192,6 @@ func (c *Config) Validate() {
 	c.FilePaths.Validate()
 	c.GamePlay.Validate()
 	c.Integrations.Validate()
-
-	// Migrate old TextFormats to UserInterface.Formats if needed
-	if c.TextFormats.Prompt != "" && c.UserInterface.Formats.Prompt == "" {
-		c.UserInterface.Formats = UserInterfaceFormats{
-			Prompt:                  c.TextFormats.Prompt,
-			EnterRoomMessageWrapper: c.TextFormats.EnterRoomMessageWrapper,
-			ExitRoomMessageWrapper:  c.TextFormats.ExitRoomMessageWrapper,
-			Time:                    c.TextFormats.Time,
-			TimeShort:               c.TextFormats.TimeShort,
-		}
-	}
-
 	c.UserInterface.Validate()
 	c.TextFormats.Validate()
 	c.Translation.Validate()
