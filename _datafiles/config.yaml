@@ -51,16 +51,16 @@ Server:
   #   Commands to run when a user logs in. These commands are run by the user
   #   and can be anything they have access to.
   OnLoginCommands:
-  - 'emote @appears before you in a flash of <ansi fg="yellow-bold">⚡l<ansi fg="white-bold">i</ansi>gh<ansi fg="white-bold">tn</ansi>i<ansi fg="white-bold">n</ansi>g⚡</ansi>!'
-  - print
-  - motd
-  - print
-  - online
-  - print
-  - inbox check
-  - print
-  - mudletmap
-  - checkclient
+    - 'emote @appears before you in a flash of <ansi fg="yellow-bold">⚡l<ansi fg="white-bold">i</ansi>gh<ansi fg="white-bold">tn</ansi>i<ansi fg="white-bold">n</ansi>g⚡</ansi>!'
+    - print
+    - motd
+    - print
+    - online
+    - print
+    - inbox check
+    - print
+    - mudletmap
+    - checkclient
   # - Motd -
   #   Message of the day. This is displayed when the motd command is run.
   Motd: '{{ t "Motd" }}'
@@ -77,12 +77,12 @@ Server:
   #   It is a good idea to lock configs related to folder/file paths to prevent
   #   accidental changes that could break the game.
   Locked:
-  - FilePaths
-  - Server.CurrentVersion
-  - Server.NextRoomId
-  - Server.Seed
-  - Server.OnLoginCommands
-  - Server.BannedNames
+    - FilePaths
+    - Server.CurrentVersion
+    - Server.NextRoomId
+    - Server.Seed
+    - Server.OnLoginCommands
+    - Server.BannedNames
 
 ################################################################################
 #
@@ -139,7 +139,6 @@ LootGoblin:
   #   If allowed, this could create a situation where a lot of loot drops and the
   #   suddenly the goblin shows up.
   IncludeRecentRooms: true
-
 
 ################################################################################
 #
@@ -321,8 +320,7 @@ Integrations:
   Discord:
     # Optional webhook URL to send mud event messages to, such as joins/disconnects
     # Can also be set via environment variable: DISCORD_WEBHOOK_URL
-    WebhookUrl: ''
-
+    WebhookUrl: ""
 
 ################################################################################
 #
@@ -337,15 +335,15 @@ UserInterface:
     # - Prompt -
     #   Default prompt formatting.
     #   See: "help prompt" in game to learn more about this.
-    Prompt: '{8}[{t} {T} {255}HP:{hp}{8}/{HP} {255}MP:{13}{mp}{8}/{13}{MP}{8}]{239}{h}{8}:'
+    Prompt: "{8}[{t} {T} {255}HP:{hp}{8}/{HP} {255}MP:{13}{mp}{8}/{13}{MP}{8}]{239}{h}{8}:"
     # - Time -
     #   When real world time is shown, what format should be used?
     #   This uses a Go time format string, which is kinda weird.
     #   See: https://go.dev/src/time/format.go
-    Time: 'Monday, 02-Jan-2006 3:04:05PM'
+    Time: "Monday, 02-Jan-2006 3:04:05PM"
     # - TimeShort -
     #   Same as Time, but shorter form
-    TimeShort: 'Jan 2 ''06 3:04PM'
+    TimeShort: "Jan 2 '06 3:04PM"
     # - EnterRoomMessageWrapper -
     #   Decorate entrance text with this. Put a %s where the message should be.
     EnterRoomMessageWrapper: "   <ansi fg=\"enters-message\"> >>> </ansi>%s\n"
@@ -370,15 +368,15 @@ UserInterface:
 Translation:
   # - DefaultLanguage -
   # Specify the default game language (fallback)
-  DefaultLanguage: 'en'
+  DefaultLanguage: "en"
   # - Language -
   # Specify the game language
-  Language: 'en'
+  Language: "en"
   # - LanguagePaths -
   # Specify the game language file paths
   LanguagePaths:
-    - '_datafiles/localize'
-    - '_datafiles/world/default/localize'
+    - "_datafiles/localize"
+    - "_datafiles/world/default/localize"
 
 ################################################################################
 #
@@ -422,7 +420,8 @@ Network:
   # - TimeoutMods -
   #   Whether Admin/Mod users get timed out when reaching MaxIdleSeconds
   #   If set to false, Admins & Mods never get force disconnected.
-  TimeoutMods: false
+  TimeoutMods:
+    false
     # - ZombieSeconds -
   #   How many seconds a character stays active/in game after a network connection
   #   is lost. Set to 0 to instantly log out characters (exploitable).
@@ -499,7 +498,7 @@ Validation:
   #   (This is a regular expression, you must understand how to create them)
   #   Set to empty to disable. If the regex is invalid it will revert to the
   #   default of '^[a-zA-Z0-9_]+$'
-  NameRejectRegex: '^[a-zA-Z0-9_]+$'
+  NameRejectRegex: "^[a-zA-Z0-9_]+$"
   NameRejectReason: "Must only contain Alpha-numeric and underscores."
   # - BannedNames -
   #   Names that are not allowed to be used by players. This is a good place to
@@ -513,39 +512,39 @@ Validation:
   #   that contain that name. For example, "*admin*" would ban "admin", "superadmin",
   #   "administrator", etc.
   BannedNames:
-  - "*admin*"
-  - "*moderator*"
-  - "player*"
-  - "user*"
-  - "me"
-  - "myself"
-  - "self"
-  - "us"
-  - "you"
-  - "them"
-  - "everyone"
-  - "someone"
-  - "anyone"
-  - "nobody"
-  - "somebody"
-  - "anybody"
-  - "none"
-  - "nothing"
-  - "something"
-  - "anything"
-  - "everything"
-  - "all"
-  - "north*"
-  - "south*"
-  - "east*"
-  - "west*"
-  - "up"
-  - "down"
-  - "chest"
-  - "door"
-  - "new"
-  - "join"
-  - "register"
+    - "*admin*"
+    - "*moderator*"
+    - "player*"
+    - "user*"
+    - "me"
+    - "myself"
+    - "self"
+    - "us"
+    - "you"
+    - "them"
+    - "everyone"
+    - "someone"
+    - "anyone"
+    - "nobody"
+    - "somebody"
+    - "anybody"
+    - "none"
+    - "nothing"
+    - "something"
+    - "anything"
+    - "everything"
+    - "all"
+    - "north*"
+    - "south*"
+    - "east*"
+    - "west*"
+    - "up"
+    - "down"
+    - "chest"
+    - "door"
+    - "new"
+    - "join"
+    - "register"
 
 ################################################################################
 #
@@ -565,7 +564,6 @@ Validation:
 Roles:
   builder: ["room.info", "build"]
   helper: ["paz", "teleport.playername", "locate"]
-
 
 ################################################################################
 #
