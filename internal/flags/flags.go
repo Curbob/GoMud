@@ -9,15 +9,20 @@ import (
 	"strings"
 
 	"github.com/GoMudEngine/GoMud/internal/mudlog"
+	"github.com/GoMudEngine/GoMud/internal/worldcli"
 )
 
 func HandleFlags(serverVersion string) {
 
 	var portsearch string
 	var showVersion bool
+	var createWorld bool
+	var listWorlds bool
 
 	flag.StringVar(&portsearch, "port-search", "", "Search for the first 10 open ports: -port-search=30000-40000")
 	flag.BoolVar(&showVersion, "version", false, "Display the current binary version")
+	flag.BoolVar(&createWorld, "create-world", false, "Create a new world from the empty template")
+	flag.BoolVar(&listWorlds, "list-worlds", false, "List all available worlds")
 
 	flag.Parse()
 
@@ -28,6 +33,16 @@ func HandleFlags(serverVersion string) {
 
 	if portsearch != `` {
 		doPortSearch(portsearch)
+		os.Exit(0)
+	}
+
+	if listWorlds {
+		worldcli.ListWorlds()
+		os.Exit(0)
+	}
+
+	if createWorld {
+		worldcli.CreateWorld()
 		os.Exit(0)
 	}
 }
@@ -74,3 +89,5 @@ func isPortInUse(port int) bool {
 	ln.Close()
 	return false
 }
+
+
