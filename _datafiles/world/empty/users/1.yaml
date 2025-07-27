@@ -1,5 +1,4 @@
 userid: 1
-permission: admin
 role: admin
 username: admin
 password: password
@@ -8,39 +7,42 @@ macros:
   =1: e;e;e;e;e;e;e;e
 character:
   name: AdminAnt
-  description: AdminAnt possesses the ability to manipulate the very fabric of
-    the universe, bending it to his will with a mere thought. He can create and destroy,
+  description: AdminAnt possesses the ability to manipulate the very fabric of the
+    universe, bending it to his will with a mere thought. He can create and destroy,
     alter reality, and shape the world around him as he sees fit. His knowledge of
     the world is unparalleled, as he has access to its innermost workings and understands
-    its deepest secrets. With a wave of his hand, AdminAnt can bestow blessings
-    upon other adventurers, granting them strength, wisdom, or fortune beyond their
-    wildest dreams. Conversely, he can also mete out justice to those who would seek
-    to disrupt the balance of the world, swiftly and decisively.
+    its deepest secrets. With a wave of his hand, AdminAnt can bestow blessings upon
+    other adventurers, granting them strength, wisdom, or fortune beyond their wildest
+    dreams. Conversely, he can also mete out justice to those who would seek to disrupt
+    the balance of the world, swiftly and decisively.
+  adjectives:
+  - zombie
   roomid: 1
-  zone: Frostfang
-  raceid: 2
+  zone: Startland
+  raceid: 1
   stats:
     strength:
       training: 6
+      base: 1
     speed:
       training: 28
-      base: 1
     smarts:
       training: 1
       base: 1
     vitality:
       training: 5
+      base: 1
     mysticism:
       training: 1
-      base: 2
     perception:
       training: 2
+      base: 1
   level: 5
   experience: 17470
   trainingpoints: 44
   statpoints: 6
-  health: 60
-  mana: 32
+  health: 44
+  mana: 20
   actionpoints: 202
   alignment: -1
   gold: 9950
@@ -57,28 +59,14 @@ character:
   - itemid: 30002
     uses: 1
   - itemid: 10012
-  buffs:
-    list:
-    - buffid: 28
-      onstartevent: true
-      permabuff: true
-      roundcounter: 9
-      triggersleft: 1000000000
-    - buffid: 29
-      onstartevent: true
-      permabuff: true
-      roundcounter: 32
-      triggersleft: 1000000000
-    - buffid: 39
-      onstartevent: false
-      permabuff: true
-      roundcounter: 6
-      triggersleft: 1000000000
   equipment:
     weapon:
       itemid: 10004
     offhand:
       itemid: 20004
+    head: {}
+    neck: {}
+    body: {}
     belt:
       itemid: 20011
     gloves:
@@ -86,6 +74,8 @@ character:
     ring:
       itemid: 20015
       uncursed: true
+    legs: {}
+    feet: {}
   skills:
     brawling: 4
     cast: 4

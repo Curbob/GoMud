@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -87,11 +88,25 @@ func Exists(name string) bool {
 		}
 	}
 
-	// Now check datafiles
-	var fullPath string = util.FilePath(string(configs.GetFilePathsConfig().DataFiles), `/`, path)
-	_, err := os.Stat(fullPath)
+	datafilesPath := string(configs.GetFilePathsConfig().DataFiles)
 
-	return err == nil
+	// Now check datafiles
+	var fullPath string = util.FilePath(datafilesPath, `/`, path)
+
+	if _, err := os.Stat(fullPath); err == nil {
+		return true
+	}
+
+	if !strings.HasSuffix(datafilesPath, `default`) {
+		// try with the last folder name replaced with "default":
+		fullPath = util.FilePath(filepath.Dir(datafilesPath), `/`, `default`, `/`, path)
+
+		if _, err := os.Stat(fullPath); err == nil {
+			return true
+		}
+	}
+
+	return false
 }
 
 // Configure a forced ansi flag setting
@@ -213,13 +228,30 @@ func Process(fname string, data any, receivingUserId ...int) (string, error) {
 		//
 		// nothing able to load from the plugin files, lets try the normal filesystem.
 		//
+		datafilesPath := string(configs.GetFilePathsConfig().DataFiles)
 
-		fullPath := util.FilePath(string(configs.GetFilePathsConfig().DataFiles), `/`, tplInfo.path)
+		fullPath := util.FilePath(datafilesPath, `/`, tplInfo.path)
+
+		var fileContents []byte
+		var err error
 
 		// Get the file contents
-		fileContents, err := os.ReadFile(fullPath)
+		fileContents, err = os.ReadFile(fullPath)
 		if err != nil {
-			continue
+
+			// Check the failover (default) if not already default
+			if !strings.HasSuffix(datafilesPath, `default`) {
+				// try with the last folder name replaced with "default":
+				fullPath = util.FilePath(filepath.Dir(datafilesPath), `/`, `default`, `/`, tplInfo.path)
+				fileContents, err = os.ReadFile(fullPath)
+
+				if err != nil {
+					continue
+				}
+			} else {
+				continue
+			}
+
 		}
 
 		// parse the file contents as a template
