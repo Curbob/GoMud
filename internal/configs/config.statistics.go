@@ -6,17 +6,17 @@ type Statistics struct {
 }
 
 type StatDefaults struct {
-	Strength   ConfigInt `yaml:"Strength"`   // Muscular strength
-	Speed      ConfigInt `yaml:"Speed"`      // Speed and agility
-	Smarts     ConfigInt `yaml:"Smarts"`     // Intelligence and wisdom
-	Vitality   ConfigInt `yaml:"Vitality"`   // Health and stamina
-	Mysticism  ConfigInt `yaml:"Mysticism"`  // Magic and mana
-	Perception ConfigInt `yaml:"Perception"` // How well you notice things
+	Strength   ConfigInt `yaml:"Strength"`
+	Speed      ConfigInt `yaml:"Speed"`
+	Smarts     ConfigInt `yaml:"Smarts"`
+	Vitality   ConfigInt `yaml:"Vitality"`
+	Mysticism  ConfigInt `yaml:"Mysticism"`
+	Perception ConfigInt `yaml:"Perception"`
 }
 
 type StatFactors struct {
-	BaseModFactor         ConfigFloat `yaml:"BaseModFactor"`         // How much of a scaling to apply to levels before multiplying by racial stat
-	NaturalGainsModFactor ConfigFloat `yaml:"NaturalGainsModFactor"` // Free stats gained per level modded by this
+	BaseModFactor         ConfigFloat `yaml:"BaseModFactor"`
+	NaturalGainsModFactor ConfigFloat `yaml:"NaturalGainsModFactor"`
 }
 
 func (s *Statistics) Validate() {
