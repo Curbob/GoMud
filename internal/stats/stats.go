@@ -105,3 +105,36 @@ func (si *StatInfo) Recalculate(level int) {
 		si.ValueAdj = 100 + int(math.Round(math.Sqrt(float64(overage))*2))
 	}
 }
+
+// Helper methods for common stat operations
+func (s *Statistics) GetValue(statName string) int {
+	return s.Get(statName).Value
+}
+
+func (s *Statistics) GetValueAdj(statName string) int {
+	return s.Get(statName).ValueAdj
+}
+
+func (s *Statistics) GetBase(statName string) int {
+	return s.Get(statName).Base
+}
+
+func (s *Statistics) SetBase(statName string, value int) {
+	s.Get(statName).Base = value
+}
+
+func (s *Statistics) AddMod(statName string, value int) {
+	s.Get(statName).Mods += value
+}
+
+func (s *Statistics) SetMod(statName string, value int) {
+	s.Get(statName).Mods = value
+}
+
+func (s *Statistics) GetTraining(statName string) int {
+	return s.Get(statName).Training
+}
+
+func (s *Statistics) SetTraining(statName string, value int) {
+	s.Get(statName).Training = value
+}

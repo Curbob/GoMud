@@ -70,41 +70,41 @@
             <div class="input-group-prepend w-50">
                 <span class="input-group-text w-100" id="stats-strength">Strength</span>
             </div>
-            <input type="text" name="stats[strength]" class="form-control" value="{{.raceInfo.Stats.Strength.Base}}">
+            <input type="text" name="stats[strength]" class="form-control" value="{{.raceInfo.Stats.GetBase "Strength"}}">
         </div>
 
         <div class="input-group col">
             <div class="input-group-prepend w-50">
                 <span class="input-group-text w-100" id="stats-speed">Speed</span>
             </div>
-            <input type="text" name="stats[speed]" class="form-control" value="{{.raceInfo.Stats.Speed.Base}}">
+            <input type="text" name="stats[speed]" class="form-control" value="{{.raceInfo.Stats.GetBase "Speed"}}">
         </div>
 
         <div class="input-group col">
             <div class="input-group-prepend w-50">
                 <span class="input-group-text w-100" id="stats-smarts">Smarts</span>
             </div>
-            <input type="text" name="stats[smarts]" class="form-control" value="{{.raceInfo.Stats.Smarts.Base}}">
+            <input type="text" name="stats[smarts]" class="form-control" value="{{.raceInfo.Stats.GetBase "Smarts"}}">
         </div>
         <div class="input-group col">
             <div class="input-group-prepend w-50">
                 <span class="input-group-text w-100" id="stats-vitality">Vitality</span>
             </div>
-            <input type="text" name="stats[vitality]" class="form-control" value="{{.raceInfo.Stats.Vitality.Base}}">
+            <input type="text" name="stats[vitality]" class="form-control" value="{{.raceInfo.Stats.GetBase "Vitality"}}">
         </div>
 
         <div class="input-group col">
             <div class="input-group-prepend w-50">
                 <span class="input-group-text w-100" id="stats-mysticism">Mysticism</span>
             </div>
-            <input type="text" name="stats[mysticism]" class="form-control" value="{{.raceInfo.Stats.Mysticism.Base}}">
+            <input type="text" name="stats[mysticism]" class="form-control" value="{{.raceInfo.Stats.GetBase "Mysticism"}}">
         </div>
 
         <div class="input-group col">
             <div class="input-group-prepend w-50">
                 <span class="input-group-text w-100" id="stats-perception">Perception</span>
             </div>
-            <input type="text" name="stats[perception]" class="form-control" value="{{.raceInfo.Stats.Perception.Base}}">
+            <input type="text" name="stats[perception]" class="form-control" value="{{.raceInfo.Stats.GetBase "Perception"}}">
         </div>
 
     </div>

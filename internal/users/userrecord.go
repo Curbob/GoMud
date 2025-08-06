@@ -218,12 +218,12 @@ func (u *UserRecord) GrantXP(amt int, source string) {
 			u.EventLog.Add(`xp`, fmt.Sprintf(`<ansi fg="username">%s</ansi> is now <ansi fg="magenta-bold">level %d</ansi>!`, u.Character.Name, u.Character.Level))
 
 			levelUpEvent.LevelsGained += 1
-			levelUpEvent.StatsDelta.Strength.Value += statsDelta.Strength.Value
-			levelUpEvent.StatsDelta.Speed.Value += statsDelta.Speed.Value
-			levelUpEvent.StatsDelta.Smarts.Value += statsDelta.Smarts.Value
-			levelUpEvent.StatsDelta.Vitality.Value += statsDelta.Vitality.Value
-			levelUpEvent.StatsDelta.Mysticism.Value += statsDelta.Mysticism.Value
-			levelUpEvent.StatsDelta.Perception.Value += statsDelta.Perception.Value
+			levelUpEvent.StatsDelta.Get("Strength").Value += statsDelta.Get("Strength").Value
+			levelUpEvent.StatsDelta.Get("Speed").Value += statsDelta.Get("Speed").Value
+			levelUpEvent.StatsDelta.Get("Smarts").Value += statsDelta.Get("Smarts").Value
+			levelUpEvent.StatsDelta.Get("Vitality").Value += statsDelta.Get("Vitality").Value
+			levelUpEvent.StatsDelta.Get("Mysticism").Value += statsDelta.Get("Mysticism").Value
+			levelUpEvent.StatsDelta.Get("Perception").Value += statsDelta.Get("Perception").Value
 
 			levelUpEvent.TrainingPoints += 1
 			levelUpEvent.StatPoints += 1

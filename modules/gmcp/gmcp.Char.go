@@ -475,12 +475,12 @@ func (g *GMCPCharModule) GetCharNode(user *users.UserRecord, gmcpModule string) 
 	if all || g.wantsGMCPPayload(`Char.Stats`, gmcpModule) {
 
 		payload.Stats = &GMCPCharModule_Payload_Stats{
-			Strength:   user.Character.Stats.Strength.ValueAdj,
-			Speed:      user.Character.Stats.Speed.ValueAdj,
-			Smarts:     user.Character.Stats.Smarts.ValueAdj,
-			Vitality:   user.Character.Stats.Vitality.ValueAdj,
-			Mysticism:  user.Character.Stats.Mysticism.ValueAdj,
-			Perception: user.Character.Stats.Perception.ValueAdj,
+			Strength:   user.Character.Stats.GetValueAdj("Strength"),
+			Speed:      user.Character.Stats.GetValueAdj("Speed"),
+			Smarts:     user.Character.Stats.GetValueAdj("Smarts"),
+			Vitality:   user.Character.Stats.GetValueAdj("Vitality"),
+			Mysticism:  user.Character.Stats.GetValueAdj("Mysticism"),
+			Perception: user.Character.Stats.GetValueAdj("Perception"),
 		}
 
 		if !all {
