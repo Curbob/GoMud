@@ -95,6 +95,8 @@ type Character struct {
 }
 
 func New() *Character {
+	statsConfig := configs.GetStatisticsConfig()
+
 	return &Character{
 		//Name:   defaultName,
 		Adjectives: []string{},
@@ -102,12 +104,12 @@ func New() *Character {
 		Zone:       startingZone,
 		RaceId:     startingRace,
 		Stats: stats.Statistics{
-			Strength:   stats.StatInfo{Base: 1},
-			Speed:      stats.StatInfo{Base: 1},
-			Smarts:     stats.StatInfo{Base: 1},
-			Vitality:   stats.StatInfo{Base: 1},
-			Mysticism:  stats.StatInfo{Base: 1},
-			Perception: stats.StatInfo{Base: 1},
+			Strength:   stats.StatInfo{Base: int(statsConfig.BaseStats.Strength)},
+			Speed:      stats.StatInfo{Base: int(statsConfig.BaseStats.Speed)},
+			Smarts:     stats.StatInfo{Base: int(statsConfig.BaseStats.Smarts)},
+			Vitality:   stats.StatInfo{Base: int(statsConfig.BaseStats.Vitality)},
+			Mysticism:  stats.StatInfo{Base: int(statsConfig.BaseStats.Mysticism)},
+			Perception: stats.StatInfo{Base: int(statsConfig.BaseStats.Perception)},
 		},
 		Level:          1,
 		Experience:     1,

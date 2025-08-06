@@ -48,6 +48,7 @@ type Config struct {
 	SpecialRooms SpecialRooms `yaml:"SpecialRooms"`
 	Validation   Validation   `yaml:"Validation"`
 	Roles        Roles        `yaml:"Roles"`
+	Statistics   Statistics   `yaml:"Statistics"`
 	// Plugins is a special case
 	Modules Modules `yaml:"Modules"`
 
@@ -197,6 +198,7 @@ func (c *Config) Validate() {
 	c.Scripting.Validate()
 	c.SpecialRooms.Validate()
 	c.Validation.Validate()
+	c.Statistics.Validate()
 	c.Modules.Validate()
 	c.Roles.Validate()
 

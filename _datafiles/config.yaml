@@ -538,6 +538,27 @@ Validation:
 
 ################################################################################
 #
+#   Statistics Configuration
+#   Settings for character statistics and stat calculations
+#
+################################################################################
+Statistics:
+  # Base stat values for new characters
+  BaseStats:
+    Strength: 1    # Muscular strength 
+    Speed: 1       # Speed and agility 
+    Smarts: 1      # Intelligence and wisdom 
+    Vitality: 1    # Health and stamina 
+    Mysticism: 1   # Magic and mana 
+    Perception: 1  # How well you notice things
+  
+  # Stat calculation factors
+  Factors:
+    BaseModFactor: 0.3333333334  # How much of a scaling to apply to levels before multiplying by racial stat
+    NaturalGainsModFactor: 0.5   # Free stats gained per level modded by this
+
+################################################################################
+#
 #   Roles
 #   Roles are string identifiers that map to a number of command names.
 #   They are used to determine what admin commands a player has access to.

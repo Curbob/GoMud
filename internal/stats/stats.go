@@ -3,12 +3,19 @@ package stats
 import (
 	"math"
 	"strings"
+
+	"github.com/GoMudEngine/GoMud/internal/configs"
 )
 
-const (
-	BaseModFactor         = 0.3333333334 // How much of a scaling to aply to levels before multiplying by racial stat
-	NaturalGainsModFactor = 0.5          // Free stats gained per level modded by this.
-)
+func getBaseModFactor() float64 {
+	cfg := configs.GetStatisticsConfig()
+	return float64(cfg.Factors.BaseModFactor)
+}
+
+func getNaturalGainsModFactor() float64 {
+	cfg := configs.GetStatisticsConfig()
+	return float64(cfg.Factors.NaturalGainsModFactor)
+}
 
 type Statistics struct {
 	Strength   StatInfo `yaml:"strength,omitempty"`   // Muscular strength (damage?)
@@ -87,11 +94,11 @@ func (si *StatInfo) GainsForLevel(level int) int {
 	if level < 1 {
 		level = 1
 	}
-	levelScale := float64(level-1) * BaseModFactor
+	levelScale := float64(level-1) * getBaseModFactor()
 	basePoints := int(levelScale * float64(si.Base))
 
 	// every x levels we get natural gains
-	freeStatPoints := int(float64(level) * NaturalGainsModFactor)
+	freeStatPoints := int(float64(level) * getNaturalGainsModFactor())
 
 	return basePoints + freeStatPoints
 }
