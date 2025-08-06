@@ -15,8 +15,8 @@ type StatDefaults struct {
 }
 
 type StatFactors struct {
-	BaseModFactor         ConfigFloat `yaml:"BaseModFactor"`
-	NaturalGainsModFactor ConfigFloat `yaml:"NaturalGainsModFactor"`
+	BaseModFactor         ConfigFloat `yaml:"BaseModFactor"`         // How much of a scaling to aply to levels before multiplying by racial stat
+	NaturalGainsModFactor ConfigFloat `yaml:"NaturalGainsModFactor"` // Free stats gained per level modded by this.
 }
 
 func (s *Statistics) Validate() {
