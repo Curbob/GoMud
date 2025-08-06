@@ -20,7 +20,6 @@ type StatFactors struct {
 }
 
 func (s *Statistics) Validate() {
-	// Validate base stats are reasonable (minimum 1)
 	if s.BaseStats.Strength < 1 {
 		s.BaseStats.Strength = 1
 	}
