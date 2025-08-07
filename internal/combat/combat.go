@@ -455,7 +455,6 @@ func calculateCombat(sourceChar characters.Character, targetChar characters.Char
 
 	for i := 0; i < attackCount; i++ {
 
-
 		attackWeapons := []items.Item{}
 
 		dualWieldLevel := sourceChar.GetSkillLevel(skills.DualWield)
@@ -559,7 +558,6 @@ func calculateCombat(sourceChar characters.Character, targetChar characters.Char
 			if configs.GetGamePlayConfig().ConsistentAttackMessages {
 				msgSeed = weapon.ItemId
 			}
-
 
 			// Individual weapons may get multiple attacks
 			for j := 0; j < attacks; j++ {
