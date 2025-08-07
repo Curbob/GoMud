@@ -182,7 +182,6 @@ func (ct *CombatCooldownTimer) sendUpdates() {
 	ct.playerMutex.RUnlock()
 
 	if len(playerIds) > 0 {
-		mudlog.Debug("CombatCooldownTimer", "action", "sendUpdates", "playerCount", len(playerIds), "remainingSeconds", remainingSeconds)
 	}
 
 	// Send updates
@@ -197,9 +196,10 @@ func (ct *CombatCooldownTimer) sendUpdates() {
 			continue
 		}
 
-		// Check if still in combat
+		// Check if player is actively fighting (has aggro)
+		// Cooldown only matters when the player is attacking, not when just being attacked
 		if user.Character.Aggro == nil {
-			// Skip players no longer in combat
+			// Skip players not actively fighting
 			// They will be removed by the CombatStatus module
 			continue
 		}
@@ -261,7 +261,6 @@ func handleCombatCooldownUpdate(e events.Event) events.ListenerReturn {
 		return events.Continue
 	}
 
-	mudlog.Debug("CombatCooldownTimer", "action", "handleCombatCooldownUpdate", "userId", evt.UserId, "cooldown", evt.CooldownSeconds)
 
 	_, valid := validateUserForGMCP(evt.UserId, "GMCPCombatCooldown")
 	if !valid {

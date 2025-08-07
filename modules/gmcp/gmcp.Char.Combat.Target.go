@@ -1,9 +1,7 @@
 // Package gmcp handles Combat Target updates for GMCP.
 //
-// Tracks the player's current combat target and HP changes, sending updates only when:
-// - Target changes (different mob or cleared)
-// - Target HP changes (damage/healing)
-// - Target dies or moves away
+// Event-driven target tracking that updates immediately when combat starts.
+// Tracks the player's current combat target with HP updates.
 package gmcp
 
 import (
@@ -28,27 +26,32 @@ type GMCPCombatTargetUpdate struct {
 func (g GMCPCombatTargetUpdate) Type() string { return `GMCPCombatTargetUpdate` }
 
 var (
-	// targetMutex protects the target tracking maps
-	targetMutex sync.RWMutex
+	// targetMutexNew protects the target tracking maps
+	targetMutexNew sync.RWMutex
 
-	// userTargets tracks the current target for each user
-	userTargets = make(map[int]int) // userId -> mobInstanceId
-
-	// lastTargetHP tracks the last HP sent for each user's target
-	lastTargetHP = make(map[int]int) // userId -> lastHP
-
+	// userTargetsNew tracks the current target for each user
+	userTargetsNew = make(map[int]*TargetInfo) // userId -> target info
 )
 
-// NOTE: Race condition mitigated by defensive cleanup in all handlers.
-// If user disconnects between validateUserForGMCP and map operations,
-// the cleanup functions handle it gracefully without data corruption.
+type TargetInfo struct {
+	Id        int
+	Name      string
+	Type      string // "mob" or "player"
+	LastHP    int
+	LastMaxHP int
+}
 
 func init() {
+	// Register the GMCP output handler
 	events.RegisterListener(GMCPCombatTargetUpdate{}, handleCombatTargetUpdate)
-	events.RegisterListener(events.NewRound{}, handleTargetNewRound)
-	events.RegisterListener(events.MobVitalsChanged{}, handleTargetMobVitalsChanged)
-	events.RegisterListener(events.MobDeath{}, handleTargetMobDeath)
-	events.RegisterListener(events.RoomChange{}, handleTargetRoomChange)
+
+	// Listen for combat events
+	events.RegisterListener(events.CombatStarted{}, handleTargetCombatStarted)
+	events.RegisterListener(events.MobVitalsChanged{}, handleTargetVitalsChanged)
+	events.RegisterListener(events.MobDeath{}, handleTargetDeath)
+	events.RegisterListener(events.PlayerDeath{}, handleTargetPlayerDeath)
+	events.RegisterListener(events.RoomChange{}, handleTargetRoomChangeNew)
+	events.RegisterListener(events.CombatEnded{}, handleTargetCombatEnded)
 }
 
 func handleCombatTargetUpdate(e events.Event) events.ListenerReturn {
@@ -84,135 +87,190 @@ func handleCombatTargetUpdate(e events.Event) events.ListenerReturn {
 	return events.Continue
 }
 
-// handleTargetNewRound checks for target changes each round
-func handleTargetNewRound(e events.Event) events.ListenerReturn {
-	_, typeOk := e.(events.NewRound)
-	if !typeOk {
-		mudlog.Error("GMCPCombatTarget", "action", "handleTargetNewRound", "error", "type assertion failed", "expectedType", "events.NewRound", "actualType", fmt.Sprintf("%T", e))
+// handleTargetCombatStarted sets target when player attacks
+func handleTargetCombatStarted(e events.Event) events.ListenerReturn {
+	mudlog.Info("GMCPCombatTarget", "event", "CombatStarted received in Target module")
+	evt, ok := e.(events.CombatStarted)
+	if !ok {
+		mudlog.Error("GMCPCombatTarget", "error", "CombatStarted type assertion failed")
 		return events.Continue
 	}
 
-	// Check all users currently in combat
-	trackedUsers := GetUsersInCombat()
+	mudlog.Info("GMCPCombatTarget", "attackerType", evt.AttackerType, "attackerId", evt.AttackerId,
+		"defenderType", evt.DefenderType, "defenderId", evt.DefenderId)
 
-	for _, userId := range trackedUsers {
-		user, valid := validateUserForGMCP(userId, "GMCPCombatTarget")
-		if !valid {
-			targetMutex.Lock()
-			if _, exists := userTargets[userId]; exists {
-				delete(userTargets, userId)
-				delete(lastTargetHP, userId)
-			}
-			targetMutex.Unlock()
-			continue
+	// Only care about player attackers
+	if evt.AttackerType != "player" {
+		return events.Continue
+	}
+
+	// Validate user has GMCP
+	_, valid := validateUserForGMCP(evt.AttackerId, "GMCPCombatTarget")
+	if !valid {
+		return events.Continue
+	}
+
+	// Create target info
+	targetInfo := &TargetInfo{
+		Id:   evt.DefenderId,
+		Name: util.StripANSI(evt.DefenderName),
+		Type: evt.DefenderType,
+	}
+
+	// Get initial HP if possible
+	if evt.DefenderType == "mob" {
+		if mob := mobs.GetInstance(evt.DefenderId); mob != nil {
+			targetInfo.LastHP = mob.Character.Health
+			targetInfo.LastMaxHP = int(mob.Character.HealthMax.Value)
 		}
-
-		if user.Character.Aggro != nil && user.Character.Aggro.MobInstanceId > 0 {
-			targetMutex.Lock()
-			oldTarget := userTargets[userId]
-			newTarget := user.Character.Aggro.MobInstanceId
-
-			// Update target if changed
-			if oldTarget != newTarget {
-				userTargets[userId] = newTarget
-				delete(lastTargetHP, userId) // Reset HP tracking for new target
-			}
-			targetMutex.Unlock()
-
-			// Send update if target changed
-			if oldTarget != newTarget {
-				sendTargetUpdate(userId)
-			}
-		} else {
-			// Not in combat, clear target
-			targetMutex.Lock()
-			hadTarget := userTargets[userId] > 0
-			delete(userTargets, userId)
-			delete(lastTargetHP, userId)
-			targetMutex.Unlock()
-
-			if hadTarget {
-				// Send empty target update
-				handleCombatTargetUpdate(GMCPCombatTargetUpdate{
-					UserId:     userId,
-					TargetName: "",
-				})
-			}
+	} else if evt.DefenderType == "player" {
+		if player := users.GetByUserId(evt.DefenderId); player != nil {
+			targetInfo.LastHP = player.Character.Health
+			targetInfo.LastMaxHP = int(player.Character.HealthMax.Value)
 		}
+	}
+
+	// Update tracking
+	targetMutexNew.Lock()
+	userTargetsNew[evt.AttackerId] = targetInfo
+	targetMutexNew.Unlock()
+
+	// Send immediate GMCP update
+	sendTargetUpdateNew(evt.AttackerId)
+
+	mudlog.Info("GMCPCombatTarget", "action", "Target set", "userId", evt.AttackerId,
+		"targetName", targetInfo.Name, "targetType", targetInfo.Type)
+
+	return events.Continue
+}
+
+// handleTargetVitalsChanged updates target HP
+func handleTargetVitalsChanged(e events.Event) events.ListenerReturn {
+	evt, ok := e.(events.MobVitalsChanged)
+	if !ok {
+		return events.Continue
+	}
+
+	targetMutexNew.RLock()
+	// Check all users to see who has this mob as target
+	usersToUpdate := []int{}
+	for userId, target := range userTargetsNew {
+		if target.Type == "mob" && target.Id == evt.MobId {
+			usersToUpdate = append(usersToUpdate, userId)
+		}
+	}
+	targetMutexNew.RUnlock()
+
+	// Send updates
+	for _, userId := range usersToUpdate {
+		sendTargetUpdateNew(userId)
 	}
 
 	return events.Continue
 }
 
-// handleTargetMobVitalsChanged sends updates when a mob's vitals change
-func handleTargetMobVitalsChanged(e events.Event) events.ListenerReturn {
-	evt, typeOk := e.(events.MobVitalsChanged)
-	if !typeOk {
-		mudlog.Error("GMCPCombatTarget", "action", "handleTargetMobVitalsChanged", "error", "type assertion failed", "expectedType", "events.MobVitalsChanged", "actualType", fmt.Sprintf("%T", e))
+// handleTargetDeath clears target when it dies
+func handleTargetDeath(e events.Event) events.ListenerReturn {
+	evt, ok := e.(events.MobDeath)
+	if !ok {
 		return events.Continue
 	}
 
-	targetMutex.RLock()
-	userTargetsCopy := make(map[int]int)
-	for k, v := range userTargets {
-		userTargetsCopy[k] = v
-	}
-	targetMutex.RUnlock()
-
-	for userId, targetId := range userTargetsCopy {
-		if targetId == evt.MobId {
-			// Validate user still exists before sending update
-			user := users.GetByUserId(userId)
-			if user == nil {
-				targetMutex.Lock()
-				delete(userTargets, userId)
-				delete(lastTargetHP, userId)
-				targetMutex.Unlock()
-				mudlog.Warn("GMCPCombatTarget", "action", "handleTargetMobVitalsChanged", "issue", "user not found, cleaning up stale target tracking", "userId", userId)
-				continue
-			}
-			sendTargetUpdate(userId)
+	targetMutexNew.Lock()
+	usersToUpdate := []int{}
+	for userId, target := range userTargetsNew {
+		if target.Type == "mob" && target.Id == evt.InstanceId {
+			delete(userTargetsNew, userId)
+			usersToUpdate = append(usersToUpdate, userId)
 		}
+	}
+	targetMutexNew.Unlock()
+
+	// Send clear target updates
+	for _, userId := range usersToUpdate {
+		handleCombatTargetUpdate(GMCPCombatTargetUpdate{
+			UserId:     userId,
+			TargetName: "",
+		})
 	}
 
 	return events.Continue
 }
 
-// handleTargetMobDeath handles when a target dies
-func handleTargetMobDeath(e events.Event) events.ListenerReturn {
-	evt, typeOk := e.(events.MobDeath)
-	if !typeOk {
-		mudlog.Error("GMCPCombatTarget", "action", "handleTargetMobDeath", "error", "type assertion failed", "expectedType", "events.MobDeath", "actualType", fmt.Sprintf("%T", e))
+// handleTargetPlayerDeath handles player target death
+func handleTargetPlayerDeath(e events.Event) events.ListenerReturn {
+	evt, ok := e.(events.PlayerDeath)
+	if !ok {
 		return events.Continue
 	}
 
-	// Check all users to see if this was their target
-	targetMutex.RLock()
-	userTargetsCopy := make(map[int]int)
-	for k, v := range userTargets {
-		userTargetsCopy[k] = v
+	targetMutexNew.Lock()
+	usersToUpdate := []int{}
+	for userId, target := range userTargetsNew {
+		if target.Type == "player" && target.Id == evt.UserId {
+			delete(userTargetsNew, userId)
+			usersToUpdate = append(usersToUpdate, userId)
+		}
 	}
-	targetMutex.RUnlock()
+	targetMutexNew.Unlock()
 
-	for userId, targetId := range userTargetsCopy {
-		if targetId == evt.InstanceId {
-			// Validate user still exists before sending update
-			user := users.GetByUserId(userId)
-			if user == nil {
-				// Clean up stale target tracking
-				targetMutex.Lock()
-				delete(userTargets, userId)
-				delete(lastTargetHP, userId)
-				targetMutex.Unlock()
-				mudlog.Warn("GMCPCombatTarget", "action", "handleTargetMobDeath", "issue", "user not found, cleaning up stale target tracking", "userId", userId)
-				continue
+	// Send clear target updates
+	for _, userId := range usersToUpdate {
+		handleCombatTargetUpdate(GMCPCombatTargetUpdate{
+			UserId:     userId,
+			TargetName: "",
+		})
+	}
+
+	return events.Continue
+}
+
+// handleTargetRoomChangeNew handles when target moves away
+func handleTargetRoomChangeNew(e events.Event) events.ListenerReturn {
+	evt, ok := e.(events.RoomChange)
+	if !ok {
+		return events.Continue
+	}
+
+	// Handle mob targets moving
+	if evt.MobInstanceId != 0 {
+		targetMutexNew.Lock()
+		usersToUpdate := []int{}
+		for userId, target := range userTargetsNew {
+			if target.Type == "mob" && target.Id == evt.MobInstanceId {
+				user := users.GetByUserId(userId)
+				if user != nil && user.Character.RoomId != evt.ToRoomId {
+					delete(userTargetsNew, userId)
+					usersToUpdate = append(usersToUpdate, userId)
+				}
 			}
+		}
+		targetMutexNew.Unlock()
 
-			targetMutex.Lock()
-			delete(userTargets, userId)
-			delete(lastTargetHP, userId)
-			targetMutex.Unlock()
+		for _, userId := range usersToUpdate {
+			handleCombatTargetUpdate(GMCPCombatTargetUpdate{
+				UserId:     userId,
+				TargetName: "",
+			})
+		}
+	}
 
+	// Handle player targets moving
+	if evt.UserId != 0 {
+		targetMutexNew.Lock()
+		usersToUpdate := []int{}
+		for userId, target := range userTargetsNew {
+			if target.Type == "player" && target.Id == evt.UserId {
+				user := users.GetByUserId(userId)
+				if user != nil && user.Character.RoomId != evt.ToRoomId {
+					delete(userTargetsNew, userId)
+					usersToUpdate = append(usersToUpdate, userId)
+				}
+			}
+		}
+		targetMutexNew.Unlock()
+
+		for _, userId := range usersToUpdate {
 			handleCombatTargetUpdate(GMCPCombatTargetUpdate{
 				UserId:     userId,
 				TargetName: "",
@@ -223,104 +281,69 @@ func handleTargetMobDeath(e events.Event) events.ListenerReturn {
 	return events.Continue
 }
 
-// handleTargetRoomChange handles when a target moves away
-func handleTargetRoomChange(e events.Event) events.ListenerReturn {
-	evt, typeOk := e.(events.RoomChange)
-	if !typeOk {
-		mudlog.Error("GMCPCombatTarget", "action", "handleTargetRoomChange", "error", "type assertion failed", "expectedType", "events.RoomChange", "actualType", fmt.Sprintf("%T", e))
+// handleTargetCombatEnded clears target when combat ends
+func handleTargetCombatEnded(e events.Event) events.ListenerReturn {
+	evt, ok := e.(events.CombatEnded)
+	if !ok || evt.EntityType != "player" {
 		return events.Continue
 	}
 
-	if evt.MobInstanceId == 0 {
-		return events.Continue
-	}
+	targetMutexNew.Lock()
+	delete(userTargetsNew, evt.EntityId)
+	targetMutexNew.Unlock()
 
-	// Check all users to see if this was their target
-	targetMutex.RLock()
-	userTargetsCopy := make(map[int]int)
-	for k, v := range userTargets {
-		userTargetsCopy[k] = v
-	}
-	targetMutex.RUnlock()
-
-	for userId, targetId := range userTargetsCopy {
-		if targetId == evt.MobInstanceId {
-			user := users.GetByUserId(userId)
-			if user == nil {
-				// Clean up stale target tracking
-				targetMutex.Lock()
-				delete(userTargets, userId)
-				delete(lastTargetHP, userId)
-				targetMutex.Unlock()
-				mudlog.Warn("GMCPCombatTarget", "action", "handleTargetRoomChange", "issue", "user not found, cleaning up stale target tracking", "userId", userId)
-				continue
-			}
-
-			if evt.ToRoomId != user.Character.RoomId {
-				targetMutex.Lock()
-				delete(userTargets, userId)
-				delete(lastTargetHP, userId)
-				targetMutex.Unlock()
-
-				handleCombatTargetUpdate(GMCPCombatTargetUpdate{
-					UserId:     userId,
-					TargetName: "",
-				})
-			}
-		}
-	}
+	// Clear target
+	handleCombatTargetUpdate(GMCPCombatTargetUpdate{
+		UserId:     evt.EntityId,
+		TargetName: "",
+	})
 
 	return events.Continue
 }
 
-// sendTargetUpdate sends current target info for a user
-func sendTargetUpdate(userId int) {
-	user := users.GetByUserId(userId)
-	if user == nil {
-		targetMutex.Lock()
-		delete(userTargets, userId)
-		delete(lastTargetHP, userId)
-		targetMutex.Unlock()
-		mudlog.Warn("GMCPCombatTarget", "action", "sendTargetUpdate", "issue", "user not found, cleaning up stale target tracking", "userId", userId)
+// sendTargetUpdateNew sends current target info for a user
+func sendTargetUpdateNew(userId int) {
+	targetMutexNew.RLock()
+	target := userTargetsNew[userId]
+	targetMutexNew.RUnlock()
+
+	if target == nil {
 		return
 	}
 
-	targetMutex.RLock()
-	targetId := userTargets[userId]
-	targetMutex.RUnlock()
+	// Get current HP
+	currentHP := 0
+	maxHP := 0
 
-	if targetId == 0 {
-		return
+	if target.Type == "mob" {
+		if mob := mobs.GetInstance(target.Id); mob != nil {
+			currentHP = mob.Character.Health
+			maxHP = int(mob.Character.HealthMax.Value)
+		}
+	} else if target.Type == "player" {
+		if player := users.GetByUserId(target.Id); player != nil {
+			currentHP = player.Character.Health
+			maxHP = int(player.Character.HealthMax.Value)
+		}
 	}
 
-	mob := mobs.GetInstance(targetId)
-	if mob == nil {
-		mudlog.Error("GMCPCombatTarget", "action", "sendTargetUpdate", "error", "mob lookup failed", "mobId", targetId, "userId", userId)
-		return
-	}
-
-	targetMutex.RLock()
-	lastHP := lastTargetHP[userId]
-	targetMutex.RUnlock()
-	currentHP := mob.Character.Health
-	if lastHP != currentHP {
-		targetMutex.Lock()
-		lastTargetHP[userId] = currentHP
-		targetMutex.Unlock()
+	// Only send if HP changed or initial send
+	if currentHP != target.LastHP || target.LastHP == 0 {
+		target.LastHP = currentHP
+		target.LastMaxHP = maxHP
 
 		handleCombatTargetUpdate(GMCPCombatTargetUpdate{
 			UserId:          userId,
-			TargetName:      util.StripANSI(mob.Character.Name),
+			TargetName:      target.Name,
 			TargetHpCurrent: currentHP,
-			TargetHpMax:     int(mob.Character.HealthMax.Value),
+			TargetHpMax:     maxHP,
 		})
 	}
 }
 
-// cleanupCombatTarget removes all target tracking for a user
-func cleanupCombatTarget(userId int) {
-	targetMutex.Lock()
-	delete(userTargets, userId)
-	delete(lastTargetHP, userId)
-	targetMutex.Unlock()
+// cleanupCombatTargetNew removes all target tracking for a user
+func cleanupCombatTargetNew(userId int) {
+	targetMutexNew.Lock()
+	delete(userTargetsNew, userId)
+	targetMutexNew.Unlock()
 }
