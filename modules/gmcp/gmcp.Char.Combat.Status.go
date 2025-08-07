@@ -125,8 +125,8 @@ func handleStatusNewRound(e events.Event) events.ListenerReturn {
 	}
 	stateMutex.RUnlock()
 
-	// Also add any users currently in combat (in case they're not tracked yet)
-	for _, userId := range GetUsersInCombat() {
+	// Also add any users currently in combat or being attacked
+	for _, userId := range GetUsersInOrTargetedByCombat() {
 		found := false
 		for _, tracked := range trackedUsers {
 			if tracked == userId {
@@ -152,7 +152,8 @@ func handleStatusNewRound(e events.Event) events.ListenerReturn {
 			continue
 		}
 
-		currentlyInCombat := user.Character.Aggro != nil
+		// Use centralized combat detection
+		currentlyInCombat := IsUserInCombat(userId)
 
 		stateMutex.RLock()
 		wasInCombat := userCombatState[userId]
@@ -177,6 +178,15 @@ func handleStatusNewRound(e events.Event) events.ListenerReturn {
 		if needsUpdate {
 			// Send immediate update only for state changes
 			sendCombatStatusUpdate(userId, currentlyInCombat, evt.RoundNumber)
+
+			// Fire CombatEnded event when combat truly ends
+			if wasInCombat && !currentlyInCombat {
+				events.AddToQueue(events.CombatEnded{
+					EntityId:   userId,
+					EntityType: "player",
+					Reason:     "combat-complete",
+				})
+			}
 		}
 	}
 
@@ -208,7 +218,8 @@ func handleStatusVitalsChanged(e events.Event) events.ListenerReturn {
 		return events.Continue
 	}
 
-	currentlyInCombat := user.Character.Aggro != nil
+	// Use centralized combat detection
+	currentlyInCombat := IsUserInCombat(evt.UserId)
 
 	stateMutex.RLock()
 	wasInCombat := userCombatState[evt.UserId]
@@ -229,13 +240,22 @@ func handleStatusVitalsChanged(e events.Event) events.ListenerReturn {
 		// Send immediate update - this captures HP at start of round
 		sendCombatStatusUpdate(evt.UserId, currentlyInCombat, roundNum)
 
-		// Update cooldown tracking only on state changes
-		if stateChanged {
-			if currentlyInCombat {
-				TrackCombatPlayer(evt.UserId)
-			} else {
-				UntrackCombatPlayer(evt.UserId)
-			}
+		// Update cooldown tracking based on aggro state (not just combat state)
+		// Cooldown only runs when player is actively fighting
+		if user.Character.Aggro != nil {
+			TrackCombatPlayer(evt.UserId)
+		} else {
+			UntrackCombatPlayer(evt.UserId)
+		}
+
+		// Fire CombatEnded event when combat truly ends
+		if stateChanged && !currentlyInCombat {
+			// Combat has truly ended (no aggro and not being attacked)
+			events.AddToQueue(events.CombatEnded{
+				EntityId:   evt.UserId,
+				EntityType: "player",
+				Reason:     "combat-complete",
+			})
 		}
 	}
 

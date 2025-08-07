@@ -1,8 +1,7 @@
 // Package gmcp handles Combat Enemies list updates for GMCP.
 //
-// Tracks all mobs targeting the player and sends updates when the enemy list changes.
-// Includes metadata like which enemy is the primary target.
-// Updates on round checks and immediately when enemies die or flee.
+// Event-driven enemy tracking that shows all combat participants.
+// Enemies are added when: player attacks them OR they attack the player.
 package gmcp
 
 import (
@@ -32,22 +31,34 @@ type EnemyInfo struct {
 func (g GMCPCombatEnemiesUpdate) Type() string { return `GMCPCombatEnemiesUpdate` }
 
 var (
-	// enemiesMutex protects the enemies tracking map
-	enemiesMutex sync.RWMutex
+	// enemiesMutexNew protects the enemies tracking map
+	enemiesMutexNew sync.RWMutex
 
-	// userEnemies tracks all enemies for each user
-	userEnemies = make(map[int]map[int]bool) // userId -> map[mobInstanceId]bool
+	// userEnemiesNew tracks all enemies for each user
+	userEnemiesNew = make(map[int]map[int]*EnemyInfoFull) // userId -> map[enemyId]info
 )
 
-// NOTE: Race condition mitigated by defensive cleanup in all handlers.
-// If user disconnects between validateUserForGMCP and map operations,
-// the cleanup functions handle it gracefully without data corruption.
+type EnemyInfoFull struct {
+	Name      string
+	Id        int
+	Type      string // "mob" or "player"
+	IsPrimary bool   // true if this is the user's target
+	LastRound uint64 // Last round they were in combat
+}
 
 func init() {
+	// Register the GMCP output handler
 	events.RegisterListener(GMCPCombatEnemiesUpdate{}, handleCombatEnemiesUpdate)
-	events.RegisterListener(events.NewRound{}, handleEnemiesNewRound)
-	events.RegisterListener(events.MobDeath{}, handleEnemiesMobDeath)
-	events.RegisterListener(events.RoomChange{}, handleEnemiesRoomChange)
+
+	// Listen for combat events
+	events.RegisterListener(events.CombatStarted{}, handleEnemiesCombatStarted)
+	events.RegisterListener(events.DamageDealt{}, handleEnemiesDamageDealt)
+	events.RegisterListener(events.AttackAvoided{}, handleEnemiesAttackAvoided)
+	events.RegisterListener(events.MobDeath{}, handleEnemiesMobDeathNew)
+	events.RegisterListener(events.PlayerDeath{}, handleEnemiesPlayerDeath)
+	events.RegisterListener(events.RoomChange{}, handleEnemiesRoomChangeNew)
+	events.RegisterListener(events.CombatEnded{}, handleEnemiesCombatEnded)
+	events.RegisterListener(events.NewRound{}, handleEnemiesCleanup)
 }
 
 func handleCombatEnemiesUpdate(e events.Event) events.ListenerReturn {
@@ -80,216 +91,326 @@ func handleCombatEnemiesUpdate(e events.Event) events.ListenerReturn {
 	return events.Continue
 }
 
-// handleEnemiesNewRound updates enemy lists each round
-func handleEnemiesNewRound(e events.Event) events.ListenerReturn {
-	_, typeOk := e.(events.NewRound)
-	if !typeOk {
-		mudlog.Error("GMCPCombatEnemies", "action", "handleEnemiesNewRound", "error", "type assertion failed", "expectedType", "events.NewRound", "actualType", fmt.Sprintf("%T", e))
+// handleEnemiesCombatStarted adds enemies when combat starts
+func handleEnemiesCombatStarted(e events.Event) events.ListenerReturn {
+	mudlog.Info("GMCPCombatEnemies", "event", "CombatStarted received in Enemies module")
+	evt, ok := e.(events.CombatStarted)
+	if !ok {
+		mudlog.Error("GMCPCombatEnemies", "error", "CombatStarted type assertion failed")
 		return events.Continue
 	}
 
-	// Check all users currently in combat
-	trackedUsers := GetUsersInCombat()
+	mudlog.Info("GMCPCombatEnemies", "attackerType", evt.AttackerType, "attackerId", evt.AttackerId,
+		"defenderType", evt.DefenderType, "defenderId", evt.DefenderId)
 
-	for _, userId := range trackedUsers {
-		user := users.GetByUserId(userId)
-		if user == nil {
-			enemiesMutex.Lock()
-			if _, exists := userEnemies[userId]; exists {
-				delete(userEnemies, userId)
-				mudlog.Warn("GMCPCombatEnemies", "action", "handleEnemiesNewRound", "issue", "user not found, cleaning up stale enemy tracking", "userId", userId)
-			}
-			enemiesMutex.Unlock()
-			continue
-		}
+	// If player attacks mob/player, add defender to attacker's enemy list
+	if evt.AttackerType == "player" {
+		addEnemy(evt.AttackerId, evt.DefenderId, evt.DefenderType, evt.DefenderName, true)
+	}
 
-		currentEnemies := make(map[int]bool)
-
-		room := rooms.LoadRoom(user.Character.RoomId)
-		if room == nil {
-			mudlog.Error("GMCPCombatEnemies", "action", "handleEnemiesNewRound", "error", "room lookup failed", "roomId", user.Character.RoomId, "userId", userId)
-			continue
-		}
-		for _, mobId := range room.GetMobs() {
-			if mob := mobs.GetInstance(mobId); mob != nil {
-				// Check if mob is targeting this user
-				if mob.Character.Aggro != nil && mob.Character.Aggro.UserId == userId {
-					currentEnemies[mobId] = true
-				}
-			}
-		}
-
-		enemiesMutex.RLock()
-		oldEnemies := userEnemies[userId]
-		changed := false
-
-		if len(oldEnemies) != len(currentEnemies) {
-			changed = true
-		} else {
-			for mobId := range currentEnemies {
-				if !oldEnemies[mobId] {
-					changed = true
-					break
-				}
-			}
-		}
-		enemiesMutex.RUnlock()
-
-		if changed {
-			enemiesMutex.Lock()
-			if len(currentEnemies) > 0 {
-				userEnemies[userId] = currentEnemies
-			} else {
-				delete(userEnemies, userId)
-			}
-			enemiesMutex.Unlock()
-		}
-
-		if changed {
-			sendEnemiesUpdate(userId)
-		}
+	// If mob/player attacks player, add attacker to defender's enemy list
+	if evt.DefenderType == "player" {
+		addEnemy(evt.DefenderId, evt.AttackerId, evt.AttackerType, evt.AttackerName, false)
 	}
 
 	return events.Continue
 }
 
-// handleEnemiesMobDeath removes dead mobs from enemy lists
-func handleEnemiesMobDeath(e events.Event) events.ListenerReturn {
-	evt, typeOk := e.(events.MobDeath)
-	if !typeOk {
-		mudlog.Error("GMCPCombatEnemies", "action", "handleEnemiesMobDeath", "error", "type assertion failed", "expectedType", "events.MobDeath", "actualType", fmt.Sprintf("%T", e))
+// handleEnemiesDamageDealt ensures enemies are tracked when damage occurs
+func handleEnemiesDamageDealt(e events.Event) events.ListenerReturn {
+	evt, ok := e.(events.DamageDealt)
+	if !ok {
 		return events.Continue
 	}
 
-	enemiesMutex.RLock()
-	usersToCheck := make(map[int]bool)
-	for userId, enemies := range userEnemies {
-		if enemies[evt.InstanceId] {
-			usersToCheck[userId] = true
+	// If damage is dealt to a player, ensure attacker is in their enemy list
+	if evt.TargetType == "player" {
+		addEnemy(evt.TargetId, evt.SourceId, evt.SourceType, evt.SourceName, false)
+	}
+
+	// If player deals damage, ensure target is in their enemy list
+	if evt.SourceType == "player" {
+		addEnemy(evt.SourceId, evt.TargetId, evt.TargetType, evt.TargetName, isUserTarget(evt.SourceId, evt.TargetId, evt.TargetType))
+	}
+
+	return events.Continue
+}
+
+// handleEnemiesAttackAvoided handles missed attacks (still combat participation)
+func handleEnemiesAttackAvoided(e events.Event) events.ListenerReturn {
+	evt, ok := e.(events.AttackAvoided)
+	if !ok {
+		return events.Continue
+	}
+
+	// If attack was avoided by player, attacker is still an enemy
+	if evt.DefenderType == "player" {
+		addEnemy(evt.DefenderId, evt.AttackerId, evt.AttackerType, evt.AttackerName, false)
+	}
+
+	// If player's attack was avoided, target is still an enemy
+	if evt.AttackerType == "player" {
+		addEnemy(evt.AttackerId, evt.DefenderId, evt.DefenderType, evt.DefenderName, isUserTarget(evt.AttackerId, evt.DefenderId, evt.DefenderType))
+	}
+
+	return events.Continue
+}
+
+// handleEnemiesMobDeathNew removes dead mobs from enemy lists
+func handleEnemiesMobDeathNew(e events.Event) events.ListenerReturn {
+	evt, ok := e.(events.MobDeath)
+	if !ok {
+		return events.Continue
+	}
+
+	enemiesMutexNew.Lock()
+	usersToUpdate := []int{}
+	for userId, enemies := range userEnemiesNew {
+		if enemy, exists := enemies[evt.InstanceId]; exists && enemy.Type == "mob" {
+			delete(enemies, evt.InstanceId)
+			if len(enemies) == 0 {
+				delete(userEnemiesNew, userId)
+			}
+			usersToUpdate = append(usersToUpdate, userId)
 		}
 	}
-	enemiesMutex.RUnlock()
+	enemiesMutexNew.Unlock()
 
+	for _, userId := range usersToUpdate {
+		sendEnemiesUpdateNew(userId)
+	}
+
+	return events.Continue
+}
+
+// handleEnemiesPlayerDeath removes dead players from enemy lists
+func handleEnemiesPlayerDeath(e events.Event) events.ListenerReturn {
+	evt, ok := e.(events.PlayerDeath)
+	if !ok {
+		return events.Continue
+	}
+
+	// Also clear the dead player's enemy list
+	enemiesMutexNew.Lock()
+	delete(userEnemiesNew, evt.UserId)
+	enemiesMutexNew.Unlock()
+
+	// Remove from other players' enemy lists
+	enemiesMutexNew.Lock()
 	usersToUpdate := []int{}
-	if len(usersToCheck) > 0 {
-		enemiesMutex.Lock()
-		for userId := range usersToCheck {
-			if enemies, ok := userEnemies[userId]; ok {
-				if enemies[evt.InstanceId] {
-					delete(enemies, evt.InstanceId)
+	for userId, enemies := range userEnemiesNew {
+		if enemy, exists := enemies[evt.UserId]; exists && enemy.Type == "player" {
+			delete(enemies, evt.UserId)
+			if len(enemies) == 0 {
+				delete(userEnemiesNew, userId)
+			}
+			usersToUpdate = append(usersToUpdate, userId)
+		}
+	}
+	enemiesMutexNew.Unlock()
+
+	for _, userId := range usersToUpdate {
+		sendEnemiesUpdateNew(userId)
+	}
+
+	return events.Continue
+}
+
+// handleEnemiesRoomChangeNew handles when enemies move away
+func handleEnemiesRoomChangeNew(e events.Event) events.ListenerReturn {
+	evt, ok := e.(events.RoomChange)
+	if !ok {
+		return events.Continue
+	}
+
+	// Handle mob movement
+	if evt.MobInstanceId != 0 {
+		enemiesMutexNew.Lock()
+		usersToUpdate := []int{}
+		for userId, enemies := range userEnemiesNew {
+			if enemy, exists := enemies[evt.MobInstanceId]; exists && enemy.Type == "mob" {
+				user := users.GetByUserId(userId)
+				if user != nil && user.Character.RoomId != evt.ToRoomId {
+					delete(enemies, evt.MobInstanceId)
 					if len(enemies) == 0 {
-						delete(userEnemies, userId)
+						delete(userEnemiesNew, userId)
 					}
 					usersToUpdate = append(usersToUpdate, userId)
 				}
 			}
 		}
-		enemiesMutex.Unlock()
-	}
+		enemiesMutexNew.Unlock()
 
-	for _, userId := range usersToUpdate {
-		sendEnemiesUpdate(userId)
+		for _, userId := range usersToUpdate {
+			sendEnemiesUpdateNew(userId)
+		}
 	}
 
 	return events.Continue
 }
 
-// handleEnemiesRoomChange handles when enemies move away
-func handleEnemiesRoomChange(e events.Event) events.ListenerReturn {
-	evt, typeOk := e.(events.RoomChange)
-	if !typeOk {
-		mudlog.Error("GMCPCombatEnemies", "action", "handleEnemiesRoomChange", "error", "type assertion failed", "expectedType", "events.RoomChange", "actualType", fmt.Sprintf("%T", e))
+// handleEnemiesCombatEnded clears enemy list when player's combat ends
+func handleEnemiesCombatEnded(e events.Event) events.ListenerReturn {
+	evt, ok := e.(events.CombatEnded)
+	if !ok || evt.EntityType != "player" {
 		return events.Continue
 	}
 
-	if evt.MobInstanceId == 0 {
+	enemiesMutexNew.Lock()
+	delete(userEnemiesNew, evt.EntityId)
+	enemiesMutexNew.Unlock()
+
+	// Send empty enemy list
+	handleCombatEnemiesUpdate(GMCPCombatEnemiesUpdate{
+		UserId:  evt.EntityId,
+		Enemies: []EnemyInfo{},
+	})
+
+	return events.Continue
+}
+
+// handleEnemiesCleanup removes stale enemies who haven't acted in a while
+func handleEnemiesCleanup(e events.Event) events.ListenerReturn {
+	evt, ok := e.(events.NewRound)
+	if !ok {
 		return events.Continue
 	}
 
-	// Check all users to see if this mob was in their enemy list
-	enemiesMutex.RLock()
-	usersToCheck := make(map[int]bool)
-	for userId, enemies := range userEnemies {
-		if enemies[evt.MobInstanceId] {
-			usersToCheck[userId] = true
-		}
-	}
-	enemiesMutex.RUnlock()
+	const staleRounds = uint64(10) // Remove enemies who haven't acted in 10 rounds
+	currentRound := evt.RoundNumber
 
-	// Now update the affected users
+	enemiesMutexNew.Lock()
 	usersToUpdate := []int{}
-	if len(usersToCheck) > 0 {
-		enemiesMutex.Lock()
-		for userId := range usersToCheck {
-			if enemies, ok := userEnemies[userId]; ok {
-				if enemies[evt.MobInstanceId] {
-					user := users.GetByUserId(userId)
-					if user == nil {
-						// Clean up stale enemy tracking
-						delete(enemies, evt.MobInstanceId)
-						if len(enemies) == 0 {
-							delete(userEnemies, userId)
-						}
-						mudlog.Warn("GMCPCombatEnemies", "action", "handleEnemiesRoomChange", "issue", "user not found, cleaning up stale enemy tracking", "userId", userId)
-						continue
-					}
-					if evt.ToRoomId != user.Character.RoomId {
-						// Enemy moved to different room, remove from list
-						delete(enemies, evt.MobInstanceId)
-						if len(enemies) == 0 {
-							delete(userEnemies, userId)
-						}
-						usersToUpdate = append(usersToUpdate, userId)
-					}
-				}
+	for userId, enemies := range userEnemiesNew {
+		changed := false
+		for enemyId, enemy := range enemies {
+			if currentRound-enemy.LastRound > staleRounds {
+				delete(enemies, enemyId)
+				changed = true
 			}
 		}
-		enemiesMutex.Unlock()
+		if changed {
+			if len(enemies) == 0 {
+				delete(userEnemiesNew, userId)
+			}
+			usersToUpdate = append(usersToUpdate, userId)
+		}
 	}
+	enemiesMutexNew.Unlock()
 
 	for _, userId := range usersToUpdate {
-		sendEnemiesUpdate(userId)
+		sendEnemiesUpdateNew(userId)
 	}
 
 	return events.Continue
 }
 
-// cleanupCombatEnemies removes all enemy tracking for a user
-func cleanupCombatEnemies(userId int) {
-	enemiesMutex.Lock()
-	delete(userEnemies, userId)
-	enemiesMutex.Unlock()
-}
-
-// sendEnemiesUpdate sends current enemy list for a user
-func sendEnemiesUpdate(userId int) {
-	user := users.GetByUserId(userId)
-	if user == nil {
-		enemiesMutex.Lock()
-		delete(userEnemies, userId)
-		enemiesMutex.Unlock()
-		mudlog.Warn("GMCPCombatEnemies", "action", "sendEnemiesUpdate", "issue", "user not found, cleaning up stale enemy tracking", "userId", userId)
+// addEnemy adds an enemy to a user's enemy list
+func addEnemy(userId int, enemyId int, enemyType string, enemyName string, isPrimary bool) {
+	// Validate user has GMCP
+	_, valid := validateUserForGMCP(userId, "GMCPCombatEnemies")
+	if !valid {
 		return
 	}
 
+	enemiesMutexNew.Lock()
+	if userEnemiesNew[userId] == nil {
+		userEnemiesNew[userId] = make(map[int]*EnemyInfoFull)
+	}
+
+	// Check if already exists
+	if existing, exists := userEnemiesNew[userId][enemyId]; exists {
+		existing.LastRound = util.GetRoundCount()
+		if isPrimary {
+			existing.IsPrimary = true
+		}
+	} else {
+		userEnemiesNew[userId][enemyId] = &EnemyInfoFull{
+			Name:      util.StripANSI(enemyName),
+			Id:        enemyId,
+			Type:      enemyType,
+			IsPrimary: isPrimary,
+			LastRound: util.GetRoundCount(),
+		}
+	}
+	enemiesMutexNew.Unlock()
+
+	mudlog.Info("GMCPCombatEnemies", "action", "Enemy added", "userId", userId,
+		"enemyName", enemyName, "enemyType", enemyType, "isPrimary", isPrimary)
+
+	// Send update
+	sendEnemiesUpdateNew(userId)
+}
+
+// isUserTarget checks if an enemy is the user's current target
+func isUserTarget(userId int, enemyId int, enemyType string) bool {
+	targetMutexNew.RLock()
+	target := userTargetsNew[userId]
+	targetMutexNew.RUnlock()
+
+	if target == nil {
+		return false
+	}
+
+	return target.Id == enemyId && target.Type == enemyType
+}
+
+// sendEnemiesUpdateNew sends current enemy list for a user
+func sendEnemiesUpdateNew(userId int) {
+	enemiesMutexNew.RLock()
+	enemyMap := userEnemiesNew[userId]
+	enemiesMutexNew.RUnlock()
+
 	enemies := []EnemyInfo{}
 
-	enemiesMutex.RLock()
-	enemyMap := userEnemies[userId]
-	enemiesMutex.RUnlock()
+	// Get user's current room to verify enemies are still present
+	user := users.GetByUserId(userId)
+	if user == nil {
+		return
+	}
 
-	for mobId := range enemyMap {
-		if mob := mobs.GetInstance(mobId); mob != nil {
-			isPrimary := false
-			if user.Character.Aggro != nil && user.Character.Aggro.MobInstanceId == mobId {
-				isPrimary = true
+	room := rooms.LoadRoom(user.Character.RoomId)
+	if room == nil {
+		return
+	}
+
+	for _, enemy := range enemyMap {
+		// Verify enemy still exists and is in same room
+		stillExists := false
+
+		if enemy.Type == "mob" {
+			for _, mobId := range room.GetMobs() {
+				if mobId == enemy.Id {
+					if mob := mobs.GetInstance(mobId); mob != nil {
+						stillExists = true
+						enemies = append(enemies, EnemyInfo{
+							Name:      enemy.Name,
+							Id:        enemy.Id,
+							IsPrimary: enemy.IsPrimary,
+						})
+					}
+					break
+				}
 			}
+		} else if enemy.Type == "player" {
+			for _, playerId := range room.GetPlayers() {
+				if playerId == enemy.Id {
+					stillExists = true
+					enemies = append(enemies, EnemyInfo{
+						Name:      enemy.Name,
+						Id:        enemy.Id,
+						IsPrimary: enemy.IsPrimary,
+					})
+					break
+				}
+			}
+		}
 
-			enemies = append(enemies, EnemyInfo{
-				Name:      util.StripANSI(mob.Character.Name),
-				Id:        mobId,
-				IsPrimary: isPrimary,
-			})
+		// Clean up if enemy no longer exists
+		if !stillExists {
+			enemiesMutexNew.Lock()
+			delete(enemyMap, enemy.Id)
+			enemiesMutexNew.Unlock()
 		}
 	}
 
@@ -297,4 +418,11 @@ func sendEnemiesUpdate(userId int) {
 		UserId:  userId,
 		Enemies: enemies,
 	})
+}
+
+// cleanupCombatEnemiesNew removes all enemy tracking for a user
+func cleanupCombatEnemiesNew(userId int) {
+	enemiesMutexNew.Lock()
+	delete(userEnemiesNew, userId)
+	enemiesMutexNew.Unlock()
 }

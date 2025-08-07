@@ -183,6 +183,18 @@ func Attack(rest string, user *users.UserRecord, room *rooms.Room, flags events.
 
 			user.Character.SetAggro(0, attackMobInstanceId, characters.DefaultAttack)
 
+			// Immediately fire combat events for GMCP
+			events.AddToQueue(events.CombatStarted{
+				AttackerId:   user.UserId,
+				AttackerType: "player",
+				AttackerName: user.Character.Name,
+				DefenderId:   attackMobInstanceId,
+				DefenderType: "mob",
+				DefenderName: m.Character.Name,
+				RoomId:       room.RoomId,
+				InitiatedBy:  "attack",
+			})
+
 			user.SendText(
 				fmt.Sprintf(`You prepare to enter into mortal combat with <ansi fg="mobname">%s</ansi>.`, m.Character.Name),
 			)
@@ -238,6 +250,18 @@ func Attack(rest string, user *users.UserRecord, room *rooms.Room, flags events.
 			}
 
 			user.Character.SetAggro(attackPlayerId, 0, characters.DefaultAttack)
+
+			// Immediately fire combat events for GMCP
+			events.AddToQueue(events.CombatStarted{
+				AttackerId:   user.UserId,
+				AttackerType: "player",
+				AttackerName: user.Character.Name,
+				DefenderId:   attackPlayerId,
+				DefenderType: "player",
+				DefenderName: p.Character.Name,
+				RoomId:       room.RoomId,
+				InitiatedBy:  "attack",
+			})
 
 			user.SendText(
 				fmt.Sprintf(`You prepare to enter into mortal combat with <ansi fg="username">%s</ansi>.`, p.Character.Name),
