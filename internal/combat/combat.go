@@ -12,7 +12,6 @@ import (
 	"github.com/GoMudEngine/GoMud/internal/events"
 	"github.com/GoMudEngine/GoMud/internal/items"
 	"github.com/GoMudEngine/GoMud/internal/mobs"
-	"github.com/GoMudEngine/GoMud/internal/mudlog"
 	"github.com/GoMudEngine/GoMud/internal/races"
 	"github.com/GoMudEngine/GoMud/internal/rooms"
 	"github.com/GoMudEngine/GoMud/internal/skills"
@@ -34,8 +33,17 @@ func AttackPlayerVsMob(user *users.UserRecord, mob *mobs.Mob) AttackResult {
 	attackResult := calculateCombat(*user.Character, mob.Character, User, Mob)
 
 	if attackResult.DamageToSource != 0 {
+		oldUserHealth := user.Character.Health
 		user.Character.ApplyHealthChange(attackResult.DamageToSource * -1)
+		newUserHealth := user.Character.Health
 		user.WimpyCheck()
+
+		// Fire CharacterVitalsChanged event for immediate GMCP update
+		if oldUserHealth != newUserHealth {
+			events.AddToQueue(events.CharacterVitalsChanged{
+				UserId: user.UserId,
+			})
+		}
 	}
 
 	oldHealth := mob.Character.Health
@@ -104,13 +112,31 @@ func AttackPlayerVsPlayer(userAtk *users.UserRecord, userDef *users.UserRecord) 
 	attackResult := calculateCombat(*userAtk.Character, *userDef.Character, User, User)
 
 	if attackResult.DamageToSource != 0 {
+		oldAtkHealth := userAtk.Character.Health
 		userAtk.Character.ApplyHealthChange(attackResult.DamageToSource * -1)
+		newAtkHealth := userAtk.Character.Health
 		userAtk.WimpyCheck()
+
+		// Fire CharacterVitalsChanged event for immediate GMCP update
+		if oldAtkHealth != newAtkHealth {
+			events.AddToQueue(events.CharacterVitalsChanged{
+				UserId: userAtk.UserId,
+			})
+		}
 	}
 
 	if attackResult.DamageToTarget != 0 {
+		oldDefHealth := userDef.Character.Health
 		userDef.Character.ApplyHealthChange(attackResult.DamageToTarget * -1)
+		newDefHealth := userDef.Character.Health
 		userDef.WimpyCheck()
+
+		// Fire CharacterVitalsChanged event for immediate GMCP update
+		if oldDefHealth != newDefHealth {
+			events.AddToQueue(events.CharacterVitalsChanged{
+				UserId: userDef.UserId,
+			})
+		}
 	}
 
 	// Fire combat events
@@ -176,8 +202,17 @@ func AttackMobVsPlayer(mob *mobs.Mob, user *users.UserRecord) AttackResult {
 	}
 
 	if attackResult.DamageToTarget != 0 {
+		oldUserHealth := user.Character.Health
 		user.Character.ApplyHealthChange(attackResult.DamageToTarget * -1)
+		newUserHealth := user.Character.Health
 		user.WimpyCheck()
+
+		// Fire CharacterVitalsChanged event for immediate GMCP update
+		if oldUserHealth != newUserHealth {
+			events.AddToQueue(events.CharacterVitalsChanged{
+				UserId: user.UserId,
+			})
+		}
 	}
 
 	// Fire combat events
@@ -420,7 +455,6 @@ func calculateCombat(sourceChar characters.Character, targetChar characters.Char
 
 	for i := 0; i < attackCount; i++ {
 
-		mudlog.Debug(`calculateCombat`, `Atk`, fmt.Sprintf(`%d/%d`, i+1, attackCount), `Source`, fmt.Sprintf(`%s (%s)`, sourceChar.Name, sourceType), `Target`, fmt.Sprintf(`%s (%s)`, targetChar.Name, targetType))
 
 		attackWeapons := []items.Item{}
 
@@ -526,7 +560,6 @@ func calculateCombat(sourceChar characters.Character, targetChar characters.Char
 				msgSeed = weapon.ItemId
 			}
 
-			mudlog.Debug("DiceRolls", "attacks", attacks, "dCount", dCount, "dSides", dSides, "dBonus", dBonus, "critBuffs", critBuffs)
 
 			// Individual weapons may get multiple attacks
 			for j := 0; j < attacks; j++ {

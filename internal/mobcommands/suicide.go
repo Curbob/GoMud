@@ -36,7 +36,6 @@ func Suicide(rest string, mob *mobs.Mob, room *rooms.Room) (bool, error) {
 	// Useful to know sometimes
 	mobs.TrackRecentDeath(mob.InstanceId)
 
-	mudlog.Debug(`Mob Death`, `name`, mob.Character.Name, `rest`, rest)
 
 	// Make sure to clean up any charm stuff if it's being removed
 	if charmedUserId := mob.Character.RemoveCharm(); charmedUserId > 0 {
@@ -147,7 +146,6 @@ func Suicide(rest string, mob *mobs.Mob, room *rooms.Room) (bool, error) {
 
 					finalXPVal := int(math.Ceil(float64(xpVal) * xpScaler))
 
-					mudlog.Debug("XP Calculation", "MobLevel", mob.Character.Level, "XPBase", mobXP, "xpVal", xpVal, "xpVariation", xpVariation, "xpScaler", xpScaler, "finalXPVal", finalXPVal)
 
 					user.GrantXP(finalXPVal, `combat`)
 
@@ -157,13 +155,18 @@ func Suicide(rest string, mob *mobs.Mob, room *rooms.Room) (bool, error) {
 					user.Character.UpdateAlignment(alignmentAdj)
 					alignmentAfter := user.Character.AlignmentName()
 
-					mudlog.Debug("Alignment", "user Alignment", user.Character.Alignment, "mob Alignment", mob.Character.Alignment, `alignmentAdj`, alignmentAdj, `alignmentBefore`, alignmentBefore, `alignmentAfter`, alignmentAfter)
 
 					if alignmentBefore != alignmentAfter {
 						alignmentBefore = fmt.Sprintf(`<ansi fg="%s">%s</ansi>`, alignmentBefore, alignmentBefore)
 						alignmentAfter = fmt.Sprintf(`<ansi fg="%s">%s</ansi>`, alignmentAfter, alignmentAfter)
 						updateTxt := fmt.Sprintf(`<ansi fg="231">Your alignment has shifted from %s to %s!</ansi>`, alignmentBefore, alignmentAfter)
 						user.SendText(updateTxt)
+						
+						events.AddToQueue(events.CharacterAlignmentChanged{
+							UserId:       user.UserId,
+							OldAlignment: int(user.Character.Alignment) - alignmentAdj,
+							NewAlignment: int(user.Character.Alignment),
+						})
 					}
 
 					// Chance to learn to tame the creature.
@@ -180,7 +183,6 @@ func Suicide(rest string, mob *mobs.Mob, room *rooms.Room) (bool, error) {
 						targetNumber = 1
 					}
 
-					mudlog.Debug("Tame Chance", "levelDelta", levelDelta, "skillsDelta", skillsDelta, "targetNumber", targetNumber)
 
 					if util.Rand(1000) < targetNumber {
 						if mob.IsTameable() && user.Character.GetSkillLevel(skills.Tame) > 0 {
@@ -237,13 +239,18 @@ func Suicide(rest string, mob *mobs.Mob, room *rooms.Room) (bool, error) {
 						user.Character.UpdateAlignment(alignmentAdj)
 						alignmentAfter := user.Character.AlignmentName()
 
-						mudlog.Debug("Alignment", "user Alignment", user.Character.Alignment, "mob Alignment", mob.Character.Alignment, `alignmentAdj`, alignmentAdj, `alignmentBefore`, alignmentBefore, `alignmentAfter`, alignmentAfter)
-
+	
 						if alignmentBefore != alignmentAfter {
 							alignmentBefore = fmt.Sprintf(`<ansi fg="%s">%s</ansi>`, alignmentBefore, alignmentBefore)
 							alignmentAfter = fmt.Sprintf(`<ansi fg="%s">%s</ansi>`, alignmentAfter, alignmentAfter)
 							updateTxt := fmt.Sprintf(`<ansi fg="231">Your alignment has shifted from %s to %s!</ansi>`, alignmentBefore, alignmentAfter)
 							user.SendText(updateTxt)
+							
+							events.AddToQueue(events.CharacterAlignmentChanged{
+								UserId:       user.UserId,
+								OldAlignment: int(user.Character.Alignment) - alignmentAdj,
+								NewAlignment: int(user.Character.Alignment),
+							})
 						}
 
 						// Chance to learn to tame the creature.
@@ -260,8 +267,7 @@ func Suicide(rest string, mob *mobs.Mob, room *rooms.Room) (bool, error) {
 							targetNumber = 1
 						}
 
-						mudlog.Debug("Tame Chance", "levelDelta", levelDelta, "skillsDelta", skillsDelta, "targetNumber", targetNumber)
-
+	
 						if util.Rand(1000) < targetNumber {
 							if mob.IsTameable() && user.Character.GetSkillLevel(skills.Tame) > 0 {
 

@@ -10,8 +10,10 @@ import (
 	"github.com/GoMudEngine/GoMud/internal/configs"
 	"github.com/GoMudEngine/GoMud/internal/connections"
 	"github.com/GoMudEngine/GoMud/internal/events"
+	"github.com/GoMudEngine/GoMud/internal/mobs"
 	"github.com/GoMudEngine/GoMud/internal/mudlog"
 	"github.com/GoMudEngine/GoMud/internal/plugins"
+	"github.com/GoMudEngine/GoMud/internal/rooms"
 	"github.com/GoMudEngine/GoMud/internal/term"
 	"github.com/GoMudEngine/GoMud/internal/users"
 	lru "github.com/hashicorp/golang-lru/v2"
@@ -88,7 +90,8 @@ func validateUserForGMCP(userId int, module string) (*users.UserRecord, bool) {
 		return nil, false
 	}
 
-	if !isGMCPEnabled(user.ConnectionId()) {
+	gmcpEnabled := isGMCPEnabled(user.ConnectionId())
+	if !gmcpEnabled {
 		return nil, false
 	}
 
@@ -144,10 +147,17 @@ func (gs *GMCPSettings) IsMudlet() bool {
 
 // Combat tracking handlers
 func handleCombatStartedTracking(e events.Event) events.ListenerReturn {
+	mudlog.Info("GMCP Combat Tracking", "event", "CombatStarted received")
 	evt, ok := e.(events.CombatStarted)
 	if !ok {
+		mudlog.Error("GMCP Combat Tracking", "error", "CombatStarted type assertion failed")
 		return events.Continue
 	}
+
+	mudlog.Info("GMCP Combat Tracking", "event", "CombatStarted",
+		"attackerType", evt.AttackerType, "attackerId", evt.AttackerId,
+		"defenderType", evt.DefenderType, "defenderId", evt.DefenderId,
+		"initiatedBy", evt.InitiatedBy)
 
 	// Track both attacker and defender if they're players
 	if evt.AttackerType == "player" {
@@ -155,6 +165,7 @@ func handleCombatStartedTracking(e events.Event) events.ListenerReturn {
 		combatUsers[evt.AttackerId] = struct{}{}
 		combatUsersMutex.Unlock()
 		TrackCombatPlayer(evt.AttackerId)
+		mudlog.Info("GMCP Combat Tracking", "action", "Added player to combat", "userId", evt.AttackerId)
 	}
 
 	if evt.DefenderType == "player" {
@@ -162,6 +173,7 @@ func handleCombatStartedTracking(e events.Event) events.ListenerReturn {
 		combatUsers[evt.DefenderId] = struct{}{}
 		combatUsersMutex.Unlock()
 		TrackCombatPlayer(evt.DefenderId)
+		mudlog.Info("GMCP Combat Tracking", "action", "Added player to combat", "userId", evt.DefenderId)
 	}
 
 	return events.Continue
@@ -192,6 +204,9 @@ func handlePlayerDespawnTracking(e events.Event) events.ListenerReturn {
 	combatUsersMutex.Lock()
 	delete(combatUsers, evt.UserId)
 	combatUsersMutex.Unlock()
+	
+	// Clean up all GMCP state for this user
+	CleanupUser(evt.UserId)
 
 	return events.Continue
 }
@@ -208,22 +223,57 @@ func GetUsersInCombat() []int {
 	return usersInCombat
 }
 
-// IsUserInCombat checks if a specific user is in combat
+// IsUserInCombat checks if a user is currently in combat (attacking or being attacked)
+// This is the single source of truth for combat state detection
 func IsUserInCombat(userId int) bool {
-	combatUsersMutex.RLock()
-	defer combatUsersMutex.RUnlock()
+	user := users.GetByUserId(userId)
+	if user == nil {
+		return false
+	}
 
-	_, exists := combatUsers[userId]
-	return exists
+	// User is attacking if they have aggro set
+	if user.Character.Aggro != nil && (user.Character.Aggro.UserId > 0 || user.Character.Aggro.MobInstanceId > 0) {
+		return true
+	}
+
+	// Check if any mobs in their room are targeting them
+	room := rooms.LoadRoom(user.Character.RoomId)
+	if room == nil {
+		return false
+	}
+
+	for _, mobId := range room.GetMobs() {
+		if mob := mobs.GetInstance(mobId); mob != nil {
+			if mob.Character.Aggro != nil && mob.Character.Aggro.UserId == userId {
+				return true // Being attacked
+			}
+		}
+	}
+
+	return false
+}
+
+// GetUsersInOrTargetedByCombat returns users who are either attacking OR being attacked
+func GetUsersInOrTargetedByCombat() []int {
+	result := []int{}
+	
+	// Check all active users for combat involvement
+	for _, user := range users.GetAllActiveUsers() {
+		if IsUserInCombat(user.UserId) {
+			result = append(result, user.UserId)
+		}
+	}
+
+	return result
 }
 
 // CleanupUser removes all GMCP state for a disconnecting user
 func CleanupUser(userId int) {
 	// Clean up each combat module's state
 	cleanupCombatStatus(userId)
-	cleanupCombatTarget(userId)
-	cleanupCombatEnemies(userId)
-	UntrackCombatPlayer(userId) // Cooldown module cleanup
+	cleanupCombatTargetNew(userId)  // Use new event-driven version
+	cleanupCombatEnemiesNew(userId) // Use new event-driven version
+	UntrackCombatPlayer(userId)     // Cooldown module cleanup
 }
 
 func (g *GMCPModule) IsMudletExportedFunction(connectionId uint64) bool {
@@ -320,7 +370,7 @@ func (g *GMCPModule) HandleIAC(connectionId uint64, iacCmd []byte) bool {
 		return false
 	}
 
-	if ok, payload := term.Matches(iacCmd, GmcpAccept); ok {
+	if ok, _ := term.Matches(iacCmd, GmcpAccept); ok {
 
 		gmcpData, ok := g.cache.Get(connectionId)
 		if !ok {
@@ -329,11 +379,10 @@ func (g *GMCPModule) HandleIAC(connectionId uint64, iacCmd []byte) bool {
 		gmcpData.GMCPAccepted = true
 		g.cache.Add(connectionId, gmcpData)
 
-		mudlog.Debug("Received", "type", "IAC (Client-GMCP Accept)", "data", term.BytesString(payload))
 		return true
 	}
 
-	if ok, payload := term.Matches(iacCmd, GmcpRefuse); ok {
+	if ok, _ := term.Matches(iacCmd, GmcpRefuse); ok {
 
 		gmcpData, ok := g.cache.Get(connectionId)
 		if !ok {
@@ -342,7 +391,6 @@ func (g *GMCPModule) HandleIAC(connectionId uint64, iacCmd []byte) bool {
 		gmcpData.GMCPAccepted = false
 		g.cache.Add(connectionId, gmcpData)
 
-		mudlog.Debug("Received", "type", "IAC (Client-GMCP Refuse)", "data", term.BytesString(payload))
 		return true
 	}
 
@@ -367,7 +415,6 @@ func (g *GMCPModule) HandleIAC(connectionId uint64, iacCmd []byte) bool {
 			command = string(requestBody)
 		}
 
-		mudlog.Debug("Received", "type", "GMCP (Handling)", "command", command, "payload", string(payload))
 
 		switch command {
 
@@ -412,7 +459,6 @@ func (g *GMCPModule) HandleIAC(connectionId uint64, iacCmd []byte) bool {
 		case `Char.Login`:
 			decoded := GMCPLogin{}
 			if err := json.Unmarshal(payload, &decoded); err == nil {
-				mudlog.Debug("GMCP LOGIN", "username", decoded.Name, "password", strings.Repeat(`*`, len(decoded.Password)))
 			}
 
 		case `GMCP`:
@@ -505,7 +551,6 @@ func (g *GMCPModule) HandleIAC(connectionId uint64, iacCmd []byte) bool {
 						Payload:      payload,
 					})
 
-					mudlog.Debug("GMCP", "type", "Discord", "command", discordCommand, "userId", userId)
 				}
 			}
 		}
@@ -513,7 +558,6 @@ func (g *GMCPModule) HandleIAC(connectionId uint64, iacCmd []byte) bool {
 		return true
 	}
 
-	mudlog.Debug("Received", "type", "GMCP?", "data-size", len(iacCmd), "data-string", string(iacCmd), "data-bytes", iacCmd)
 
 	return true
 }

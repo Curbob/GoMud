@@ -333,6 +333,14 @@ type CharacterVitalsChanged struct {
 
 func (p CharacterVitalsChanged) Type() string { return `CharacterVitalsChanged` }
 
+type CharacterAlignmentChanged struct {
+	UserId       int
+	OldAlignment int
+	NewAlignment int
+}
+
+func (p CharacterAlignmentChanged) Type() string { return `CharacterAlignmentChanged` }
+
 // Health, mana, etc.
 type CharacterTrained struct {
 	UserId int

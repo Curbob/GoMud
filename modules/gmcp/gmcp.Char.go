@@ -43,6 +43,7 @@ func init() {
 
 	events.RegisterListener(events.PlayerSpawn{}, g.playerSpawnHandler)
 	events.RegisterListener(events.CharacterVitalsChanged{}, g.vitalsChangedHandler)
+	events.RegisterListener(events.CharacterAlignmentChanged{}, g.alignmentChangedHandler)
 	events.RegisterListener(events.LevelUp{}, g.levelUpHandler)
 	events.RegisterListener(events.CharacterTrained{}, g.charTrainedHandler)
 	events.RegisterListener(GMCPCharUpdate{}, g.buildAndSendGMCPPayload)
@@ -156,10 +157,28 @@ func (g *GMCPCharModule) vitalsChangedHandler(e events.Event) events.ListenerRet
 	lastVitalsUpdate[evt.UserId] = now
 	vitalsUpdateMu.Unlock()
 
-	// Changing equipment might affect stats, inventory, maxhp/maxmp etc
 	events.AddToQueue(GMCPCharUpdate{
 		UserId:     evt.UserId,
 		Identifier: `Char.Vitals`,
+	})
+
+	return events.Continue
+}
+
+func (g *GMCPCharModule) alignmentChangedHandler(e events.Event) events.ListenerReturn {
+
+	evt, typeOk := e.(events.CharacterAlignmentChanged)
+	if !typeOk {
+		return events.Continue
+	}
+
+	if evt.UserId == 0 {
+		return events.Continue
+	}
+
+	events.AddToQueue(GMCPCharUpdate{
+		UserId:     evt.UserId,
+		Identifier: `Char.Info`,
 	})
 
 	return events.Continue
@@ -418,10 +437,9 @@ func (g *GMCPCharModule) GetCharNode(user *users.UserRecord, gmcpModule string) 
 	}
 
 	if g.wantsGMCPPayload(`Char.Status`, gmcpModule) {
-		// Return character status - could include things like "standing", "fighting", etc.
-		// For now, return a simple status object
+		// Return character status
 		status := map[string]interface{}{
-			"state": "standing", // TODO: Add actual state tracking
+			"state": "standing",
 		}
 		return status, `Char.Status`
 	}
