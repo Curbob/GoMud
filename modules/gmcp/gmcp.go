@@ -204,7 +204,7 @@ func handlePlayerDespawnTracking(e events.Event) events.ListenerReturn {
 	combatUsersMutex.Lock()
 	delete(combatUsers, evt.UserId)
 	combatUsersMutex.Unlock()
-	
+
 	// Clean up all GMCP state for this user
 	CleanupUser(evt.UserId)
 
@@ -256,7 +256,7 @@ func IsUserInCombat(userId int) bool {
 // GetUsersInOrTargetedByCombat returns users who are either attacking OR being attacked
 func GetUsersInOrTargetedByCombat() []int {
 	result := []int{}
-	
+
 	// Check all active users for combat involvement
 	for _, user := range users.GetAllActiveUsers() {
 		if IsUserInCombat(user.UserId) {
@@ -415,7 +415,6 @@ func (g *GMCPModule) HandleIAC(connectionId uint64, iacCmd []byte) bool {
 			command = string(requestBody)
 		}
 
-
 		switch command {
 
 		case `Core.Hello`:
@@ -557,7 +556,6 @@ func (g *GMCPModule) HandleIAC(connectionId uint64, iacCmd []byte) bool {
 
 		return true
 	}
-
 
 	return true
 }
