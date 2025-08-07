@@ -261,7 +261,6 @@ func handleCombatCooldownUpdate(e events.Event) events.ListenerReturn {
 		return events.Continue
 	}
 
-
 	_, valid := validateUserForGMCP(evt.UserId, "GMCPCombatCooldown")
 	if !valid {
 		return events.Continue
