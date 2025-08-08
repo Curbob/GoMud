@@ -172,23 +172,16 @@ func (i *Item) Validate() {
 type ItemLookData struct {
 	Item          *Item
 	ItemSpec      ItemSpec
-	Location      string // "in your backpack", "you are wearing"
-	IsWeapon      bool
-	IsReadable    bool
-	IsDrinkable   bool
-	IsEdible      bool
-	IsLockpicks   bool
-	IsKey         bool
-	IsWearable    bool
-	IsUsable      bool
+	Location      string          // "in your backpack", "you are wearing"
+	Type          string          // Item type for template comparisons
+	Subtype       string          // Item subtype for template comparisons
+	Adjectives    map[string]bool // Extensible flags (cursed, enchanted, etc)
 	WeaponHands   int
 	WeaponType    string // "claws", "shooting", etc.
 	WaitRounds    int
 	HasUses       bool
 	UsesRemaining int
 	MaxUses       int
-	IsCursed      bool
-	IsEnchanted   bool
 	EnchantLevel  int
 }
 
@@ -197,7 +190,10 @@ func (i *Item) GetLookData(location string) ItemLookData {
 	// Defensive check for nil item
 	if i == nil {
 		return ItemLookData{
-			Location: location,
+			Location:   location,
+			Type:       "",
+			Subtype:    "",
+			Adjectives: make(map[string]bool),
 		}
 	}
 
@@ -207,23 +203,20 @@ func (i *Item) GetLookData(location string) ItemLookData {
 		Item:          i,
 		ItemSpec:      iSpec,
 		Location:      location,
-		IsWeapon:      iSpec.Type == Weapon,
-		IsReadable:    iSpec.Type == Readable,
-		IsDrinkable:   iSpec.Subtype == Drinkable,
-		IsEdible:      iSpec.Subtype == Edible,
-		IsLockpicks:   iSpec.Type == Lockpicks,
-		IsKey:         iSpec.Type == Key,
-		IsWearable:    iSpec.Subtype == Wearable,
-		IsUsable:      iSpec.Subtype == Usable,
+		Type:          string(iSpec.Type),
+		Subtype:       string(iSpec.Subtype),
+		Adjectives:    make(map[string]bool),
 		HasUses:       iSpec.Uses > 0,
 		UsesRemaining: i.Uses,
 		MaxUses:       iSpec.Uses,
-		IsCursed:      i.IsCursed(),
-		IsEnchanted:   i.Enchantments > 0,
 		EnchantLevel:  int(i.Enchantments),
 	}
 
-	if data.IsWeapon {
+	// Set adjectives for extensibility
+	data.Adjectives["cursed"] = i.IsCursed()
+	data.Adjectives["enchanted"] = i.Enchantments > 0
+
+	if iSpec.Type == Weapon {
 		data.WeaponHands = iSpec.Hands
 		data.WaitRounds = iSpec.WaitRounds
 

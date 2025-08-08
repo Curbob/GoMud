@@ -420,9 +420,8 @@ Network:
   # - TimeoutMods -
   #   Whether Admin/Mod users get timed out when reaching MaxIdleSeconds
   #   If set to false, Admins & Mods never get force disconnected.
-  TimeoutMods:
-    false
-    # - ZombieSeconds -
+  TimeoutMods: false
+  # - ZombieSeconds -
   #   How many seconds a character stays active/in game after a network connection
   #   is lost. Set to 0 to instantly log out characters (exploitable).
   ZombieSeconds: 60

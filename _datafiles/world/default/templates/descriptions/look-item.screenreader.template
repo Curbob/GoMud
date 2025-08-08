@@ -2,20 +2,20 @@
 You look at the {{ .Item.Name }} {{ .Location }}:
 
 {{ .ItemSpec.Description }}
-{{- if .IsReadable }}
+{{- if eq .Type "readable" }}
 You should probably read this.
-{{- else if .IsDrinkable }}
+{{- else if eq .Subtype "drinkable" }}
 You could probably drink this.
-{{- else if .IsEdible }}
+{{- else if eq .Subtype "edible" }}
 You could probably eat this.
-{{- else if .IsLockpicks }}
+{{- else if eq .Type "lockpicks" }}
 These are used with the picklock command.
-{{- else if .IsKey }}
+{{- else if eq .Type "key" }}
 When you find the right door, keys are added to your keyring automatically.
-{{- else if .IsWearable }}
+{{- else if eq .Subtype "wearable" }}
 It looks like wearable {{ .ItemSpec.Type }} equipment.
 {{- end }}
-{{- if .IsWeapon }}
+{{- if eq .Type "weapon" }}
 It looks like a {{ .WeaponHands }}-Handed weapon.
 {{- if eq .WeaponType "claws" }}
 It looks like a claws weapon. These can be dual wielded without training.
@@ -29,9 +29,9 @@ It requires an extra {{ .WaitRounds }} round(s) between attacks.
 {{- if .HasUses }}
 It has {{ .UsesRemaining }}/{{ .MaxUses }} uses remaining.
 {{- end }}
-{{- if .IsCursed }}
+{{- if index .Adjectives "cursed" }}
 It's CURSED! Once equipped, it cannot be removed without magical help.
 {{- end }}
-{{- if .IsEnchanted }}
+{{- if index .Adjectives "enchanted" }}
 It glows with a magical aura (enchantment level {{ .EnchantLevel }}).
 {{- end }}

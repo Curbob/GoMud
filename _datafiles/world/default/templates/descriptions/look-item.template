@@ -2,20 +2,20 @@
 You look at the <ansi fg="item">{{ .Item.DisplayName }}</ansi> {{ .Location }}:
 
 {{ .ItemSpec.Description }}
-{{- if .IsReadable }}
+{{- if eq .Type "readable" }}
 - You should probably <ansi fg="command">read</ansi> this.
-{{- else if .IsDrinkable }}
+{{- else if eq .Subtype "drinkable" }}
 - You could probably <ansi fg="command">drink</ansi> this.
-{{- else if .IsEdible }}
+{{- else if eq .Subtype "edible" }}
 - You could probably <ansi fg="command">eat</ansi> this.
-{{- else if .IsLockpicks }}
+{{- else if eq .Type "lockpicks" }}
 - These are used with the <ansi fg="command">picklock</ansi> command.
-{{- else if .IsKey }}
+{{- else if eq .Type "key" }}
 - When you find the right door, keys are added to your keyring automatically.
-{{- else if .IsWearable }}
+{{- else if eq .Subtype "wearable" }}
 - It looks like wearable <ansi fg="magenta">{{ .ItemSpec.Type }}</ansi> equipment.
 {{- end }}
-{{- if .IsWeapon }}
+{{- if eq .Type "weapon" }}
 - It looks like a <ansi fg="yellow">{{ .WeaponHands }}-Handed</ansi> weapon.
 {{- if eq .WeaponType "claws" }}
 - It looks like a <ansi fg="yellow">claws</ansi> weapon. These can be dual wielded without training.
@@ -29,9 +29,9 @@ You look at the <ansi fg="item">{{ .Item.DisplayName }}</ansi> {{ .Location }}:
 {{- if .HasUses }}
 - It has <ansi fg="yellow">{{ .UsesRemaining }}/{{ .MaxUses }}</ansi> uses remaining.
 {{- end }}
-{{- if .IsCursed }}
+{{- if index .Adjectives "cursed" }}
 - It's <ansi fg="red-bold">CURSED!</ansi> Once equipped, it cannot be removed without magical help.
 {{- end }}
-{{- if .IsEnchanted }}
+{{- if index .Adjectives "enchanted" }}
 - It glows with a <ansi fg="enchanted">magical aura</ansi> (enchantment level {{ .EnchantLevel }}).
 {{- end }}
