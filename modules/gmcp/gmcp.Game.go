@@ -128,9 +128,10 @@ func (g *GMCPGameModule) sendAllGameNodes(userId int) {
 
 	// Send Game.Info
 	infoPayload := map[string]interface{}{
-		"engine":     "GoMud",
-		"login_time": user.GetConnectTime().Format(tFormat),
-		"name":       string(c.Server.MudName),
+		"engine":           "GoMud",
+		"login_time":       user.GetConnectTime().Format(tFormat),
+		"login_time_epoch": user.GetConnectTime().Unix(),
+		"name":             string(c.Server.MudName),
 	}
 
 	events.AddToQueue(GMCPOut{
