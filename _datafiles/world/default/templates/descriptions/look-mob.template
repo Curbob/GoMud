@@ -1,0 +1,66 @@
+{{/* Template for looking at mobs */}}
+<ansi fg="black-bold">.:</ansi> <ansi fg="mobname">{{ .Character.Name }}</ansi>{{ if .IsCharmed }} (<ansi fg="yellow">charmed by {{ .CharmedBy }}</ansi>){{ end }}{{ if .IsShop }} (<ansi fg="green">merchant</ansi>){{ end }}
+ ┌─ <ansi fg="black-bold">.:</ansi><ansi fg="20">Description</ansi> ────────────────────────────────────────────────────────────┐
+   {{ splitstring .Character.GetDescription 72 "   "}}
+   {{ .HealthStatus }}
+ └────────────────────────────────────────────────────────────────────────────┘
+{{- $showEmpty := showEmptyEquipmentSlots }}
+{{- $hasEquipment := false }}
+{{- if and (not .Equipment.Weapon.IsDisabled) (gt .Equipment.Weapon.ItemId 0) }}{{ $hasEquipment = true }}{{ end }}
+{{- if and (not .Equipment.Offhand.IsDisabled) (gt .Equipment.Offhand.ItemId 0) }}{{ $hasEquipment = true }}{{ end }}
+{{- if and (not .Equipment.Head.IsDisabled) (gt .Equipment.Head.ItemId 0) }}{{ $hasEquipment = true }}{{ end }}
+{{- if and (not .Equipment.Neck.IsDisabled) (gt .Equipment.Neck.ItemId 0) }}{{ $hasEquipment = true }}{{ end }}
+{{- if and (not .Equipment.Body.IsDisabled) (gt .Equipment.Body.ItemId 0) }}{{ $hasEquipment = true }}{{ end }}
+{{- if and (not .Equipment.Belt.IsDisabled) (gt .Equipment.Belt.ItemId 0) }}{{ $hasEquipment = true }}{{ end }}
+{{- if and (not .Equipment.Gloves.IsDisabled) (gt .Equipment.Gloves.ItemId 0) }}{{ $hasEquipment = true }}{{ end }}
+{{- if and (not .Equipment.Ring.IsDisabled) (gt .Equipment.Ring.ItemId 0) }}{{ $hasEquipment = true }}{{ end }}
+{{- if and (not .Equipment.Legs.IsDisabled) (gt .Equipment.Legs.ItemId 0) }}{{ $hasEquipment = true }}{{ end }}
+{{- if and (not .Equipment.Feet.IsDisabled) (gt .Equipment.Feet.ItemId 0) }}{{ $hasEquipment = true }}{{ end }}
+{{- if and (not $hasEquipment) (not $showEmpty) }}
+ <ansi fg="yellow">{{ .Character.Name }}</ansi> is not wearing anything.
+{{- else if or $hasEquipment $showEmpty }}
+ ┌─ <ansi fg="black-bold">.:</ansi><ansi fg="20">Equipment</ansi> ──────────────────────────────────────────────────────────────┐
+{{- $showItem := false }}
+{{- $showItem = or (and (not .Equipment.Weapon.IsDisabled) (gt .Equipment.Weapon.ItemId 0)) (and $showEmpty (not .Equipment.Weapon.IsDisabled)) }}
+{{- if $showItem }}
+   <ansi fg="yellow">Weapon:  </ansi>{{ if gt .Equipment.Weapon.ItemId 0 }}<ansi fg="itemname">{{ .Equipment.Weapon.NameSimple  }}</ansi>{{ else }}<ansi fg="black-bold">-nothing-</ansi>{{ end }}
+{{- end }}
+{{- $showItem = or (and (not .Equipment.Offhand.IsDisabled) (gt .Equipment.Offhand.ItemId 0)) (and $showEmpty (not .Equipment.Offhand.IsDisabled)) }}
+{{- if $showItem }}
+   <ansi fg="yellow">Offhand: </ansi>{{ if gt .Equipment.Offhand.ItemId 0 }}<ansi fg="itemname">{{ .Equipment.Offhand.NameSimple }}</ansi>{{ else }}<ansi fg="black-bold">-nothing-</ansi>{{ end }}
+{{- end }}
+{{- $showItem = or (and (not .Equipment.Head.IsDisabled) (gt .Equipment.Head.ItemId 0)) (and $showEmpty (not .Equipment.Head.IsDisabled)) }}
+{{- if $showItem }}
+   <ansi fg="yellow">Head:    </ansi>{{ if gt .Equipment.Head.ItemId 0 }}<ansi fg="itemname">{{ .Equipment.Head.NameSimple    }}</ansi>{{ else }}<ansi fg="black-bold">-nothing-</ansi>{{ end }}
+{{- end }}
+{{- $showItem = or (and (not .Equipment.Neck.IsDisabled) (gt .Equipment.Neck.ItemId 0)) (and $showEmpty (not .Equipment.Neck.IsDisabled)) }}
+{{- if $showItem }}
+   <ansi fg="yellow">Neck:    </ansi>{{ if gt .Equipment.Neck.ItemId 0 }}<ansi fg="itemname">{{ .Equipment.Neck.NameSimple    }}</ansi>{{ else }}<ansi fg="black-bold">-nothing-</ansi>{{ end }}
+{{- end }}
+{{- $showItem = or (and (not .Equipment.Body.IsDisabled) (gt .Equipment.Body.ItemId 0)) (and $showEmpty (not .Equipment.Body.IsDisabled)) }}
+{{- if $showItem }}
+   <ansi fg="yellow">Body:    </ansi>{{ if gt .Equipment.Body.ItemId 0 }}<ansi fg="itemname">{{ .Equipment.Body.NameSimple    }}</ansi>{{ else }}<ansi fg="black-bold">-nothing-</ansi>{{ end }}
+{{- end }}
+{{- $showItem = or (and (not .Equipment.Belt.IsDisabled) (gt .Equipment.Belt.ItemId 0)) (and $showEmpty (not .Equipment.Belt.IsDisabled)) }}
+{{- if $showItem }}
+   <ansi fg="yellow">Belt:    </ansi>{{ if gt .Equipment.Belt.ItemId 0 }}<ansi fg="itemname">{{ .Equipment.Belt.NameSimple    }}</ansi>{{ else }}<ansi fg="black-bold">-nothing-</ansi>{{ end }}
+{{- end }}
+{{- $showItem = or (and (not .Equipment.Gloves.IsDisabled) (gt .Equipment.Gloves.ItemId 0)) (and $showEmpty (not .Equipment.Gloves.IsDisabled)) }}
+{{- if $showItem }}
+   <ansi fg="yellow">Gloves:  </ansi>{{ if gt .Equipment.Gloves.ItemId 0 }}<ansi fg="itemname">{{ .Equipment.Gloves.NameSimple  }}</ansi>{{ else }}<ansi fg="black-bold">-nothing-</ansi>{{ end }}
+{{- end }}
+{{- $showItem = or (and (not .Equipment.Ring.IsDisabled) (gt .Equipment.Ring.ItemId 0)) (and $showEmpty (not .Equipment.Ring.IsDisabled)) }}
+{{- if $showItem }}
+   <ansi fg="yellow">Ring:    </ansi>{{ if gt .Equipment.Ring.ItemId 0 }}<ansi fg="itemname">{{ .Equipment.Ring.NameSimple    }}</ansi>{{ else }}<ansi fg="black-bold">-nothing-</ansi>{{ end }}
+{{- end }}
+{{- $showItem = or (and (not .Equipment.Legs.IsDisabled) (gt .Equipment.Legs.ItemId 0)) (and $showEmpty (not .Equipment.Legs.IsDisabled)) }}
+{{- if $showItem }}
+   <ansi fg="yellow">Legs:    </ansi>{{ if gt .Equipment.Legs.ItemId 0 }}<ansi fg="itemname">{{ .Equipment.Legs.NameSimple    }}</ansi>{{ else }}<ansi fg="black-bold">-nothing-</ansi>{{ end }}
+{{- end }}
+{{- $showItem = or (and (not .Equipment.Feet.IsDisabled) (gt .Equipment.Feet.ItemId 0)) (and $showEmpty (not .Equipment.Feet.IsDisabled)) }}
+{{- if $showItem }}
+   <ansi fg="yellow">Feet:    </ansi>{{ if gt .Equipment.Feet.ItemId 0 }}<ansi fg="itemname">{{ .Equipment.Feet.NameSimple    }}</ansi>{{ else }}<ansi fg="black-bold">-nothing-</ansi>{{ end }}
+{{- end }}
+ └────────────────────────────────────────────────────────────────────────────┘
+{{- end }}
+ Carrying: {{ .CarryingStatus }} objects

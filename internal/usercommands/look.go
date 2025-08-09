@@ -122,21 +122,16 @@ func Look(rest string, user *users.UserRecord, room *rooms.Room, flags events.Ev
 				)
 			}
 
-			descTxt, _ := templates.Process("character/description", &m.Character, user.UserId)
-			user.SendText(descTxt)
-
-			itemNames := []string{}
-			for _, item := range m.Character.Items {
-				itemNames = append(itemNames, item.DisplayName())
+			// Use the new template-based look system for mobs
+			charmerName := ""
+			if m.Character.IsCharmed() && m.Character.Charmed.UserId > 0 {
+				if charmer := users.GetByUserId(m.Character.Charmed.UserId); charmer != nil {
+					charmerName = charmer.Character.Name
+				}
 			}
-
-			invData := map[string]any{
-				`Equipment`: &m.Character.Equipment,
-				`ItemNames`: itemNames,
-			}
-
-			inventoryTxt, _ := templates.Process("character/inventory-look", invData, user.UserId)
-			user.SendText(inventoryTxt)
+			mobLookData := m.GetLookData(charmerName)
+			mobDescTxt, _ := templates.Process("descriptions/look-mob", mobLookData, user.UserId)
+			user.SendText(mobDescTxt)
 		}
 
 		user.SendText(statusTxt)
@@ -283,14 +278,6 @@ func Look(rest string, user *users.UserRecord, room *rooms.Room, flags events.Ev
 
 	if foundItem {
 
-		user.SendText(``)
-
-		user.SendText(
-			fmt.Sprintf(`You look at the <ansi fg="item">%s</ansi> %s:`, lookItem.DisplayName(), lookDestination),
-		)
-
-		user.SendText(``)
-
 		if !isSneaking {
 			room.SendText(
 				fmt.Sprintf(`<ansi fg="username">%s</ansi> is admiring their <ansi fg="item">%s</ansi>.`, user.Character.Name, lookItem.DisplayName()),
@@ -298,10 +285,12 @@ func Look(rest string, user *users.UserRecord, room *rooms.Room, flags events.Ev
 			)
 		}
 
-		user.SendText(
-			lookItem.GetLongDescription(),
-		)
+		// Use the new template-based look system for items
+		itemLookData := lookItem.GetLookData(lookDestination)
+		itemDescTxt, _ := templates.Process("descriptions/look-item", itemLookData, user.UserId)
 
+		user.SendText(``)
+		user.SendText(itemDescTxt)
 		user.SendText(``)
 
 		return true, nil

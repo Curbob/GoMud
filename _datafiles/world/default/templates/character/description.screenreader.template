@@ -1,0 +1,8 @@
+{{ .Name }} ({{ .AlignmentName }})
+{{- $tnl := .XPTNL -}}
+{{- $pct := (pct .Experience $tnl ) -}}
+
+Description:
+{{ .GetDescription }}
+
+Health Status: {{ .GetHealthAppearance }}

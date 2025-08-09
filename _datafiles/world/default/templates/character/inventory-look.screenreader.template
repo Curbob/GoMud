@@ -1,0 +1,22 @@
+Equipment:
+{{ if not .Equipment.Weapon.IsDisabled }}Weapon: {{ .Equipment.Weapon.NameSimple }}
+{{ end -}}
+{{- if not .Equipment.Offhand.IsDisabled }}Offhand: {{ .Equipment.Offhand.NameSimple }}
+{{ end -}}
+{{- if not .Equipment.Head.IsDisabled }}Head: {{ .Equipment.Head.NameSimple }}
+{{ end -}}
+{{- if not .Equipment.Neck.IsDisabled }}Neck: {{ .Equipment.Neck.NameSimple }}
+{{ end -}}
+{{- if not .Equipment.Body.IsDisabled }}Body: {{ .Equipment.Body.NameSimple }}
+{{ end -}}
+{{- if not .Equipment.Belt.IsDisabled }}Belt: {{ .Equipment.Belt.NameSimple }}
+{{ end -}}
+{{- if not .Equipment.Gloves.IsDisabled }}Gloves: {{ .Equipment.Gloves.NameSimple }}
+{{ end -}}
+{{- if not .Equipment.Ring.IsDisabled }}Ring: {{ .Equipment.Ring.NameSimple }}
+{{ end -}}
+{{- if not .Equipment.Legs.IsDisabled }}Legs: {{ .Equipment.Legs.NameSimple }}
+{{ end -}}
+{{- if not .Equipment.Feet.IsDisabled }}Feet: {{ .Equipment.Feet.NameSimple }}
+{{ end }}
+Carrying: {{ $itmCt := len .ItemNames }}{{ if eq $itmCt 0 }}no{{ else if lt $itmCt 4 }}a few{{ else if lt $itmCt 7 }}several{{ else }}lots of{{ end }} objects
