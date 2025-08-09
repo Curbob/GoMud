@@ -1,8 +1,6 @@
 package gmcp
 
 import (
-	"strconv"
-
 	"github.com/GoMudEngine/GoMud/internal/configs"
 	"github.com/GoMudEngine/GoMud/internal/events"
 	"github.com/GoMudEngine/GoMud/internal/plugins"
@@ -28,6 +26,7 @@ func init() {
 
 	events.RegisterListener(events.PlayerDespawn{}, g.onJoinLeave)
 	events.RegisterListener(events.PlayerSpawn{}, g.onJoinLeave)
+	events.RegisterListener(GMCPGameUpdate{}, g.buildAndSendGMCPPayload)
 
 }
 
@@ -36,37 +35,125 @@ type GMCPGameModule struct {
 	plug *plugins.Plugin
 }
 
+// GMCPGameUpdate is used to request Game module updates
+type GMCPGameUpdate struct {
+	UserId     int
+	Identifier string
+}
+
+func (g GMCPGameUpdate) Type() string { return `GMCPGameUpdate` }
+
 func (g *GMCPGameModule) onJoinLeave(e events.Event) events.ListenerReturn {
 
-	c := configs.GetConfig()
-
-	tFormat := string(c.TextFormats.Time)
-
-	whoPayload := `"Who": { "Players": [`
-
-	infoPayloads := map[int]string{}
-
-	pCt := 0
-	for _, user := range users.GetAllActiveUsers() {
-
-		infoPayloads[user.UserId] = `"Info": { "logintime": "` + user.GetConnectTime().Format(tFormat) + `", "name": "` + string(c.Server.MudName) + `" }`
-
-		if pCt > 0 {
-			whoPayload += `, `
+	// Handle PlayerSpawn - send Game modules to the spawning player
+	if spawnEvt, isSpawn := e.(events.PlayerSpawn); isSpawn {
+		if spawnEvt.UserId == 0 {
+			return events.Continue
 		}
-		pCt++
 
-		whoPayload += `{ "level": ` + strconv.Itoa(user.Character.Level) + `, "name": "` + user.Character.Name + `", "title": "` + user.Role + `"}`
+		// Don't send Game modules here - SendFullGMCPUpdate handles it
+		// This prevents duplicate sending and potential race conditions
+		// g.sendAllGameNodes(spawnEvt.UserId)
 	}
-	whoPayload += `] }`
 
-	for userId, infoStr := range infoPayloads {
+	// For both spawn and despawn, update Game.Who for all active users
+	// since the player list has changed
+	players := []map[string]interface{}{}
+
+	for _, user := range users.GetAllActiveUsers() {
+		players = append(players, map[string]interface{}{
+			"level": user.Character.Level,
+			"name":  user.Character.Name,
+			"title": user.Role,
+		})
+	}
+
+	// Send updated Game.Who.Players to all active users
+	for _, user := range users.GetAllActiveUsers() {
 		events.AddToQueue(GMCPOut{
-			UserId:  userId,
-			Module:  `Game`,
-			Payload: `{ ` + infoStr + `, ` + whoPayload + ` }`,
+			UserId:  user.UserId,
+			Module:  `Game.Who.Players`,
+			Payload: players,
 		})
 	}
 
 	return events.Continue
+}
+
+func (g *GMCPGameModule) buildAndSendGMCPPayload(e events.Event) events.ListenerReturn {
+	evt, typeOk := e.(GMCPGameUpdate)
+	if !typeOk {
+		return events.Continue
+	}
+
+	if evt.UserId < 1 {
+		return events.Continue
+	}
+
+	// Make sure they have GMCP enabled
+	user := users.GetByUserId(evt.UserId)
+	if user == nil {
+		return events.Continue
+	}
+
+	if !isGMCPEnabled(user.ConnectionId()) {
+		return events.Continue
+	}
+
+	// If requesting "Game", send all sub-nodes
+	if evt.Identifier == `Game` {
+		g.sendAllGameNodes(evt.UserId)
+		return events.Continue
+	}
+
+	// Otherwise, send the specific node requested (not implemented for now)
+	// Individual Game sub-nodes could be added here if needed
+
+	return events.Continue
+}
+
+// sendAllGameNodes sends all Game nodes as individual GMCP messages
+func (g *GMCPGameModule) sendAllGameNodes(userId int) {
+	user := users.GetByUserId(userId)
+	if user == nil {
+		return
+	}
+
+	if !isGMCPEnabled(user.ConnectionId()) {
+		return
+	}
+
+	c := configs.GetConfig()
+	tFormat := string(c.TextFormats.Time)
+
+	// Send Game.Info
+	infoPayload := map[string]interface{}{
+		"engine":           "GoMud",
+		"login_time":       user.GetConnectTime().Format(tFormat),
+		"login_time_epoch": user.GetConnectTime().Unix(),
+		"name":             string(c.Server.MudName),
+	}
+
+	events.AddToQueue(GMCPOut{
+		UserId:  userId,
+		Module:  `Game.Info`,
+		Payload: infoPayload,
+	})
+
+	// Build and send Game.Who.Players
+	players := []map[string]interface{}{}
+
+	for _, u := range users.GetAllActiveUsers() {
+		players = append(players, map[string]interface{}{
+			"level": u.Character.Level,
+			"name":  u.Character.Name,
+			"title": u.Role,
+		})
+	}
+
+	events.AddToQueue(GMCPOut{
+		UserId:  userId,
+		Module:  `Game.Who.Players`,
+		Payload: players,
+	})
 }

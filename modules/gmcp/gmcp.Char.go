@@ -4,6 +4,8 @@ import (
 	"math"
 	"strconv"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/GoMudEngine/GoMud/internal/buffs"
 	"github.com/GoMudEngine/GoMud/internal/configs"
@@ -16,6 +18,7 @@ import (
 	"github.com/GoMudEngine/GoMud/internal/rooms"
 	"github.com/GoMudEngine/GoMud/internal/skills"
 	"github.com/GoMudEngine/GoMud/internal/users"
+	"github.com/GoMudEngine/GoMud/internal/util"
 )
 
 // ////////////////////////////////////////////////////////////////////
@@ -40,6 +43,7 @@ func init() {
 
 	events.RegisterListener(events.PlayerSpawn{}, g.playerSpawnHandler)
 	events.RegisterListener(events.CharacterVitalsChanged{}, g.vitalsChangedHandler)
+	events.RegisterListener(events.CharacterAlignmentChanged{}, g.alignmentChangedHandler)
 	events.RegisterListener(events.LevelUp{}, g.levelUpHandler)
 	events.RegisterListener(events.CharacterTrained{}, g.charTrainedHandler)
 	events.RegisterListener(GMCPCharUpdate{}, g.buildAndSendGMCPPayload)
@@ -49,6 +53,9 @@ func init() {
 	events.RegisterListener(events.BuffsTriggered{}, g.buffTriggeredHandler)
 
 	events.RegisterListener(events.Quest{}, g.questProgressHandler)
+
+	// Clean up tracking maps on player disconnect
+	events.RegisterListener(events.PlayerDespawn{}, g.playerDespawnHandler)
 
 }
 
@@ -122,6 +129,12 @@ func (g *GMCPCharModule) charChangeHandler(e events.Event) events.ListenerReturn
 	return events.Continue
 }
 
+// Track last vitals update time to prevent spam
+var (
+	vitalsUpdateMu   sync.Mutex
+	lastVitalsUpdate = make(map[int]time.Time)
+)
+
 func (g *GMCPCharModule) vitalsChangedHandler(e events.Event) events.ListenerReturn {
 
 	evt, typeOk := e.(events.CharacterVitalsChanged)
@@ -133,10 +146,39 @@ func (g *GMCPCharModule) vitalsChangedHandler(e events.Event) events.ListenerRet
 		return events.Continue
 	}
 
-	// Changing equipment might affect stats, inventory, maxhp/maxmp etc
+	// Deduplicate rapid vitals updates (max 1 per 100ms)
+	vitalsUpdateMu.Lock()
+	lastUpdate, exists := lastVitalsUpdate[evt.UserId]
+	now := time.Now()
+	if exists && now.Sub(lastUpdate) < 100*time.Millisecond {
+		vitalsUpdateMu.Unlock()
+		return events.Continue // Skip this update
+	}
+	lastVitalsUpdate[evt.UserId] = now
+	vitalsUpdateMu.Unlock()
+
 	events.AddToQueue(GMCPCharUpdate{
 		UserId:     evt.UserId,
 		Identifier: `Char.Vitals`,
+	})
+
+	return events.Continue
+}
+
+func (g *GMCPCharModule) alignmentChangedHandler(e events.Event) events.ListenerReturn {
+
+	evt, typeOk := e.(events.CharacterAlignmentChanged)
+	if !typeOk {
+		return events.Continue
+	}
+
+	if evt.UserId == 0 {
+		return events.Continue
+	}
+
+	events.AddToQueue(GMCPCharUpdate{
+		UserId:     evt.UserId,
+		Identifier: `Char.Info`,
 	})
 
 	return events.Continue
@@ -169,9 +211,14 @@ func (g *GMCPCharModule) ownershipChangeHandler(e events.Event) events.ListenerR
 		return events.Continue // Return false to stop halt the event chain for this event
 	}
 
+	// Send both Items and Summary updates when inventory changes
 	events.AddToQueue(GMCPCharUpdate{
 		UserId:     evt.UserId,
-		Identifier: `Char.Inventory.Backpack`,
+		Identifier: `Char.Inventory.Backpack.Items`,
+	})
+	events.AddToQueue(GMCPCharUpdate{
+		UserId:     evt.UserId,
+		Identifier: `Char.Inventory.Backpack.Summary`,
 	})
 
 	return events.Continue
@@ -189,7 +236,9 @@ func (g *GMCPCharModule) statsChangeHandler(e events.Event) events.ListenerRetur
 	}
 
 	// Changing equipment might affect stats, inventory, maxhp/maxmp etc
-	events.AddToQueue(GMCPCharUpdate{UserId: evt.UserId, Identifier: `Char.Stats, Char.Vitals, Char.Inventory.Backpack.Summary`})
+	events.AddToQueue(GMCPCharUpdate{UserId: evt.UserId, Identifier: `Char.Stats`})
+	events.AddToQueue(GMCPCharUpdate{UserId: evt.UserId, Identifier: `Char.Vitals`})
+	events.AddToQueue(GMCPCharUpdate{UserId: evt.UserId, Identifier: `Char.Inventory.Backpack.Summary`})
 
 	return events.Continue
 }
@@ -205,26 +254,18 @@ func (g *GMCPCharModule) equipmentChangeHandler(e events.Event) events.ListenerR
 		return events.Continue
 	}
 
-	statsToChange := ``
-
 	if len(evt.ItemsRemoved) > 0 || len(evt.ItemsWorn) > 0 {
-		statsToChange += `Char.Inventory, Char.Stats, Char.Vitals`
+		// Queue individual events for each module
+		events.AddToQueue(GMCPCharUpdate{UserId: evt.UserId, Identifier: `Char.Inventory.Worn`})
+		events.AddToQueue(GMCPCharUpdate{UserId: evt.UserId, Identifier: `Char.Inventory.Backpack.Items`})
+		events.AddToQueue(GMCPCharUpdate{UserId: evt.UserId, Identifier: `Char.Inventory.Backpack.Summary`})
+		events.AddToQueue(GMCPCharUpdate{UserId: evt.UserId, Identifier: `Char.Stats`})
+		events.AddToQueue(GMCPCharUpdate{UserId: evt.UserId, Identifier: `Char.Vitals`})
 	}
 
-	// If only gold or bank changed
+	// If gold or bank changed
 	if evt.BankChange != 0 || evt.GoldChange != 0 {
-		if statsToChange != `` {
-			statsToChange += `, `
-		}
-		statsToChange += `Char.Worth`
-	}
-
-	if statsToChange != `` {
-		// Changing equipment might affect stats, inventory, maxhp/maxmp etc
-		events.AddToQueue(GMCPCharUpdate{
-			UserId:     evt.UserId,
-			Identifier: statsToChange,
-		})
+		events.AddToQueue(GMCPCharUpdate{UserId: evt.UserId, Identifier: `Char.Worth`})
 	}
 
 	return events.Continue
@@ -242,7 +283,10 @@ func (g *GMCPCharModule) charTrainedHandler(e events.Event) events.ListenerRetur
 	}
 
 	// Changing equipment might affect stats, inventory, maxhp/maxmp etc
-	events.AddToQueue(GMCPCharUpdate{UserId: evt.UserId, Identifier: `Char.Stats, Char.Worth, Char.Vitals, Char.Inventory.Backpack.Summary`})
+	events.AddToQueue(GMCPCharUpdate{UserId: evt.UserId, Identifier: `Char.Stats`})
+	events.AddToQueue(GMCPCharUpdate{UserId: evt.UserId, Identifier: `Char.Worth`})
+	events.AddToQueue(GMCPCharUpdate{UserId: evt.UserId, Identifier: `Char.Vitals`})
+	events.AddToQueue(GMCPCharUpdate{UserId: evt.UserId, Identifier: `Char.Inventory.Backpack.Summary`})
 
 	return events.Continue
 }
@@ -286,6 +330,24 @@ func (g *GMCPCharModule) playerSpawnHandler(e events.Event) events.ListenerRetur
 	return events.Continue
 }
 
+func (g *GMCPCharModule) playerDespawnHandler(e events.Event) events.ListenerReturn {
+	evt, typeOk := e.(events.PlayerDespawn)
+	if !typeOk {
+		return events.Continue
+	}
+
+	if evt.UserId == 0 {
+		return events.Continue
+	}
+
+	// Clean up vitals tracking
+	vitalsUpdateMu.Lock()
+	delete(lastVitalsUpdate, evt.UserId)
+	vitalsUpdateMu.Unlock()
+
+	return events.Continue
+}
+
 func (g *GMCPCharModule) buildAndSendGMCPPayload(e events.Event) events.ListenerReturn {
 
 	evt, typeOk := e.(GMCPCharUpdate)
@@ -309,55 +371,80 @@ func (g *GMCPCharModule) buildAndSendGMCPPayload(e events.Event) events.Listener
 	}
 
 	if len(evt.Identifier) >= 4 {
+		// Normalize the identifier (handle case variations)
+		identifierParts := strings.Split(strings.ToLower(evt.Identifier), `.`)
+		for i := 0; i < len(identifierParts); i++ {
+			identifierParts[i] = strings.Title(identifierParts[i])
+		}
 
-		for _, identifier := range strings.Split(evt.Identifier, `,`) {
+		requestedId := strings.Join(identifierParts, `.`)
 
-			identifier = strings.TrimSpace(identifier)
+		payload, moduleName := g.GetCharNode(user, requestedId)
 
-			identifierParts := strings.Split(strings.ToLower(identifier), `.`)
-			for i := 0; i < len(identifierParts); i++ {
-				identifierParts[i] = strings.Title(identifierParts[i])
-			}
-
-			requestedId := strings.Join(identifierParts, `.`)
-
-			payload, moduleName := g.GetCharNode(user, requestedId)
-
+		// Skip if nil payload (handled elsewhere, like sendAllCharNodes)
+		if payload != nil && moduleName != "" {
 			events.AddToQueue(GMCPOut{
 				UserId:  evt.UserId,
 				Module:  moduleName,
 				Payload: payload,
 			})
-
 		}
-
 	}
 
 	return events.Continue
+}
+
+// sendAllCharNodes sends all Char nodes as individual GMCP messages
+func (g *GMCPCharModule) sendAllCharNodes(user *users.UserRecord) {
+	// Send each node individually
+	events.AddToQueue(GMCPCharUpdate{UserId: user.UserId, Identifier: `Char.Info`})
+	events.AddToQueue(GMCPCharUpdate{UserId: user.UserId, Identifier: `Char.Status`})
+	events.AddToQueue(GMCPCharUpdate{UserId: user.UserId, Identifier: `Char.Stats`})
+	events.AddToQueue(GMCPCharUpdate{UserId: user.UserId, Identifier: `Char.Vitals`})
+	events.AddToQueue(GMCPCharUpdate{UserId: user.UserId, Identifier: `Char.Worth`})
+	events.AddToQueue(GMCPCharUpdate{UserId: user.UserId, Identifier: `Char.Affects`})
+	events.AddToQueue(GMCPCharUpdate{UserId: user.UserId, Identifier: `Char.Inventory.Worn`})
+	events.AddToQueue(GMCPCharUpdate{UserId: user.UserId, Identifier: `Char.Inventory.Backpack.Items`})
+	events.AddToQueue(GMCPCharUpdate{UserId: user.UserId, Identifier: `Char.Inventory.Backpack.Summary`})
+	events.AddToQueue(GMCPCharUpdate{UserId: user.UserId, Identifier: `Char.Quests`})
+	events.AddToQueue(GMCPCharUpdate{UserId: user.UserId, Identifier: `Char.Pets`})
+	events.AddToQueue(GMCPCharUpdate{UserId: user.UserId, Identifier: `Char.Enemies`})
 }
 
 func (g *GMCPCharModule) GetCharNode(user *users.UserRecord, gmcpModule string) (data any, moduleName string) {
 
 	all := gmcpModule == `Char`
 
+	// If requesting all, we'll handle it differently by queuing individual messages
+	if all {
+		g.sendAllCharNodes(user)
+		return nil, ""
+	}
+
 	payload := GMCPCharModule_Payload{}
 
-	if all || g.wantsGMCPPayload(`Char.Info`, gmcpModule) {
+	if g.wantsGMCPPayload(`Char.Info`, gmcpModule) {
 		payload.Info = &GMCPCharModule_Payload_Info{
 			Account:   user.Username,
-			Name:      user.Character.Name,
+			Name:      util.StripANSI(user.Character.Name),
 			Class:     skills.GetProfession(user.Character.GetAllSkillRanks()),
 			Race:      user.Character.Race(),
 			Alignment: user.Character.AlignmentName(),
 			Level:     user.Character.Level,
 		}
 
-		if !all {
-			return payload.Info, `Char.Info`
-		}
+		return payload.Info, `Char.Info`
 	}
 
-	if all || g.wantsGMCPPayload(`Char.Pets`, gmcpModule) {
+	if g.wantsGMCPPayload(`Char.Status`, gmcpModule) {
+		// Return character status
+		status := map[string]interface{}{
+			"state": "standing",
+		}
+		return status, `Char.Status`
+	}
+
+	if g.wantsGMCPPayload(`Char.Pets`, gmcpModule) {
 
 		payload.Pets = []GMCPCharModule_Payload_Pet{}
 
@@ -366,18 +453,16 @@ func (g *GMCPCharModule) GetCharNode(user *users.UserRecord, gmcpModule string) 
 			p := GMCPCharModule_Payload_Pet{
 				Name:   user.Character.Pet.Name,
 				Type:   user.Character.Pet.Type,
-				Hunger: `full`,
+				Hunger: user.Character.Pet.Food.String(),
 			}
 
 			payload.Pets = append(payload.Pets, p)
 		}
 
-		if !all {
-			return payload.Pets, `Char.Pets`
-		}
+		return payload.Pets, `Char.Pets`
 	}
 
-	if all || g.wantsGMCPPayload(`Char.Enemies`, gmcpModule) {
+	if g.wantsGMCPPayload(`Char.Enemies`, gmcpModule) {
 
 		payload.Enemies = []GMCPCharModule_Enemy{}
 
@@ -397,12 +482,12 @@ func (g *GMCPCharModule) GetCharNode(user *users.UserRecord, gmcpModule string) 
 				}
 
 				e := GMCPCharModule_Enemy{
-					Id:      mob.ShorthandId(),
-					Name:    mob.Character.Name,
-					Level:   mob.Character.Level,
-					Hp:      mob.Character.Health,
-					MaxHp:   mob.Character.HealthMax.Value,
-					Engaged: mob.InstanceId == aggroMobInstanceId,
+					Id:        mob.ShorthandId(),
+					Name:      util.StripANSI(mob.Character.Name),
+					Level:     mob.Character.Level,
+					Health:    mob.Character.Health,
+					HealthMax: mob.Character.HealthMax.Value,
+					Engaged:   mob.InstanceId == aggroMobInstanceId,
 				}
 
 				payload.Enemies = append(payload.Enemies, e)
@@ -410,10 +495,7 @@ func (g *GMCPCharModule) GetCharNode(user *users.UserRecord, gmcpModule string) 
 
 		}
 
-		if !all {
-			return payload.Enemies, `Char.Enemies`
-		}
-
+		return payload.Enemies, `Char.Enemies`
 	}
 
 	// Allow specifically updating the Backpack Summary
@@ -431,18 +513,18 @@ func (g *GMCPCharModule) GetCharNode(user *users.UserRecord, gmcpModule string) 
 		return payload.Inventory.Backpack.Summary, `Char.Inventory.Backpack.Summary`
 	}
 
-	if all || g.wantsGMCPPayload(`Char.Inventory`, gmcpModule) || g.wantsGMCPPayload(`Char.Inventory.Backpack`, gmcpModule) {
+	// Allow specifically updating the Backpack Items
+	if `Char.Inventory.Backpack.Items` == gmcpModule {
+		items := []GMCPCharModule_Payload_Inventory_Item{}
+		for _, itm := range user.Character.Items {
+			items = append(items, newInventory_Item(itm))
+		}
+		return items, `Char.Inventory.Backpack.Items`
+	}
 
+	// Handle individual inventory nodes separately
+	if g.wantsGMCPPayload(`Char.Inventory.Worn`, gmcpModule) {
 		payload.Inventory = &GMCPCharModule_Payload_Inventory{
-
-			Backpack: &GMCPCharModule_Payload_Inventory_Backpack{
-				Items: []GMCPCharModule_Payload_Inventory_Item{},
-				Summary: GMCPCharModule_Payload_Inventory_Backpack_Summary{
-					Count: len(user.Character.Items),
-					Max:   user.Character.CarryCapacity(),
-				},
-			},
-
 			Worn: &GMCPCharModule_Payload_Inventory_Worn{
 				Weapon:  newInventory_Item(user.Character.Equipment.Weapon),
 				Offhand: newInventory_Item(user.Character.Equipment.Offhand),
@@ -456,23 +538,10 @@ func (g *GMCPCharModule) GetCharNode(user *users.UserRecord, gmcpModule string) 
 				Feet:    newInventory_Item(user.Character.Equipment.Feet),
 			},
 		}
-
-		// Fill the items list
-		for _, itm := range user.Character.Items {
-			payload.Inventory.Backpack.Items = append(payload.Inventory.Backpack.Items, newInventory_Item(itm))
-		}
-
-		if !all {
-
-			if `Char.Inventory.Backpack` == gmcpModule {
-				return payload.Inventory.Backpack, `Char.Inventory.Backpack`
-			}
-
-			return payload.Inventory, `Char.Inventory`
-		}
+		return payload.Inventory.Worn, `Char.Inventory.Worn`
 	}
 
-	if all || g.wantsGMCPPayload(`Char.Stats`, gmcpModule) {
+	if g.wantsGMCPPayload(`Char.Stats`, gmcpModule) {
 
 		payload.Stats = &GMCPCharModule_Payload_Stats{
 			Strength:   user.Character.Stats.Strength.ValueAdj,
@@ -483,42 +552,36 @@ func (g *GMCPCharModule) GetCharNode(user *users.UserRecord, gmcpModule string) 
 			Perception: user.Character.Stats.Perception.ValueAdj,
 		}
 
-		if !all {
-			return payload.Stats, `Char.Stats`
-		}
+		return payload.Stats, `Char.Stats`
 	}
 
-	if all || g.wantsGMCPPayload(`Char.Vitals`, gmcpModule) {
+	if g.wantsGMCPPayload(`Char.Vitals`, gmcpModule) {
 
 		payload.Vitals = &GMCPCharModule_Payload_Vitals{
-			Hp:    user.Character.Health,
-			HpMax: user.Character.HealthMax.Value,
-			Sp:    user.Character.Mana,
-			SpMax: user.Character.ManaMax.Value,
+			Health:         user.Character.Health,
+			HealthMax:      user.Character.HealthMax.Value,
+			SpellPoints:    user.Character.Mana,
+			SpellPointsMax: user.Character.ManaMax.Value,
 		}
 
-		if !all {
-			return payload.Vitals, `Char.Vitals`
-		}
+		return payload.Vitals, `Char.Vitals`
 	}
 
-	if all || g.wantsGMCPPayload(`Char.Worth`, gmcpModule) {
+	if g.wantsGMCPPayload(`Char.Worth`, gmcpModule) {
 
 		payload.Worth = &GMCPCharModule_Payload_Worth{
-			Gold:           user.Character.Gold,
-			Bank:           user.Character.Bank,
+			GoldCarried:    user.Character.Gold,
+			GoldBank:       user.Character.Bank,
 			SkillPoints:    user.Character.StatPoints,
 			TrainingPoints: user.Character.TrainingPoints,
-			TNL:            user.Character.XPTL(user.Character.Level),
-			XP:             user.Character.Experience,
+			ToNextLevel:    user.Character.XPTL(user.Character.Level),
+			Experience:     user.Character.Experience,
 		}
 
-		if !all {
-			return payload.Worth, `Char.Worth`
-		}
+		return payload.Worth, `Char.Worth`
 	}
 
-	if all || g.wantsGMCPPayload(`Char.Affects`, gmcpModule) {
+	if g.wantsGMCPPayload(`Char.Affects`, gmcpModule) {
 
 		c := configs.GetTimingConfig()
 
@@ -570,12 +633,10 @@ func (g *GMCPCharModule) GetCharNode(user *users.UserRecord, gmcpModule string) 
 			payload.Affects[name] = aff
 		}
 
-		if !all {
-			return payload.Affects, `Char.Affects`
-		}
+		return payload.Affects, `Char.Affects`
 	}
 
-	if all || g.wantsGMCPPayload(`Char.Quests`, gmcpModule) {
+	if g.wantsGMCPPayload(`Char.Quests`, gmcpModule) {
 
 		payload.Quests = []GMCPCharModule_Payload_Quest{}
 
@@ -616,17 +677,12 @@ func (g *GMCPCharModule) GetCharNode(user *users.UserRecord, gmcpModule string) 
 			payload.Quests = append(payload.Quests, questPayload)
 		}
 
-		if !all {
-			return payload.Quests, `Char.Quests`
-		}
+		return payload.Quests, `Char.Quests`
 	}
 
-	// If we reached this point and Char wasn't requested, we have a problem.
-	if !all {
-		mudlog.Error(`gmcp.Char`, `error`, `Bad module requested`, `module`, gmcpModule)
-	}
-
-	return payload, `Char`
+	// If we reached this point, we have a problem.
+	mudlog.Error(`gmcp.Char`, `error`, `Bad module requested`, `module`, gmcpModule)
+	return nil, ""
 }
 
 // wantsGMCPPayload(`Char.Info`, `Char`)
@@ -648,91 +704,118 @@ func (g *GMCPCharModule) wantsGMCPPayload(packageToConsider string, packageReque
 }
 
 type GMCPCharModule_Payload struct {
-	Info      *GMCPCharModule_Payload_Info             `json:"Info,omitempty"`
-	Affects   map[string]GMCPCharModule_Payload_Affect `json:"Affects,omitempty"`
-	Enemies   []GMCPCharModule_Enemy                   `json:"Enemies,omitempty"`
-	Inventory *GMCPCharModule_Payload_Inventory        `json:"Inventory,omitempty"`
-	Stats     *GMCPCharModule_Payload_Stats            `json:"Stats,omitempty"`
-	Vitals    *GMCPCharModule_Payload_Vitals           `json:"Vitals,omitempty"`
-	Worth     *GMCPCharModule_Payload_Worth            `json:"Worth,omitempty"`
-	Quests    []GMCPCharModule_Payload_Quest           `json:"Quests,omitempty"`
-	Pets      []GMCPCharModule_Payload_Pet             `json:"Pets,omitempty"`
+	Info      *GMCPCharModule_Payload_Info             `json:"info"`
+	Affects   map[string]GMCPCharModule_Payload_Affect `json:"affects"`
+	Enemies   []GMCPCharModule_Enemy                   `json:"enemies"`
+	Inventory *GMCPCharModule_Payload_Inventory        `json:"inventory"`
+	Stats     *GMCPCharModule_Payload_Stats            `json:"stats"`
+	Vitals    *GMCPCharModule_Payload_Vitals           `json:"vitals"`
+	Worth     *GMCPCharModule_Payload_Worth            `json:"worth"`
+	Quests    []GMCPCharModule_Payload_Quest           `json:"quests"`
+	Pets      []GMCPCharModule_Payload_Pet             `json:"pets"`
 }
 
 // /////////////////
 // Char.Info
 // /////////////////
 type GMCPCharModule_Payload_Info struct {
-	Account   string `json:"account,omitempty"`
-	Name      string `json:"name,omitempty"`
-	Class     string `json:"class,omitempty"`
-	Race      string `json:"race,omitempty"`
-	Alignment string `json:"alignment,omitempty"`
-	Level     int    `json:"level,omitempty"`
+	Account   string `json:"account"`
+	Name      string `json:"name"`
+	Class     string `json:"class"`
+	Race      string `json:"race"`
+	Alignment string `json:"alignment"`
+	Level     int    `json:"level"`
 }
 
 // /////////////////
 // Char.Enemies
 // /////////////////
 type GMCPCharModule_Enemy struct {
-	Id      string `json:"id"`
-	Name    string `json:"name"`
-	Level   int    `json:"level"`
-	Hp      int    `json:"hp"`
-	MaxHp   int    `json:"hp_max"`
-	Engaged bool   `json:"engaged"`
+	Id        string `json:"id"`
+	Name      string `json:"name"`
+	Level     int    `json:"level"`
+	Health    int    `json:"health"`
+	HealthMax int    `json:"health_max"`
+	Engaged   bool   `json:"engaged"`
 }
 
 // /////////////////
 // Char.Inventory
 // /////////////////
 type GMCPCharModule_Payload_Inventory struct {
-	Backpack *GMCPCharModule_Payload_Inventory_Backpack `json:"Backpack,omitempty"`
+	Backpack *GMCPCharModule_Payload_Inventory_Backpack `json:"Backpack"`
 	Worn     *GMCPCharModule_Payload_Inventory_Worn     `json:"Worn"`
 }
 
 type GMCPCharModule_Payload_Inventory_Backpack struct {
-	Items   []GMCPCharModule_Payload_Inventory_Item           `json:"items,omitempty"`
-	Summary GMCPCharModule_Payload_Inventory_Backpack_Summary `json:"Summary,omitempty"`
+	Items   []GMCPCharModule_Payload_Inventory_Item           `json:"Items"`
+	Summary GMCPCharModule_Payload_Inventory_Backpack_Summary `json:"Summary"`
 }
 
 type GMCPCharModule_Payload_Inventory_Backpack_Summary struct {
-	Count int `json:"count,omitempty"`
-	Max   int `json:"max,omitempty"`
+	Count int `json:"count"`
+	Max   int `json:"max"`
 }
 
 type GMCPCharModule_Payload_Inventory_Worn struct {
-	Weapon  GMCPCharModule_Payload_Inventory_Item `json:"weapon,omitempty"`
-	Offhand GMCPCharModule_Payload_Inventory_Item `json:"offhand,omitempty"`
-	Head    GMCPCharModule_Payload_Inventory_Item `json:"head,omitempty"`
-	Neck    GMCPCharModule_Payload_Inventory_Item `json:"neck,omitempty"`
-	Body    GMCPCharModule_Payload_Inventory_Item `json:"body,omitempty"`
-	Belt    GMCPCharModule_Payload_Inventory_Item `json:"belt,omitempty"`
-	Gloves  GMCPCharModule_Payload_Inventory_Item `json:"gloves,omitempty"`
-	Ring    GMCPCharModule_Payload_Inventory_Item `json:"ring,omitempty"`
-	Legs    GMCPCharModule_Payload_Inventory_Item `json:"legs,omitempty"`
-	Feet    GMCPCharModule_Payload_Inventory_Item `json:"feet,omitempty"`
+	Weapon  GMCPCharModule_Payload_Inventory_Item `json:"weapon"`
+	Offhand GMCPCharModule_Payload_Inventory_Item `json:"offhand"`
+	Head    GMCPCharModule_Payload_Inventory_Item `json:"head"`
+	Neck    GMCPCharModule_Payload_Inventory_Item `json:"neck"`
+	Body    GMCPCharModule_Payload_Inventory_Item `json:"body"`
+	Belt    GMCPCharModule_Payload_Inventory_Item `json:"belt"`
+	Gloves  GMCPCharModule_Payload_Inventory_Item `json:"gloves"`
+	Ring    GMCPCharModule_Payload_Inventory_Item `json:"ring"`
+	Legs    GMCPCharModule_Payload_Inventory_Item `json:"legs"`
+	Feet    GMCPCharModule_Payload_Inventory_Item `json:"feet"`
 }
 
 type GMCPCharModule_Payload_Inventory_Item struct {
 	Id      string   `json:"id"`
 	Name    string   `json:"name"`
 	Type    string   `json:"type"`
-	SubType string   `json:"subtype"`
+	SubType string   `json:"sub_type"`
 	Uses    int      `json:"uses"`
 	Details []string `json:"details"`
+	Command string   `json:"command"`
 }
 
 func newInventory_Item(itm items.Item) GMCPCharModule_Payload_Inventory_Item {
+	// Handle empty equipment slots
+	if itm.ItemId == 0 {
+		return GMCPCharModule_Payload_Inventory_Item{
+			Id:      "",
+			Name:    "",
+			Type:    "",
+			SubType: "",
+			Uses:    0,
+			Details: []string{},
+			Command: "",
+		}
+	}
+
+	// Handle disabled slots
+	if itm.IsDisabled() {
+		return GMCPCharModule_Payload_Inventory_Item{
+			Id:      "",
+			Name:    "disabled",
+			Type:    "disabled",
+			SubType: "",
+			Uses:    0,
+			Details: []string{"disabled"},
+			Command: "",
+		}
+	}
 
 	itmSpec := itm.GetSpec()
 	d := GMCPCharModule_Payload_Inventory_Item{
 		Id:      itm.ShorthandId(),
-		Name:    itm.Name(),
+		Name:    util.StripANSI(itm.Name()),
 		Type:    string(itmSpec.Type),
 		SubType: string(itmSpec.Subtype),
 		Uses:    itm.Uses,
 		Details: []string{},
+		Command: getItemCommand(itmSpec),
 	}
 
 	if !itm.Uncursed && itmSpec.Cursed {
@@ -746,38 +829,79 @@ func newInventory_Item(itm items.Item) GMCPCharModule_Payload_Inventory_Item {
 	return d
 }
 
+// getItemCommand returns the primary command for using an item based on its type and subtype
+func getItemCommand(spec items.ItemSpec) string {
+	// Check subtype first as it's more specific
+	switch spec.Subtype {
+	case items.Drinkable:
+		return "drink"
+	case items.Edible:
+		return "eat"
+	case items.Usable:
+		return "use"
+	case items.Throwable:
+		return "throw"
+	case items.Wearable:
+		return "wear"
+	}
+
+	// Check type for specific commands
+	switch spec.Type {
+	case items.Weapon:
+		return "wield"
+	case items.Readable:
+		return "read"
+	case items.Grenade:
+		return "drop" // drop to explode
+	case items.Lockpicks:
+		return "picklock"
+	}
+
+	// For worn equipment (already equipped items)
+	if spec.Type == items.Offhand || spec.Type == items.Head ||
+		spec.Type == items.Neck || spec.Type == items.Body ||
+		spec.Type == items.Belt || spec.Type == items.Gloves ||
+		spec.Type == items.Ring || spec.Type == items.Legs ||
+		spec.Type == items.Feet {
+		return "remove"
+	}
+
+	// Default - no specific command
+	return ""
+}
+
 // /////////////////
 // Char.Stats
 // /////////////////
 type GMCPCharModule_Payload_Stats struct {
-	Strength   int `json:"strength,omitempty"`
-	Speed      int `json:"speed,omitempty"`
-	Smarts     int `json:"smarts,omitempty"`
-	Vitality   int `json:"vitality,omitempty"`
-	Mysticism  int `json:"mysticism,omitempty"`
-	Perception int `json:"perception,omitempty"`
+	Strength   int `json:"strength"`
+	Speed      int `json:"speed"`
+	Smarts     int `json:"smarts"`
+	Vitality   int `json:"vitality"`
+	Mysticism  int `json:"mysticism"`
+	Perception int `json:"perception"`
 }
 
 // /////////////////
 // Char.Vitals
 // /////////////////
 type GMCPCharModule_Payload_Vitals struct {
-	Hp    int `json:"hp,omitempty"`
-	HpMax int `json:"hp_max,omitempty"`
-	Sp    int `json:"sp,omitempty"`
-	SpMax int `json:"sp_max,omitempty"`
+	Health         int `json:"health"`
+	HealthMax      int `json:"health_max"`
+	SpellPoints    int `json:"spell_points"`
+	SpellPointsMax int `json:"spell_points_max"`
 }
 
 // /////////////////
 // Char.Worth
 // /////////////////
 type GMCPCharModule_Payload_Worth struct {
-	Gold           int `json:"gold_carry,omitempty"`
-	Bank           int `json:"gold_bank,omitempty"`
-	SkillPoints    int `json:"skillpoints,omitempty"`
-	TrainingPoints int `json:"trainingpoints,omitempty"`
-	TNL            int `json:"tnl,omitempty"`
-	XP             int `json:"xp,omitempty"`
+	GoldCarried    int `json:"gold_carried"`
+	GoldBank       int `json:"gold_bank"`
+	SkillPoints    int `json:"skill_points"`
+	TrainingPoints int `json:"training_points"`
+	ToNextLevel    int `json:"to_next_level"`
+	Experience     int `json:"experience"`
 }
 
 // /////////////////
@@ -787,7 +911,7 @@ type GMCPCharModule_Payload_Affect struct {
 	Name         string         `json:"name"`
 	Description  string         `json:"description"`
 	DurationMax  int            `json:"duration_max"`
-	DurationLeft int            `json:"duration_cur"`
+	DurationLeft int            `json:"duration_current"`
 	Type         string         `json:"type"`
 	Mods         map[string]int `json:"affects"`
 }

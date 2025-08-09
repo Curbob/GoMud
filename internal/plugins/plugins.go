@@ -464,7 +464,9 @@ func Load(dataFilesPath string) {
 				for k, v := range dataMap {
 					overlayMap[fmt.Sprintf(`Modules.%s.%s`, p.name, k)] = v
 				}
-				configs.AddOverlayOverrides(overlayMap)
+				// Use AddOverlayDefaults to only add values that don't already exist
+				// This ensures user overrides from config-overrides.yaml take precedence
+				configs.AddOverlayDefaults(overlayMap)
 
 			}
 		}

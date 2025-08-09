@@ -1,7 +1,6 @@
 package gmcp
 
 import (
-	"embed"
 	"fmt"
 	"strings"
 
@@ -9,15 +8,9 @@ import (
 	"github.com/GoMudEngine/GoMud/internal/events"
 	"github.com/GoMudEngine/GoMud/internal/mudlog"
 	"github.com/GoMudEngine/GoMud/internal/parties"
-	"github.com/GoMudEngine/GoMud/internal/plugins"
 	"github.com/GoMudEngine/GoMud/internal/rooms"
 	"github.com/GoMudEngine/GoMud/internal/usercommands"
 	"github.com/GoMudEngine/GoMud/internal/users"
-)
-
-var (
-	//go:embed files/*
-	files embed.FS
 )
 
 // MudletConfig holds the configuration for Mudlet clients
@@ -43,9 +36,8 @@ type MudletConfig struct {
 	DiscordSmallImageKey string `json:"discord_small_image_key" yaml:"discord_small_image_key"`
 }
 
-// GMCPMudletModule handles Mudlet-specific GMCP functionality
-type GMCPMudletModule struct {
-	plug        *plugins.Plugin
+// GMCPMudletHandler handles Mudlet-specific GMCP functionality
+type GMCPMudletHandler struct {
 	config      MudletConfig
 	mudletUsers map[int]bool // Track which users are using Mudlet clients
 }
@@ -74,70 +66,42 @@ type GMCPDiscordMessage struct {
 
 func (g GMCPDiscordMessage) Type() string { return `GMCPDiscordMessage` }
 
-func init() {
-	// Create module with basic structure
-	g := GMCPMudletModule{
-		plug:        plugins.New(`gmcp.Mudlet`, `1.0`),
+// mudletHandler is the global instance for Mudlet-specific functionality
+var mudletHandler *GMCPMudletHandler
+
+// initMudlet initializes the Mudlet handler - called from main gmcp.go init
+func initMudlet() {
+	// Create handler with basic structure
+	mudletHandler = &GMCPMudletHandler{
 		mudletUsers: make(map[int]bool),
 	}
 
-	// Attach filesystem with proper error handling
-	if err := g.plug.AttachFileSystem(files); err != nil {
-		panic(err)
-	}
-
-	// Register callbacks for load/save
-	g.plug.Callbacks.SetOnLoad(g.load)
-	g.plug.Callbacks.SetOnSave(g.save)
-
 	// Register event listeners
-	events.RegisterListener(events.PlayerSpawn{}, g.playerSpawnHandler)
-	events.RegisterListener(events.PlayerDespawn{}, g.playerDespawnHandler)
-	events.RegisterListener(GMCPMudletDetected{}, g.mudletDetectedHandler)
-	events.RegisterListener(GMCPDiscordStatusRequest{}, g.discordStatusRequestHandler)
-	events.RegisterListener(GMCPDiscordMessage{}, g.discordMessageHandler)
-	events.RegisterListener(events.RoomChange{}, g.roomChangeHandler)
-	events.RegisterListener(events.PartyUpdated{}, g.partyUpdateHandler)
+	events.RegisterListener(events.PlayerSpawn{}, mudletHandler.playerSpawnHandler)
+	events.RegisterListener(events.PlayerDespawn{}, mudletHandler.playerDespawnHandler)
+	events.RegisterListener(GMCPMudletDetected{}, mudletHandler.mudletDetectedHandler)
+	events.RegisterListener(GMCPDiscordStatusRequest{}, mudletHandler.discordStatusRequestHandler)
+	events.RegisterListener(GMCPDiscordMessage{}, mudletHandler.discordMessageHandler)
+	events.RegisterListener(events.RoomChange{}, mudletHandler.roomChangeHandler)
+	events.RegisterListener(events.PartyUpdated{}, mudletHandler.partyUpdateHandler)
 
-	// Register the Mudlet-specific user commands
-	g.plug.AddUserCommand("mudletmap", g.sendMapCommand, true, false)
-	g.plug.AddUserCommand("mudletui", g.sendUICommand, false, false)
-	g.plug.AddUserCommand("checkclient", g.checkClientCommand, true, false)
-	g.plug.AddUserCommand("discord", g.discordCommand, true, false)
+	// Register the Mudlet-specific user commands through the main GMCP plugin
+	gmcpModule.plug.AddUserCommand("mudletmap", mudletHandler.sendMapCommand, true, false)
+	gmcpModule.plug.AddUserCommand("mudletui", mudletHandler.sendUICommand, false, false)
+	gmcpModule.plug.AddUserCommand("checkclient", mudletHandler.checkClientCommand, true, false)
+	gmcpModule.plug.AddUserCommand("discord", mudletHandler.discordCommand, true, false)
 }
 
-// Helper function to load a config string from the plugin's configuration
-func loadConfigString(p *plugins.Plugin, key string) string {
-	if val, ok := p.Config.Get(key).(string); ok {
+// Helper function to get a config string from the main GMCP plugin
+func getConfigString(key string) string {
+	if val, ok := gmcpModule.plug.Config.Get(key).(string); ok {
 		return val
 	}
 	return ""
 }
 
-// load handles loading configuration from the plugin's storage
-func (g *GMCPMudletModule) load() {
-	// Load config values directly from embedded config or overrides
-	g.config.MapperVersion = loadConfigString(g.plug, "mapper_version")
-	g.config.MapperURL = loadConfigString(g.plug, "mapper_url")
-	g.config.UIVersion = loadConfigString(g.plug, "ui_version")
-	g.config.UIURL = loadConfigString(g.plug, "ui_url")
-	g.config.MapVersion = loadConfigString(g.plug, "map_version")
-	g.config.MapURL = loadConfigString(g.plug, "map_url")
-	g.config.DiscordApplicationID = loadConfigString(g.plug, "discord_application_id")
-	g.config.DiscordInviteURL = loadConfigString(g.plug, "discord_invite_url")
-	g.config.DiscordLargeImageKey = loadConfigString(g.plug, "discord_large_image_key")
-	g.config.DiscordDetails = loadConfigString(g.plug, "discord_details")
-	g.config.DiscordState = loadConfigString(g.plug, "discord_state")
-	g.config.DiscordSmallImageKey = loadConfigString(g.plug, "discord_small_image_key")
-}
-
-// save handles saving configuration to the plugin's storage
-func (g *GMCPMudletModule) save() {
-	g.plug.WriteStruct(`mudlet_config`, g.config)
-}
-
 // Helper function to check if a user is using a Mudlet client
-func (g *GMCPMudletModule) isMudletClient(userId int) bool {
+func (g *GMCPMudletHandler) isMudletClient(userId int) bool {
 	if userId < 1 {
 		return false
 	}
@@ -188,7 +152,7 @@ func sendGMCP(userId int, module string, payload interface{}) {
 }
 
 // Helper function to create and send Discord Info message
-func (g *GMCPMudletModule) sendDiscordInfo(userId int) {
+func (g *GMCPMudletHandler) sendDiscordInfo(userId int) {
 	if userId < 1 {
 		return
 	}
@@ -204,13 +168,14 @@ func (g *GMCPMudletModule) sendDiscordInfo(userId int) {
 		return
 	}
 
+	// Read config values dynamically to get latest overrides
 	// Send Discord Info payload
 	payload := struct {
 		ApplicationID string `json:"applicationid"`
 		InviteURL     string `json:"inviteurl"`
 	}{
-		ApplicationID: g.config.DiscordApplicationID,
-		InviteURL:     g.config.DiscordInviteURL,
+		ApplicationID: getConfigString("discord_application_id"),
+		InviteURL:     getConfigString("discord_invite_url"),
 	}
 
 	sendGMCP(userId, "External.Discord.Info", payload)
@@ -218,7 +183,7 @@ func (g *GMCPMudletModule) sendDiscordInfo(userId int) {
 }
 
 // sendDiscordStatus sends the current Discord status information
-func (g *GMCPMudletModule) sendDiscordStatus(userId int) {
+func (g *GMCPMudletHandler) sendDiscordStatus(userId int) {
 	if userId < 1 {
 		return
 	}
@@ -249,8 +214,9 @@ func (g *GMCPMudletModule) sendDiscordStatus(userId int) {
 	showName := getUserBoolOption(user, "discord_show_name", true)
 	showLevel := getUserBoolOption(user, "discord_show_level", true)
 
+	// Read config values dynamically to get latest overrides
 	// Build the details string based on preferences
-	detailsStr := g.config.DiscordDetails
+	detailsStr := getConfigString("discord_details")
 	if showName || showLevel {
 		detailsStr = ""
 		if showName {
@@ -280,10 +246,10 @@ func (g *GMCPMudletModule) sendDiscordStatus(userId int) {
 		PartyMax      int    `json:"partymax,omitempty"`
 	}{
 		Details:       detailsStr,
-		State:         g.config.DiscordState,
+		State:         getConfigString("discord_state"),
 		Game:          configs.GetServerConfig().MudName.String(),
-		LargeImageKey: g.config.DiscordLargeImageKey,
-		SmallImageKey: g.config.DiscordSmallImageKey,
+		LargeImageKey: getConfigString("discord_large_image_key"),
+		SmallImageKey: getConfigString("discord_small_image_key"),
 		StartTime:     user.GetConnectTime().Unix(),
 	}
 
@@ -309,7 +275,7 @@ func (g *GMCPMudletModule) sendDiscordStatus(userId int) {
 }
 
 // Send empty Discord status to clear it
-func (g *GMCPMudletModule) clearDiscordStatus(userId int) {
+func (g *GMCPMudletHandler) clearDiscordStatus(userId int) {
 	payload := struct {
 		Details       string `json:"details"`
 		State         string `json:"state"`
@@ -328,13 +294,14 @@ func (g *GMCPMudletModule) clearDiscordStatus(userId int) {
 }
 
 // Send Mudlet map configuration
-func (g *GMCPMudletModule) sendMudletMapConfig(userId int) {
+func (g *GMCPMudletHandler) sendMudletMapConfig(userId int) {
 	if userId < 1 {
 		return
 	}
 
+	// Read config values dynamically to get latest overrides
 	mapConfig := map[string]string{
-		"url": g.config.MapURL,
+		"url": getConfigString("map_url"),
 	}
 
 	sendGMCP(userId, "Client.Map", mapConfig)
@@ -342,17 +309,18 @@ func (g *GMCPMudletModule) sendMudletMapConfig(userId int) {
 }
 
 // Send Mudlet UI package installation message
-func (g *GMCPMudletModule) sendMudletUIInstall(userId int) {
+func (g *GMCPMudletHandler) sendMudletUIInstall(userId int) {
 	if userId < 1 {
 		return
 	}
 
+	// Read config values dynamically to get latest overrides
 	payload := struct {
 		Version string `json:"version"`
 		URL     string `json:"url"`
 	}{
-		Version: g.config.UIVersion,
-		URL:     g.config.UIURL,
+		Version: getConfigString("ui_version"),
+		URL:     getConfigString("ui_url"),
 	}
 
 	sendGMCP(userId, "Client.GUI", payload)
@@ -360,7 +328,7 @@ func (g *GMCPMudletModule) sendMudletUIInstall(userId int) {
 }
 
 // Send Mudlet UI package removal message
-func (g *GMCPMudletModule) sendMudletUIRemove(userId int) {
+func (g *GMCPMudletHandler) sendMudletUIRemove(userId int) {
 	if userId < 1 {
 		return
 	}
@@ -376,7 +344,7 @@ func (g *GMCPMudletModule) sendMudletUIRemove(userId int) {
 }
 
 // Send Mudlet UI package update message
-func (g *GMCPMudletModule) sendMudletUIUpdate(userId int) {
+func (g *GMCPMudletHandler) sendMudletUIUpdate(userId int) {
 	if userId < 1 {
 		return
 	}
@@ -392,18 +360,19 @@ func (g *GMCPMudletModule) sendMudletUIUpdate(userId int) {
 }
 
 // Send mapper configuration to Mudlet client
-func (g *GMCPMudletModule) sendMudletConfig(userId int) {
+func (g *GMCPMudletHandler) sendMudletConfig(userId int) {
 	if userId < 1 {
 		return
 	}
 
+	// Read config values dynamically to get latest overrides
 	// Send mapper info
 	payload := struct {
 		Version string `json:"version"`
 		URL     string `json:"url"`
 	}{
-		Version: g.config.MapperVersion,
-		URL:     g.config.MapperURL,
+		Version: getConfigString("mapper_version"),
+		URL:     getConfigString("mapper_url"),
 	}
 	sendGMCP(userId, "Client.GUI", payload)
 
@@ -423,7 +392,7 @@ func (g *GMCPMudletModule) sendMudletConfig(userId int) {
 }
 
 // playerSpawnHandler handles when a player connects
-func (g *GMCPMudletModule) playerSpawnHandler(e events.Event) events.ListenerReturn {
+func (g *GMCPMudletHandler) playerSpawnHandler(e events.Event) events.ListenerReturn {
 	evt, typeOk := e.(events.PlayerSpawn)
 	if !typeOk {
 		mudlog.Error("Event", "Expected Type", "PlayerSpawn", "Actual Type", e.Type())
@@ -440,7 +409,7 @@ func (g *GMCPMudletModule) playerSpawnHandler(e events.Event) events.ListenerRet
 }
 
 // playerDespawnHandler handles when a player disconnects
-func (g *GMCPMudletModule) playerDespawnHandler(e events.Event) events.ListenerReturn {
+func (g *GMCPMudletHandler) playerDespawnHandler(e events.Event) events.ListenerReturn {
 	evt, typeOk := e.(events.PlayerDespawn)
 	if !typeOk {
 		mudlog.Error("Event", "Expected Type", "PlayerDespawn", "Actual Type", e.Type())
@@ -457,7 +426,7 @@ func (g *GMCPMudletModule) playerDespawnHandler(e events.Event) events.ListenerR
 }
 
 // mudletDetectedHandler handles when a Mudlet client is detected
-func (g *GMCPMudletModule) mudletDetectedHandler(e events.Event) events.ListenerReturn {
+func (g *GMCPMudletHandler) mudletDetectedHandler(e events.Event) events.ListenerReturn {
 	evt, typeOk := e.(GMCPMudletDetected)
 	if !typeOk {
 		mudlog.Error("Event", "Expected Type", "GMCPMudletDetected", "Actual Type", e.Type())
@@ -472,7 +441,7 @@ func (g *GMCPMudletModule) mudletDetectedHandler(e events.Event) events.Listener
 }
 
 // discordStatusRequestHandler handles Discord status requests
-func (g *GMCPMudletModule) discordStatusRequestHandler(e events.Event) events.ListenerReturn {
+func (g *GMCPMudletHandler) discordStatusRequestHandler(e events.Event) events.ListenerReturn {
 	evt, typeOk := e.(GMCPDiscordStatusRequest)
 	if !typeOk {
 		mudlog.Error("Event", "Expected Type", "GMCPDiscordStatusRequest", "Actual Type", e.Type())
@@ -488,7 +457,7 @@ func (g *GMCPMudletModule) discordStatusRequestHandler(e events.Event) events.Li
 }
 
 // discordMessageHandler handles Discord-related GMCP messages
-func (g *GMCPMudletModule) discordMessageHandler(e events.Event) events.ListenerReturn {
+func (g *GMCPMudletHandler) discordMessageHandler(e events.Event) events.ListenerReturn {
 	evt, typeOk := e.(GMCPDiscordMessage)
 	if !typeOk {
 		mudlog.Error("Event", "Expected Type", "GMCPDiscordMessage", "Actual Type", e.Type())
@@ -528,7 +497,7 @@ func (g *GMCPMudletModule) discordMessageHandler(e events.Event) events.Listener
 }
 
 // roomChangeHandler updates Discord status when players change areas
-func (g *GMCPMudletModule) roomChangeHandler(e events.Event) events.ListenerReturn {
+func (g *GMCPMudletHandler) roomChangeHandler(e events.Event) events.ListenerReturn {
 	evt, typeOk := e.(events.RoomChange)
 	if !typeOk {
 		return events.Cancel
@@ -560,7 +529,7 @@ func (g *GMCPMudletModule) roomChangeHandler(e events.Event) events.ListenerRetu
 }
 
 // partyUpdateHandler updates Discord status for party members
-func (g *GMCPMudletModule) partyUpdateHandler(e events.Event) events.ListenerReturn {
+func (g *GMCPMudletHandler) partyUpdateHandler(e events.Event) events.ListenerReturn {
 	evt, typeOk := e.(events.PartyUpdated)
 	if !typeOk {
 		mudlog.Error("Event", "Expected Type", "PartyUpdated", "Actual Type", e.Type())
@@ -578,7 +547,7 @@ func (g *GMCPMudletModule) partyUpdateHandler(e events.Event) events.ListenerRet
 }
 
 // Helper function for handling command toggles
-func (g *GMCPMudletModule) handleToggleCommand(user *users.UserRecord, settingName string, value bool, enableMsg string, disableMsg string) {
+func (g *GMCPMudletHandler) handleToggleCommand(user *users.UserRecord, settingName string, value bool, enableMsg string, disableMsg string) {
 	user.SetConfigOption(settingName, value)
 	if value {
 		user.SendText("\n<ansi fg=\"green\">" + enableMsg + "</ansi>\n")
@@ -593,7 +562,7 @@ func (g *GMCPMudletModule) handleToggleCommand(user *users.UserRecord, settingNa
 }
 
 // sendUICommand handles UI-related commands
-func (g *GMCPMudletModule) sendUICommand(rest string, user *users.UserRecord, room *rooms.Room, flags events.EventFlag) (bool, error) {
+func (g *GMCPMudletHandler) sendUICommand(rest string, user *users.UserRecord, room *rooms.Room, flags events.EventFlag) (bool, error) {
 	// Only proceed if client is Mudlet
 	connId := user.ConnectionId()
 	if gmcpData, ok := gmcpModule.cache.Get(connId); !ok || !gmcpData.Client.IsMudlet {
@@ -663,7 +632,7 @@ func (g *GMCPMudletModule) sendUICommand(rest string, user *users.UserRecord, ro
 }
 
 // sendMapCommand sends map configuration
-func (g *GMCPMudletModule) sendMapCommand(rest string, user *users.UserRecord, room *rooms.Room, flags events.EventFlag) (bool, error) {
+func (g *GMCPMudletHandler) sendMapCommand(rest string, user *users.UserRecord, room *rooms.Room, flags events.EventFlag) (bool, error) {
 	// Only send if the client is Mudlet
 	connId := user.ConnectionId()
 	if gmcpData, ok := gmcpModule.cache.Get(connId); ok && gmcpData.Client.IsMudlet {
@@ -674,7 +643,7 @@ func (g *GMCPMudletModule) sendMapCommand(rest string, user *users.UserRecord, r
 }
 
 // checkClientCommand checks if client is Mudlet and shows info
-func (g *GMCPMudletModule) checkClientCommand(rest string, user *users.UserRecord, room *rooms.Room, flags events.EventFlag) (bool, error) {
+func (g *GMCPMudletHandler) checkClientCommand(rest string, user *users.UserRecord, room *rooms.Room, flags events.EventFlag) (bool, error) {
 	// Check if client is Mudlet
 	connId := user.ConnectionId()
 	if gmcpData, ok := gmcpModule.cache.Get(connId); ok && gmcpData.Client.IsMudlet {
@@ -691,7 +660,7 @@ func (g *GMCPMudletModule) checkClientCommand(rest string, user *users.UserRecor
 }
 
 // discordCommand handles Discord-related settings
-func (g *GMCPMudletModule) discordCommand(rest string, user *users.UserRecord, room *rooms.Room, flags events.EventFlag) (bool, error) {
+func (g *GMCPMudletHandler) discordCommand(rest string, user *users.UserRecord, room *rooms.Room, flags events.EventFlag) (bool, error) {
 	// Only proceed if client is Mudlet
 	connId := user.ConnectionId()
 	if gmcpData, ok := gmcpModule.cache.Get(connId); !ok || !gmcpData.Client.IsMudlet {

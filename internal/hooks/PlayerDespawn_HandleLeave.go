@@ -13,6 +13,7 @@ import (
 	"github.com/GoMudEngine/GoMud/internal/rooms"
 	"github.com/GoMudEngine/GoMud/internal/templates"
 	"github.com/GoMudEngine/GoMud/internal/users"
+	"github.com/GoMudEngine/GoMud/modules/gmcp"
 )
 
 //
@@ -65,6 +66,10 @@ func HandleLeave(e events.Event) events.ListenerReturn {
 	if err := users.LogOutUserByConnectionId(connId); err != nil {
 		mudlog.Error("Log Out Error", "connectionId", connId, "error", err)
 	}
+
+	// Clean up all GMCP state for this user
+	gmcp.CleanupUser(evt.UserId)
+
 	connections.Remove(connId)
 
 	specialRooms := configs.GetSpecialRoomsConfig()

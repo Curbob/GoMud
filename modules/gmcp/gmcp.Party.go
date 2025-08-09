@@ -26,12 +26,13 @@ func init() {
 	// how to use a struct
 	//
 	g := GMCPPartyModule{
-		plug: plugins.New(`gmcp.Comm`, `1.0`),
+		plug: plugins.New(`gmcp.Party`, `1.0`),
 	}
 
 	events.RegisterListener(events.RoomChange{}, g.roomChangeHandler)
 	events.RegisterListener(events.PartyUpdated{}, g.onPartyChange)
 	events.RegisterListener(PartyUpdateVitals{}, g.onUpdateVitals)
+	events.RegisterListener(GMCPPartyUpdate{}, g.buildAndSendGMCPPayload)
 
 }
 
@@ -39,6 +40,14 @@ type GMCPPartyModule struct {
 	// Keep a reference to the plugin when we create it so that we can call ReadBytes() and WriteBytes() on it.
 	plug *plugins.Plugin
 }
+
+// GMCPPartyUpdate is used to request Party module updates
+type GMCPPartyUpdate struct {
+	UserId     int
+	Identifier string
+}
+
+func (g GMCPPartyUpdate) Type() string { return `GMCPPartyUpdate` }
 
 // This is a uniqu event so that multiple party members moving thorugh an area all at once don't queue up a bunch for just one party
 type PartyUpdateVitals struct {
@@ -119,7 +128,9 @@ func (g *GMCPPartyModule) onPartyChange(e events.Event) events.ListenerReturn {
 		}
 	}
 
-	payload, moduleName := g.GetPartyNode(party, `Party`)
+	// Send both Party.Info and Party.Vitals as separate messages
+	infoPayload, _ := g.GetPartyNode(party, `Party.Info`)
+	vitalsPayload, _ := g.GetPartyNode(party, `Party.Vitals`)
 
 	inParty := map[int]struct{}{}
 	if party != nil {
@@ -134,19 +145,32 @@ func (g *GMCPPartyModule) onPartyChange(e events.Event) events.ListenerReturn {
 	for _, userId := range evt.UserIds {
 
 		if _, ok := inParty[userId]; ok {
-
+			// Send party info (structure)
 			events.AddToQueue(GMCPOut{
 				UserId:  userId,
-				Module:  moduleName,
-				Payload: payload,
+				Module:  `Party.Info`,
+				Payload: infoPayload,
+			})
+
+			// Send party vitals (health/location)
+			events.AddToQueue(GMCPOut{
+				UserId:  userId,
+				Module:  `Party.Vitals`,
+				Payload: vitalsPayload,
 			})
 
 		} else {
+			// Not in party - send empty payloads
+			events.AddToQueue(GMCPOut{
+				UserId:  userId,
+				Module:  `Party.Info`,
+				Payload: GMCPPartyModule_Payload_Info{},
+			})
 
 			events.AddToQueue(GMCPOut{
 				UserId:  userId,
-				Module:  `Party`,
-				Payload: GMCPPartyModule_Payload{},
+				Module:  `Party.Vitals`,
+				Payload: map[string]GMCPPartyModule_Payload_Vitals{},
 			})
 
 		}
@@ -158,18 +182,21 @@ func (g *GMCPPartyModule) onPartyChange(e events.Event) events.ListenerReturn {
 
 func (g *GMCPPartyModule) GetPartyNode(party *parties.Party, gmcpModule string) (data any, moduleName string) {
 
-	all := gmcpModule == `Party`
-
 	if party == nil {
-		return GMCPPartyModule_Payload_Vitals{}, `Party`
+		if gmcpModule == `Party.Info` {
+			return GMCPPartyModule_Payload_Info{}, `Party.Info`
+		}
+		return map[string]GMCPPartyModule_Payload_Vitals{}, `Party.Vitals`
 	}
 
-	partyPayload := GMCPPartyModule_Payload{
+	// Prepare both info and vitals data
+	infoPayload := GMCPPartyModule_Payload_Info{
 		Leader:  `None`,
 		Members: []GMCPPartyModule_Payload_User{},
 		Invited: []GMCPPartyModule_Payload_User{},
-		Vitals:  map[string]GMCPPartyModule_Payload_Vitals{},
 	}
+
+	vitalsPayload := map[string]GMCPPartyModule_Payload_Vitals{}
 
 	roomTitles := map[int]string{}
 
@@ -190,27 +217,31 @@ func (g *GMCPPartyModule) GetPartyNode(party *parties.Party, gmcpModule string) 
 				}
 			}
 
-			partyPayload.Vitals[user.Character.Name] = GMCPPartyModule_Payload_Vitals{
+			vitalsPayload[user.Character.Name] = GMCPPartyModule_Payload_Vitals{
 				Level:         user.Character.Level,
 				HealthPercent: hPct,
 				Location:      roomTitle,
 			}
 
-			if gmcpModule == `Party.Vitals` {
-				continue
-			}
+			// Only add to info payload if we're requesting Party.Info
+			if gmcpModule == `Party.Info` {
+				if user.UserId == party.LeaderUserId {
+					infoPayload.Leader = user.Character.Name
+				}
 
-			if user.UserId == party.LeaderUserId {
-				partyPayload.Leader = user.Character.Name
-			}
+				status := "party"
+				if user.UserId == party.LeaderUserId {
+					status = "leader"
+				}
 
-			partyPayload.Members = append(partyPayload.Members,
-				GMCPPartyModule_Payload_User{
-					Name:     user.Character.Name,
-					Status:   `In Party`,
-					Position: party.GetRank(user.UserId),
-				},
-			)
+				infoPayload.Members = append(infoPayload.Members,
+					GMCPPartyModule_Payload_User{
+						Name:     user.Character.Name,
+						Status:   status,
+						Position: party.GetRank(user.UserId),
+					},
+				)
+			}
 
 		}
 
@@ -220,41 +251,48 @@ func (g *GMCPPartyModule) GetPartyNode(party *parties.Party, gmcpModule string) 
 
 		if user := users.GetByUserId(uId); user != nil {
 
-			partyPayload.Vitals[user.Character.Name] = GMCPPartyModule_Payload_Vitals{
+			// Invited users show as empty vitals
+			vitalsPayload[user.Character.Name] = GMCPPartyModule_Payload_Vitals{
 				Level:         0,
 				HealthPercent: 0,
 				Location:      ``,
 			}
 
-			if gmcpModule == `Party.Vitals` {
-				continue
+			// Only add to info payload if we're requesting Party.Info
+			if gmcpModule == `Party.Info` {
+				infoPayload.Invited = append(infoPayload.Invited,
+					GMCPPartyModule_Payload_User{
+						Name:     user.Character.Name,
+						Status:   `invited`,
+						Position: ``,
+					},
+				)
 			}
-
-			partyPayload.Invited = append(partyPayload.Invited,
-				GMCPPartyModule_Payload_User{
-					Name:     user.Character.Name,
-					Status:   `Invited`,
-					Position: ``,
-				},
-			)
 
 		}
 
 	}
 
-	if gmcpModule == `Party.Vitals` {
-		return partyPayload.Vitals, `Party.Vitals`
+	switch gmcpModule {
+	case `Party.Info`:
+		return infoPayload, `Party.Info`
+	case `Party.Vitals`:
+		return vitalsPayload, `Party.Vitals`
+	default:
+		mudlog.Error(`gmcp.Party`, `error`, `Bad module requested`, `module`, gmcpModule)
+		return nil, ""
 	}
-
-	// If we reached this point and Char wasn't requested, we have a problem.
-	if !all {
-		mudlog.Error(`gmcp.Room`, `error`, `Bad module requested`, `module`, gmcpModule)
-	}
-
-	return partyPayload, `Party`
 
 }
 
+// GMCPPartyModule_Payload_Info contains static party structure
+type GMCPPartyModule_Payload_Info struct {
+	Leader  string                         `json:"leader"`
+	Members []GMCPPartyModule_Payload_User `json:"members"`
+	Invited []GMCPPartyModule_Payload_User `json:"invited"`
+}
+
+// DEPRECATED: Old combined payload structure
 type GMCPPartyModule_Payload struct {
 	Leader  string
 	Members []GMCPPartyModule_Payload_User
@@ -272,4 +310,70 @@ type GMCPPartyModule_Payload_Vitals struct {
 	Level         int    `json:"level"`    // level of user
 	HealthPercent int    `json:"health"`   // 1 = 1%, 23 = 23% etc.
 	Location      string `json:"location"` // Title of room they are in
+}
+
+func (g *GMCPPartyModule) buildAndSendGMCPPayload(e events.Event) events.ListenerReturn {
+	evt, typeOk := e.(GMCPPartyUpdate)
+	if !typeOk {
+		return events.Continue
+	}
+
+	if evt.UserId < 1 {
+		return events.Continue
+	}
+
+	// Make sure they have GMCP enabled
+	user := users.GetByUserId(evt.UserId)
+	if user == nil {
+		return events.Continue
+	}
+
+	if !isGMCPEnabled(user.ConnectionId()) {
+		return events.Continue
+	}
+
+	// If requesting "Party", send all sub-nodes
+	if evt.Identifier == `Party` {
+		g.sendAllPartyNodes(evt.UserId)
+		return events.Continue
+	}
+
+	// Otherwise, send the specific node requested
+	party := parties.Get(evt.UserId)
+	// Note: party can be nil, GetPartyNode handles that case
+
+	payload, moduleName := g.GetPartyNode(party, evt.Identifier)
+	if payload != nil && moduleName != "" {
+		events.AddToQueue(GMCPOut{
+			UserId:  evt.UserId,
+			Module:  moduleName,
+			Payload: payload,
+		})
+	}
+
+	return events.Continue
+}
+
+// sendAllPartyNodes sends all Party nodes as individual GMCP messages
+func (g *GMCPPartyModule) sendAllPartyNodes(userId int) {
+	party := parties.Get(userId)
+
+	// Always send party structures, even if empty (when not in a party)
+	// Send Party.Info
+	if infoPayload, moduleName := g.GetPartyNode(party, `Party.Info`); infoPayload != nil {
+		events.AddToQueue(GMCPOut{
+			UserId:  userId,
+			Module:  moduleName,
+			Payload: infoPayload,
+		})
+	}
+
+	// Send Party.Vitals
+	if vitalsPayload, moduleName := g.GetPartyNode(party, `Party.Vitals`); vitalsPayload != nil {
+		events.AddToQueue(GMCPOut{
+			UserId:  userId,
+			Module:  moduleName,
+			Payload: vitalsPayload,
+		})
+	}
 }

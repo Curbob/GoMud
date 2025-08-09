@@ -1,17 +1,20 @@
 package gmcp
 
 import (
-	"bytes"
+	"embed"
 	"encoding/json"
-	"fmt"
-	"os"
 	"strconv"
 	"strings"
 
+	"sync"
+
+	"github.com/GoMudEngine/GoMud/internal/configs"
 	"github.com/GoMudEngine/GoMud/internal/connections"
 	"github.com/GoMudEngine/GoMud/internal/events"
+	"github.com/GoMudEngine/GoMud/internal/mobs"
 	"github.com/GoMudEngine/GoMud/internal/mudlog"
 	"github.com/GoMudEngine/GoMud/internal/plugins"
+	"github.com/GoMudEngine/GoMud/internal/rooms"
 	"github.com/GoMudEngine/GoMud/internal/term"
 	"github.com/GoMudEngine/GoMud/internal/users"
 	lru "github.com/hashicorp/golang-lru/v2"
@@ -22,6 +25,9 @@ const (
 )
 
 var (
+	//go:embed files/*
+	files embed.FS
+
 	///////////////////////////
 	// GMCP COMMANDS
 	///////////////////////////
@@ -34,37 +40,47 @@ var (
 	GmcpPayload               = term.TerminalCommand{Chars: []byte{term.TELNET_IAC, term.TELNET_SB, TELNET_GMCP}, EndChars: []byte{term.TELNET_IAC, term.TELNET_SE}} // Wrapper for sending GMCP payloads
 	GmcpWebPayload            = term.TerminalCommand{Chars: []byte("!!GMCP("), EndChars: []byte{')'}}                                                                // Wrapper for sending GMCP payloads
 	gmcpModule     GMCPModule = GMCPModule{}
+
+	// Shared combat tracking
+	combatUsersMutex sync.RWMutex
+	combatUsers      = make(map[int]struct{}) // Set of users currently in combat
 )
 
-// ////////////////////////////////////////////////////////////////////
-// NOTE: The init function in Go is a special function that is
-// automatically executed before the main function within a package.
-// It is used to initialize variables, set up configurations, or
-// perform any other setup tasks that need to be done before the
-// program starts running.
-// ////////////////////////////////////////////////////////////////////
 func init() {
-
-	//
-	// We can use all functions only, but this demonstrates
-	// how to use a struct
-	//
 	gmcpModule = GMCPModule{
 		plug: plugins.New(`gmcp`, `1.0`),
 	}
 
-	// connectionId to map[string]int
 	gmcpModule.cache, _ = lru.New[uint64, GMCPSettings](128)
+
+	// Attach filesystem for config overlays
+	if err := gmcpModule.plug.AttachFileSystem(files); err != nil {
+		panic(err)
+	}
+
+	// Set callbacks for load/save
+	gmcpModule.plug.Callbacks.SetOnLoad(gmcpModule.load)
+	gmcpModule.plug.Callbacks.SetOnSave(gmcpModule.save)
 
 	gmcpModule.plug.ExportFunction(`SendGMCPEvent`, gmcpModule.sendGMCPEvent)
 	gmcpModule.plug.ExportFunction(`IsMudlet`, gmcpModule.IsMudletExportedFunction)
+	gmcpModule.plug.ExportFunction(`TriggerRoomUpdate`, gmcpModule.triggerRoomUpdate)
 
 	gmcpModule.plug.Callbacks.SetIACHandler(gmcpModule.HandleIAC)
 	gmcpModule.plug.Callbacks.SetOnNetConnect(gmcpModule.onNetConnect)
 
+	// Register combat tracking listeners
+	events.RegisterListener(events.CombatStarted{}, handleCombatStartedTracking)
+	events.RegisterListener(events.CombatEnded{}, handleCombatEndedTracking)
+	events.RegisterListener(events.PlayerDespawn{}, handlePlayerDespawnTracking)
+
 	events.RegisterListener(GMCPOut{}, gmcpModule.dispatchGMCP)
 	events.RegisterListener(events.PlayerSpawn{}, gmcpModule.handlePlayerJoin)
 
+	InitCombatCooldownTimer()
+
+	// Initialize Mudlet handler
+	initMudlet()
 }
 
 func isGMCPEnabled(connectionId uint64) bool {
@@ -77,9 +93,26 @@ func isGMCPEnabled(connectionId uint64) bool {
 	return false
 }
 
-// ///////////////////
-// EVENTS
-// ///////////////////
+// validateUserForGMCP checks if a user exists and has GMCP enabled
+// Returns the user and true if valid, nil and false otherwise
+func validateUserForGMCP(userId int, module string) (*users.UserRecord, bool) {
+	if userId < 1 {
+		return nil, false
+	}
+
+	user := users.GetByUserId(userId)
+	if user == nil {
+		mudlog.Warn(module, "action", "validateUserForGMCP", "issue", "user not found", "userId", userId)
+		return nil, false
+	}
+
+	gmcpEnabled := isGMCPEnabled(user.ConnectionId())
+	if !gmcpEnabled {
+		return nil, false
+	}
+
+	return user, true
+}
 
 type GMCPOut struct {
 	UserId  int
@@ -119,8 +152,7 @@ type GMCPSettings struct {
 		Version  string
 		IsMudlet bool // Knowing whether is a mudlet client can be useful, since Mudlet hates certain ANSI/Escape codes.
 	}
-	GMCPAccepted   bool           // Do they accept GMCP data?
-	EnabledModules map[string]int // What modules/versions are accepted? Might not be used properly by clients.
+	GMCPAccepted bool // Do they accept GMCP data?
 }
 
 func (gs *GMCPSettings) IsMudlet() bool {
@@ -128,6 +160,137 @@ func (gs *GMCPSettings) IsMudlet() bool {
 }
 
 /// END SETTINGS
+
+// Combat tracking handlers
+func handleCombatStartedTracking(e events.Event) events.ListenerReturn {
+	mudlog.Info("GMCP Combat Tracking", "event", "CombatStarted received")
+	evt, ok := e.(events.CombatStarted)
+	if !ok {
+		mudlog.Error("GMCP Combat Tracking", "error", "CombatStarted type assertion failed")
+		return events.Continue
+	}
+
+	mudlog.Info("GMCP Combat Tracking", "event", "CombatStarted",
+		"attackerType", evt.AttackerType, "attackerId", evt.AttackerId,
+		"defenderType", evt.DefenderType, "defenderId", evt.DefenderId,
+		"initiatedBy", evt.InitiatedBy)
+
+	// Track both attacker and defender if they're players
+	if evt.AttackerType == "player" {
+		combatUsersMutex.Lock()
+		combatUsers[evt.AttackerId] = struct{}{}
+		combatUsersMutex.Unlock()
+		TrackCombatPlayer(evt.AttackerId)
+		mudlog.Info("GMCP Combat Tracking", "action", "Added player to combat", "userId", evt.AttackerId)
+	}
+
+	if evt.DefenderType == "player" {
+		combatUsersMutex.Lock()
+		combatUsers[evt.DefenderId] = struct{}{}
+		combatUsersMutex.Unlock()
+		TrackCombatPlayer(evt.DefenderId)
+		mudlog.Info("GMCP Combat Tracking", "action", "Added player to combat", "userId", evt.DefenderId)
+	}
+
+	return events.Continue
+}
+
+func handleCombatEndedTracking(e events.Event) events.ListenerReturn {
+	evt, ok := e.(events.CombatEnded)
+	if !ok || evt.EntityType != "player" {
+		return events.Continue
+	}
+
+	combatUsersMutex.Lock()
+	delete(combatUsers, evt.EntityId)
+	combatUsersMutex.Unlock()
+
+	// Stop tracking cooldown
+	UntrackCombatPlayer(evt.EntityId)
+
+	return events.Continue
+}
+
+func handlePlayerDespawnTracking(e events.Event) events.ListenerReturn {
+	evt, ok := e.(events.PlayerDespawn)
+	if !ok {
+		return events.Continue
+	}
+
+	combatUsersMutex.Lock()
+	delete(combatUsers, evt.UserId)
+	combatUsersMutex.Unlock()
+
+	// Clean up all GMCP state for this user
+	CleanupUser(evt.UserId)
+
+	return events.Continue
+}
+
+// GetUsersInCombat returns a list of user IDs currently in combat
+func GetUsersInCombat() []int {
+	combatUsersMutex.RLock()
+	defer combatUsersMutex.RUnlock()
+
+	usersInCombat := make([]int, 0, len(combatUsers))
+	for userId := range combatUsers {
+		usersInCombat = append(usersInCombat, userId)
+	}
+	return usersInCombat
+}
+
+// IsUserInCombat checks if a user is currently in combat (attacking or being attacked)
+// This is the single source of truth for combat state detection
+func IsUserInCombat(userId int) bool {
+	user := users.GetByUserId(userId)
+	if user == nil {
+		return false
+	}
+
+	// User is attacking if they have aggro set
+	if user.Character.Aggro != nil && (user.Character.Aggro.UserId > 0 || user.Character.Aggro.MobInstanceId > 0) {
+		return true
+	}
+
+	// Check if any mobs in their room are targeting them
+	room := rooms.LoadRoom(user.Character.RoomId)
+	if room == nil {
+		return false
+	}
+
+	for _, mobId := range room.GetMobs() {
+		if mob := mobs.GetInstance(mobId); mob != nil {
+			if mob.Character.Aggro != nil && mob.Character.Aggro.UserId == userId {
+				return true // Being attacked
+			}
+		}
+	}
+
+	return false
+}
+
+// GetUsersInOrTargetedByCombat returns users who are either attacking OR being attacked
+func GetUsersInOrTargetedByCombat() []int {
+	result := []int{}
+
+	// Check all active users for combat involvement
+	for _, user := range users.GetAllActiveUsers() {
+		if IsUserInCombat(user.UserId) {
+			result = append(result, user.UserId)
+		}
+	}
+
+	return result
+}
+
+// CleanupUser removes all GMCP state for a disconnecting user
+func CleanupUser(userId int) {
+	// Clean up each combat module's state
+	cleanupCombatStatus(userId)
+	cleanupCombatTargetNew(userId)  // Use new event-driven version
+	cleanupCombatEnemiesNew(userId) // Use new event-driven version
+	UntrackCombatPlayer(userId)     // Cooldown module cleanup
+}
 
 func (g *GMCPModule) IsMudletExportedFunction(connectionId uint64) bool {
 	gmcpData, ok := g.cache.Get(connectionId)
@@ -157,6 +320,14 @@ func (g *GMCPModule) isGMCPCommand(b []byte) bool {
 	return len(b) > 2 && b[0] == term.TELNET_IAC && b[2] == TELNET_GMCP
 }
 
+// load handles loading configuration from storage
+func (g *GMCPModule) load() {
+}
+
+// save handles saving configuration to storage
+func (g *GMCPModule) save() {
+}
+
 func (g *GMCPModule) sendGMCPEvent(userId int, moduleName string, payload any) {
 
 	evt := GMCPOut{
@@ -166,6 +337,14 @@ func (g *GMCPModule) sendGMCPEvent(userId int, moduleName string, payload any) {
 	}
 
 	events.AddToQueue(evt)
+}
+
+func (g *GMCPModule) triggerRoomUpdate(userId int) {
+	// This triggers a full room update, sending all room sub-nodes
+	events.AddToQueue(GMCPRoomUpdate{
+		UserId:     userId,
+		Identifier: `Room.Info`,
+	})
 }
 
 func (g *GMCPModule) handlePlayerJoin(e events.Event) events.ListenerReturn {
@@ -178,14 +357,17 @@ func (g *GMCPModule) handlePlayerJoin(e events.Event) events.ListenerReturn {
 
 	if _, ok := g.cache.Get(evt.ConnectionId); !ok {
 		g.cache.Add(evt.ConnectionId, GMCPSettings{})
-		// Send request to enable GMCP
 		g.sendGMCPEnableRequest(evt.ConnectionId)
+	}
+
+	if evt.UserId > 0 {
+		SendFullGMCPUpdate(evt.UserId)
+		mudlog.Info("GMCP", "type", "PlayerSpawn", "action", "Full GMCP sent on login", "userId", evt.UserId)
 	}
 
 	return events.Continue
 }
 
-// Sends a telnet IAC request to enable GMCP
 func (g *GMCPModule) sendGMCPEnableRequest(connectionId uint64) {
 	connections.SendTo(
 		GmcpEnable.BytesWithPayload(nil),
@@ -193,18 +375,14 @@ func (g *GMCPModule) sendGMCPEnableRequest(connectionId uint64) {
 	)
 }
 
-// Returns a map of module name to version number
 func (s GMCPSupportsSet) GetSupportedModules() map[string]int {
-
 	ret := map[string]int{}
 
 	for _, entry := range s {
-
 		parts := strings.Split(entry, ` `)
 		if len(parts) == 2 {
 			ret[parts[0]], _ = strconv.Atoi(parts[1])
 		}
-
 	}
 
 	return ret
@@ -216,7 +394,7 @@ func (g *GMCPModule) HandleIAC(connectionId uint64, iacCmd []byte) bool {
 		return false
 	}
 
-	if ok, payload := term.Matches(iacCmd, GmcpAccept); ok {
+	if ok, _ := term.Matches(iacCmd, GmcpAccept); ok {
 
 		gmcpData, ok := g.cache.Get(connectionId)
 		if !ok {
@@ -225,11 +403,10 @@ func (g *GMCPModule) HandleIAC(connectionId uint64, iacCmd []byte) bool {
 		gmcpData.GMCPAccepted = true
 		g.cache.Add(connectionId, gmcpData)
 
-		mudlog.Debug("Received", "type", "IAC (Client-GMCP Accept)", "data", term.BytesString(payload))
 		return true
 	}
 
-	if ok, payload := term.Matches(iacCmd, GmcpRefuse); ok {
+	if ok, _ := term.Matches(iacCmd, GmcpRefuse); ok {
 
 		gmcpData, ok := g.cache.Get(connectionId)
 		if !ok {
@@ -238,15 +415,11 @@ func (g *GMCPModule) HandleIAC(connectionId uint64, iacCmd []byte) bool {
 		gmcpData.GMCPAccepted = false
 		g.cache.Add(connectionId, gmcpData)
 
-		mudlog.Debug("Received", "type", "IAC (Client-GMCP Refuse)", "data", term.BytesString(payload))
 		return true
 	}
 
 	if len(iacCmd) >= 5 && iacCmd[len(iacCmd)-2] == term.TELNET_IAC && iacCmd[len(iacCmd)-1] == term.TELNET_SE {
-		// Unhanlded IAC command, log it
-
 		requestBody := iacCmd[3 : len(iacCmd)-2]
-		//mudlog.Debug("Received", "type", "GMCP", "size", len(iacCmd), "data", string(requestBody))
 
 		spaceAt := 0
 		for i := 0; i < len(requestBody); i++ {
@@ -266,8 +439,6 @@ func (g *GMCPModule) HandleIAC(connectionId uint64, iacCmd []byte) bool {
 			command = string(requestBody)
 		}
 
-		mudlog.Debug("Received", "type", "GMCP (Handling)", "command", command, "payload", string(payload))
-
 		switch command {
 
 		case `Core.Hello`:
@@ -286,9 +457,7 @@ func (g *GMCPModule) HandleIAC(connectionId uint64, iacCmd []byte) bool {
 				if strings.EqualFold(decoded.Client, `mudlet`) {
 					gmcpData.Client.IsMudlet = true
 
-					// Trigger the Mudlet detected event
 					userId := 0
-					// Try to find the user ID associated with this connection
 					for _, user := range users.GetAllActiveUsers() {
 						if user.ConnectionId() == connectionId {
 							userId = user.UserId
@@ -307,60 +476,80 @@ func (g *GMCPModule) HandleIAC(connectionId uint64, iacCmd []byte) bool {
 				g.cache.Add(connectionId, gmcpData)
 			}
 		case `Core.Supports.Set`:
-			decoded := GMCPSupportsSet{}
-			if err := json.Unmarshal(payload, &decoded); err == nil {
-
-				gmcpData, ok := g.cache.Get(connectionId)
-				if !ok {
-					gmcpData = GMCPSettings{}
-					gmcpData.GMCPAccepted = true
-				}
-
-				gmcpData.EnabledModules = map[string]int{}
-
-				for name, value := range decoded.GetSupportedModules() {
-
-					// Break it down into:
-					// Char.Inventory.Backpack
-					// Char.Inventory
-					// Char
-					for {
-						gmcpData.EnabledModules[name] = value
-						idx := strings.LastIndex(name, ".")
-						if idx == -1 {
-							break
-						}
-						name = name[:idx]
-					}
-
-				}
-
-				g.cache.Add(connectionId, gmcpData)
-
-			}
+			// Core.Supports.Set is accepted but ignored - we send all GMCP modules
 		case `Core.Supports.Remove`:
-			decoded := GMCPSupportsRemove{}
-			if err := json.Unmarshal(payload, &decoded); err == nil {
-
-				gmcpData, ok := g.cache.Get(connectionId)
-				if !ok {
-					gmcpData = GMCPSettings{}
-					gmcpData.GMCPAccepted = true
-				}
-
-				if len(gmcpData.EnabledModules) > 0 {
-					for _, name := range decoded {
-						delete(gmcpData.EnabledModules, name)
-					}
-				}
-
-				g.cache.Add(connectionId, gmcpData)
-
-			}
+			// Core.Supports.Remove is accepted but ignored - we send all GMCP modules
 		case `Char.Login`:
 			decoded := GMCPLogin{}
 			if err := json.Unmarshal(payload, &decoded); err == nil {
-				mudlog.Debug("GMCP LOGIN", "username", decoded.Name, "password", strings.Repeat(`*`, len(decoded.Password)))
+			}
+
+		case `GMCP`:
+			// Handle GMCP refresh request
+			payloadStr := string(payload)
+
+			// Find the user ID associated with this connection
+			userId := 0
+			for _, user := range users.GetAllActiveUsers() {
+				if user.ConnectionId() == connectionId {
+					userId = user.UserId
+					break
+				}
+			}
+
+			if userId > 0 {
+				switch {
+				case payloadStr == `SendFullPayload`:
+					// Send full GMCP refresh
+					SendFullGMCPUpdate(userId)
+					mudlog.Info("GMCP", "type", "GMCP", "action", "Full refresh requested", "userId", userId)
+
+				case strings.HasPrefix(payloadStr, `Send`):
+					// Handle individual node requests like "SendCharInventoryBackpack"
+					// Remove "Send" prefix and convert to dot notation
+					nodePath := payloadStr[4:] // Remove "Send"
+
+					// Convert camelCase to dot notation
+					// SendCharInventoryBackpack -> Char.Inventory.Backpack
+					var dotPath strings.Builder
+					for i, char := range nodePath {
+						if i > 0 && char >= 'A' && char <= 'Z' {
+							dotPath.WriteRune('.')
+						}
+						dotPath.WriteRune(char)
+					}
+
+					identifier := dotPath.String()
+					mudlog.Info("GMCP", "type", "GMCP", "action", "Node refresh requested", "userId", userId, "node", identifier)
+
+					// Trigger appropriate update based on the module
+					if strings.HasPrefix(identifier, "Char") {
+						events.AddToQueue(GMCPCharUpdate{UserId: userId, Identifier: identifier})
+					} else if strings.HasPrefix(identifier, "Room") {
+						events.AddToQueue(GMCPRoomUpdate{UserId: userId, Identifier: identifier})
+					} else if strings.HasPrefix(identifier, "Party") {
+						events.AddToQueue(GMCPPartyUpdate{UserId: userId, Identifier: identifier})
+					} else if strings.HasPrefix(identifier, "Game") {
+						events.AddToQueue(GMCPGameUpdate{UserId: userId, Identifier: identifier})
+					} else if strings.HasPrefix(identifier, "Client.Map") {
+						// Handle Client.Map request for Mudlet clients
+						if mudletHandler != nil && mudletHandler.isMudletClient(userId) {
+							mudletHandler.sendMudletMapConfig(userId)
+						}
+					} else if strings.HasPrefix(identifier, "Comm") {
+						// For Comm.Channel, send an empty structure
+						events.AddToQueue(GMCPOut{
+							UserId: userId,
+							Module: `Comm.Channel`,
+							Payload: map[string]string{
+								"channel": "",
+								"sender":  "",
+								"source":  "",
+								"text":    "",
+							},
+						})
+					}
+				}
 			}
 
 		// Handle Discord-related messages
@@ -390,16 +579,12 @@ func (g *GMCPModule) HandleIAC(connectionId uint64, iacCmd []byte) bool {
 						Payload:      payload,
 					})
 
-					mudlog.Debug("GMCP", "type", "Discord", "command", discordCommand, "userId", userId)
 				}
 			}
 		}
 
 		return true
 	}
-
-	// Unhanlded IAC command, log it
-	mudlog.Debug("Received", "type", "GMCP?", "data-size", len(iacCmd), "data-string", string(iacCmd), "data-bytes", iacCmd)
 
 	return true
 }
@@ -435,7 +620,6 @@ func (g *GMCPModule) dispatchGMCP(e events.Event) events.ListenerReturn {
 			return events.Continue
 		}
 
-		// Get enabled modules... if none, skip out.
 		if !gmcpSettings.GMCPAccepted {
 			return events.Continue
 		}
@@ -449,16 +633,6 @@ func (g *GMCPModule) dispatchGMCP(e events.Event) events.ListenerReturn {
 	switch v := gmcp.Payload.(type) {
 	case []byte:
 
-		// DEBUG ONLY
-		// TODO: REMOVE
-		if gmcp.UserId == 1 && os.Getenv("CONSOLE_GMCP_OUTPUT") == "1" {
-			var prettyJSON bytes.Buffer
-			json.Indent(&prettyJSON, v, "", "\t")
-			fmt.Print(gmcp.Module + ` `)
-			fmt.Println(prettyJSON.String())
-		}
-
-		// Regular code follows...
 		if len(gmcp.Module) > 0 {
 			v = append([]byte(gmcp.Module+` `), v...)
 		}
@@ -471,16 +645,6 @@ func (g *GMCPModule) dispatchGMCP(e events.Event) events.ListenerReturn {
 
 	case string:
 
-		// DEBUG ONLY
-		// TODO: REMOVE
-		if gmcp.UserId == 1 && os.Getenv("CONSOLE_GMCP_OUTPUT") == "1" {
-			var prettyJSON bytes.Buffer
-			json.Indent(&prettyJSON, []byte(v), "", "\t")
-			fmt.Print(gmcp.Module + ` `)
-			fmt.Println(prettyJSON.String())
-		}
-
-		// Regular code follows...
 		if len(gmcp.Module) > 0 {
 			v = gmcp.Module + ` ` + v
 		}
@@ -498,16 +662,6 @@ func (g *GMCPModule) dispatchGMCP(e events.Event) events.ListenerReturn {
 			return events.Continue
 		}
 
-		// DEBUG ONLY
-		// TODO: REMOVE
-		if gmcp.UserId == 1 && os.Getenv("CONSOLE_GMCP_OUTPUT") == "1" {
-			var prettyJSON bytes.Buffer
-			json.Indent(&prettyJSON, payload, "", "\t")
-			fmt.Print(gmcp.Module + ` `)
-			fmt.Println(prettyJSON.String())
-		}
-
-		// Regular code follows...
 		if len(gmcp.Module) > 0 {
 			payload = append([]byte(gmcp.Module+` `), payload...)
 		}
@@ -521,4 +675,216 @@ func (g *GMCPModule) dispatchGMCP(e events.Event) events.ListenerReturn {
 	}
 
 	return events.Continue
+}
+
+// SendFullGMCPUpdate sends all GMCP modules data to a specific user
+// This is useful when a client needs to resync all GMCP data
+func SendFullGMCPUpdate(userId int) {
+	if userId < 1 {
+		return
+	}
+
+	// Make sure they have GMCP enabled
+	user := users.GetByUserId(userId)
+	if user == nil {
+		return
+	}
+
+	if !isGMCPEnabled(user.ConnectionId()) {
+		return
+	}
+
+	// Trigger updates for all modules using the consistent event pattern
+
+	// Char module - sends all character sub-nodes
+	events.AddToQueue(GMCPCharUpdate{UserId: userId, Identifier: `Char`})
+
+	// Room module - sends all room sub-nodes
+	events.AddToQueue(GMCPRoomUpdate{UserId: userId, Identifier: `Room`})
+
+	// Send empty structures to establish GMCP schema for clients
+	events.AddToQueue(GMCPOut{
+		UserId:  userId,
+		Module:  `Room.Wrongdir`,
+		Payload: map[string]string{"dir": ""},
+	})
+
+	// Party module - sends all party sub-nodes
+	events.AddToQueue(GMCPPartyUpdate{UserId: userId, Identifier: `Party`})
+
+	// Game module - sends all game sub-nodes
+	events.AddToQueue(GMCPGameUpdate{UserId: userId, Identifier: `Game`})
+
+	// Combat module - send all combat status nodes
+	// Send current combat status
+	events.AddToQueue(GMCPCombatStatusUpdate{UserId: userId})
+
+	// Send combat target (if any)
+	events.AddToQueue(GMCPCombatTargetUpdate{UserId: userId})
+
+	// Send combat enemies list
+	events.AddToQueue(GMCPCombatEnemiesUpdate{UserId: userId})
+
+	// Send combat cooldown timer with default values
+	timingConfig := configs.GetTimingConfig()
+	events.AddToQueue(GMCPCombatCooldownUpdate{
+		UserId:          userId,
+		CooldownSeconds: 0.0,
+		MaxSeconds:      float64(timingConfig.RoundSeconds),
+		NameActive:      "Combat Round",
+		NameIdle:        "Ready",
+	})
+
+	// Combat damage structure
+	events.AddToQueue(GMCPOut{
+		UserId: userId,
+		Module: `Char.Combat.Damage`,
+		Payload: map[string]interface{}{
+			"amount": 0,
+			"type":   "",
+			"source": "",
+			"target": "",
+		},
+	})
+
+	// Room.Remove structures
+	events.AddToQueue(GMCPOut{
+		UserId:  userId,
+		Module:  `Room.Remove.Player`,
+		Payload: map[string]string{"name": ""},
+	})
+	events.AddToQueue(GMCPOut{
+		UserId:  userId,
+		Module:  `Room.Remove.Npc`,
+		Payload: map[string]interface{}{"id": "", "name": ""},
+	})
+	events.AddToQueue(GMCPOut{
+		UserId:  userId,
+		Module:  `Room.Remove.Item`,
+		Payload: map[string]interface{}{"id": "", "name": ""},
+	})
+
+	// Room.Add structures
+	events.AddToQueue(GMCPOut{
+		UserId:  userId,
+		Module:  `Room.Add.Player`,
+		Payload: map[string]string{"name": ""},
+	})
+	events.AddToQueue(GMCPOut{
+		UserId: userId,
+		Module: `Room.Add.Npc`,
+		Payload: map[string]interface{}{
+			"id":            "",
+			"name":          "",
+			"threat_level":  "",
+			"targeting_you": false,
+		},
+	})
+	events.AddToQueue(GMCPOut{
+		UserId: userId,
+		Module: `Room.Add.Item`,
+		Payload: map[string]interface{}{
+			"id": "", "name": "", "quest_flag": false,
+		},
+	})
+
+	// Combat event structures
+	events.AddToQueue(GMCPOut{
+		UserId: userId,
+		Module: `Char.Combat.Started`,
+		Payload: map[string]interface{}{
+			"role":         "",
+			"target_id":    0,
+			"target_type":  "",
+			"target_name":  "",
+			"initiated_by": "",
+		},
+	})
+
+	events.AddToQueue(GMCPOut{
+		UserId: userId,
+		Module: `Char.Combat.Ended`,
+		Payload: map[string]interface{}{
+			"reason":   "",
+			"duration": 0,
+		},
+	})
+
+	events.AddToQueue(GMCPOut{
+		UserId: userId,
+		Module: `Char.Combat.DamageDealt`,
+		Payload: map[string]interface{}{
+			"target_id":       0,
+			"target_type":     "",
+			"target_name":     "",
+			"amount":          0,
+			"damage_type":     "",
+			"weapon_name":     "",
+			"spell_name":      "",
+			"is_critical":     false,
+			"is_killing_blow": false,
+		},
+	})
+
+	events.AddToQueue(GMCPOut{
+		UserId: userId,
+		Module: `Char.Combat.DamageReceived`,
+		Payload: map[string]interface{}{
+			"source_id":       0,
+			"source_type":     "",
+			"source_name":     "",
+			"amount":          0,
+			"damage_type":     "",
+			"weapon_name":     "",
+			"spell_name":      "",
+			"is_critical":     false,
+			"is_killing_blow": false,
+		},
+	})
+
+	events.AddToQueue(GMCPOut{
+		UserId: userId,
+		Module: `Char.Combat.AttackMissed`,
+		Payload: map[string]interface{}{
+			"defender_id":   0,
+			"defender_type": "",
+			"defender_name": "",
+			"avoid_type":    "",
+			"weapon_name":   "",
+		},
+	})
+
+	events.AddToQueue(GMCPOut{
+		UserId: userId,
+		Module: `Char.Combat.AttackAvoided`,
+		Payload: map[string]interface{}{
+			"attacker_id":   0,
+			"attacker_type": "",
+			"attacker_name": "",
+			"avoid_type":    "",
+			"weapon_name":   "",
+		},
+	})
+
+	events.AddToQueue(GMCPOut{
+		UserId: userId,
+		Module: `Char.Combat.Fled`,
+		Payload: map[string]interface{}{
+			"direction":    "",
+			"success":      false,
+			"prevented_by": "",
+		},
+	})
+
+	// Comm module - send channel structure with all fields
+	events.AddToQueue(GMCPOut{
+		UserId: userId,
+		Module: `Comm.Channel`,
+		Payload: map[string]string{
+			"channel": "",
+			"sender":  "",
+			"source":  "",
+			"text":    "",
+		},
+	})
 }

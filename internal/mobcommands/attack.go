@@ -6,6 +6,7 @@ import (
 
 	"github.com/GoMudEngine/GoMud/internal/buffs"
 	"github.com/GoMudEngine/GoMud/internal/characters"
+	"github.com/GoMudEngine/GoMud/internal/events"
 	"github.com/GoMudEngine/GoMud/internal/mobs"
 	"github.com/GoMudEngine/GoMud/internal/rooms"
 	"github.com/GoMudEngine/GoMud/internal/users"
@@ -114,6 +115,18 @@ func Attack(rest string, mob *mobs.Mob, room *rooms.Room) (bool, error) {
 			mob.PlayerAttacked(attackPlayerId)
 
 			mob.Character.SetAggro(attackPlayerId, 0, characters.DefaultAttack)
+
+			// Fire combat event for GMCP
+			events.AddToQueue(events.CombatStarted{
+				AttackerId:   mob.InstanceId,
+				AttackerType: "mob",
+				AttackerName: mob.Character.Name,
+				DefenderId:   attackPlayerId,
+				DefenderType: "player",
+				DefenderName: u.Character.Name,
+				RoomId:       room.RoomId,
+				InitiatedBy:  "attack",
+			})
 
 			if !isSneaking {
 

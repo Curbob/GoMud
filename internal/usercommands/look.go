@@ -20,6 +20,7 @@ import (
 func Look(rest string, user *users.UserRecord, room *rooms.Room, flags events.EventFlag) (bool, error) {
 
 	secretLook := flags.Has(events.CmdSecretly)
+	suppressGMCP := flags.Has(events.CmdNoRoomGMCP)
 
 	visibility := room.GetVisibility()
 
@@ -65,7 +66,7 @@ func Look(rest string, user *users.UserRecord, room *rooms.Room, flags events.Ev
 			// Make it a "secret looks" now because we don't want another look message sent out by the lookRoom() func
 			secretLook = true
 		}
-		lookRoom(user, room.RoomId, secretLook || isSneaking)
+		lookRoom(user, room.RoomId, secretLook || isSneaking, suppressGMCP)
 		return true, nil
 	}
 
@@ -259,7 +260,7 @@ func Look(rest string, user *users.UserRecord, room *rooms.Room, flags events.Ev
 			room.SendText(fmt.Sprintf(`<ansi fg="username">%s</ansi> peers toward the %s.`, user.Character.Name, exitName), user.UserId)
 		}
 
-		lookRoom(user, lookRoomId, secretLook || isSneaking)
+		lookRoom(user, lookRoomId, secretLook || isSneaking, suppressGMCP)
 
 		return true, nil
 
@@ -412,7 +413,7 @@ func Look(rest string, user *users.UserRecord, room *rooms.Room, flags events.Ev
 
 }
 
-func lookRoom(user *users.UserRecord, roomId int, secretLook bool) {
+func lookRoom(user *users.UserRecord, roomId int, secretLook bool, suppressGMCP bool) {
 
 	room := rooms.LoadRoom(roomId)
 
@@ -591,5 +592,14 @@ func lookRoom(user *users.UserRecord, roomId int, secretLook bool) {
 
 	textOut, _ = templates.Process("descriptions/exits", details, user.UserId)
 	user.SendText(textOut)
+
+	// Send full GMCP room update when user looks (unless suppressed)
+	if !suppressGMCP {
+		if f, ok := GetExportedFunction(`TriggerRoomUpdate`); ok {
+			if triggerRoomUpdate, ok := f.(func(int)); ok {
+				triggerRoomUpdate(user.UserId)
+			}
+		}
+	}
 
 }

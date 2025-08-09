@@ -333,6 +333,14 @@ type CharacterVitalsChanged struct {
 
 func (p CharacterVitalsChanged) Type() string { return `CharacterVitalsChanged` }
 
+type CharacterAlignmentChanged struct {
+	UserId       int
+	OldAlignment int
+	NewAlignment int
+}
+
+func (p CharacterAlignmentChanged) Type() string { return `CharacterAlignmentChanged` }
+
 // Health, mana, etc.
 type CharacterTrained struct {
 	UserId int
@@ -384,3 +392,236 @@ type RedrawPrompt struct {
 
 func (l RedrawPrompt) Type() string     { return `RedrawPrompt` }
 func (l RedrawPrompt) UniqueID() string { return `RedrawPrompt-` + strconv.Itoa(l.UserId) }
+
+// Combat State Management Events
+
+// CombatStarted fires when combat begins between entities
+type CombatStarted struct {
+	AttackerId   int
+	AttackerType string // "player" or "mob"
+	AttackerName string
+	DefenderId   int
+	DefenderType string // "player" or "mob"
+	DefenderName string
+	RoomId       int
+	InitiatedBy  string // command/action that started combat
+}
+
+func (c CombatStarted) Type() string { return `CombatStarted` }
+
+// CombatEnded fires when combat ends (not due to death)
+type CombatEnded struct {
+	EntityId   int
+	EntityType string // "player" or "mob"
+	EntityName string
+	Reason     string // "fled", "broke", "peace", "distance", etc.
+	RoomId     int
+	Duration   int // Combat duration in seconds
+}
+
+func (c CombatEnded) Type() string { return `CombatEnded` }
+
+// Damage and Healing Tracking Events
+
+// DamageDealt fires immediately after damage calculation and application
+type DamageDealt struct {
+	SourceId      int
+	SourceType    string // "player" or "mob"
+	SourceName    string
+	TargetId      int
+	TargetType    string // "player" or "mob"
+	TargetName    string
+	Amount        int
+	DamageType    string // "physical", "magical", "fire", etc.
+	WeaponName    string // Name of weapon used (if applicable)
+	SpellName     string // Name of spell used (if applicable)
+	IsCritical    bool
+	IsKillingBlow bool
+}
+
+func (d DamageDealt) Type() string { return `DamageDealt` }
+
+// HealingReceived fires whenever health is restored
+type HealingReceived struct {
+	SourceId   int
+	SourceType string // "player", "mob", "item", "regen"
+	SourceName string
+	TargetId   int
+	TargetType string // "player" or "mob"
+	TargetName string
+	Amount     int
+	HealType   string // "spell", "potion", "regen", "item", etc.
+	SpellName  string // Name of healing spell (if applicable)
+	IsOverheal bool
+}
+
+func (h HealingReceived) Type() string { return `HealingReceived` }
+
+// Target and Aggro Management Events
+
+// TargetChanged fires when a combatant's primary target changes
+type TargetChanged struct {
+	EntityId      int
+	EntityType    string // "player" or "mob"
+	EntityName    string
+	OldTargetId   int
+	OldTargetType string
+	OldTargetName string
+	NewTargetId   int
+	NewTargetType string
+	NewTargetName string
+	Reason        string // "manual", "death", "fled", "taunt", etc.
+}
+
+func (t TargetChanged) Type() string { return `TargetChanged` }
+
+// AggroGained fires when a mob becomes hostile to someone
+type AggroGained struct {
+	MobId       int
+	MobName     string
+	TargetId    int
+	TargetType  string // "player" or "mob"
+	TargetName  string
+	IsInitial   bool // True if this is the first aggro
+	ThreatLevel int
+}
+
+func (a AggroGained) Type() string { return `AggroGained` }
+
+// AggroLost fires when a mob stops being hostile
+type AggroLost struct {
+	MobId      int
+	MobName    string
+	TargetId   int
+	TargetType string // "player" or "mob"
+	TargetName string
+	Reason     string // "death", "distance", "reset", "peace", etc.
+}
+
+func (a AggroLost) Type() string { return `AggroLost` }
+
+// Mob-Specific Events
+
+// MobVitalsChanged fires whenever a mob's health or mana changes
+type MobVitalsChanged struct {
+	MobId      int
+	OldHealth  int
+	NewHealth  int
+	OldMana    int
+	NewMana    int
+	ChangeType string // "damage", "heal", "regen", etc.
+}
+
+func (m MobVitalsChanged) Type() string { return `MobVitalsChanged` }
+
+// MobStatusChanged fires when status effects are applied/removed from mobs
+type MobStatusChanged struct {
+	MobId    int
+	Status   string // "stunned", "blinded", "slowed", etc.
+	Added    bool   // True if added, false if removed
+	Duration int    // Duration in seconds (0 for permanent)
+	SourceId int    // Who applied the status
+}
+
+func (m MobStatusChanged) Type() string { return `MobStatusChanged` }
+
+// Combat Action Events
+
+// CombatActionStarted fires when combat actions begin (casting, channeling, etc.)
+type CombatActionStarted struct {
+	EntityId      int
+	EntityType    string // "player" or "mob"
+	EntityName    string
+	Action        string // "spell", "ability", "item", etc.
+	ActionName    string
+	TargetId      int
+	TargetName    string
+	CastTime      float64 // Time to complete in seconds
+	Interruptible bool
+}
+
+func (c CombatActionStarted) Type() string { return `CombatActionStarted` }
+
+// CombatActionCompleted fires when an action finishes (successfully or not)
+type CombatActionCompleted struct {
+	EntityId      int
+	EntityType    string // "player" or "mob"
+	EntityName    string
+	Action        string
+	ActionName    string
+	Success       bool
+	FailureReason string
+}
+
+func (c CombatActionCompleted) Type() string { return `CombatActionCompleted` }
+
+// CombatActionInterrupted fires when an action is interrupted before completion
+type CombatActionInterrupted struct {
+	EntityId          int
+	EntityType        string // "player" or "mob"
+	EntityName        string
+	Action            string
+	ActionName        string
+	InterruptedById   int
+	InterruptedByType string // Type of interrupter
+	InterruptedByName string
+	InterruptType     string // "damage", "stun", "silence", etc.
+}
+
+func (c CombatActionInterrupted) Type() string { return `CombatActionInterrupted` }
+
+// Defense and Avoidance Events
+
+// AttackAvoided fires when an attack fails to connect
+type AttackAvoided struct {
+	AttackerId   int
+	AttackerType string // "player" or "mob"
+	AttackerName string
+	DefenderId   int
+	DefenderType string // "player" or "mob"
+	DefenderName string
+	AvoidType    string // "miss", "dodge", "parry", "block"
+	WeaponName   string
+}
+
+func (a AttackAvoided) Type() string { return `AttackAvoided` }
+
+// Special Combat Events
+
+// CombatEffectTriggered fires when DoTs, bleeds, or other effects tick
+type CombatEffectTriggered struct {
+	SourceId       int
+	SourceName     string
+	TargetId       int
+	TargetType     string // "player" or "mob"
+	TargetName     string
+	Effect         string // "bleed", "poison", "burn", etc.
+	Damage         int
+	TicksRemaining int
+}
+
+func (c CombatEffectTriggered) Type() string { return `CombatEffectTriggered` }
+
+// CombatantFled fires when someone attempts to flee
+type CombatantFled struct {
+	EntityId    int
+	EntityType  string // "player" or "mob"
+	EntityName  string
+	Direction   string
+	Success     bool
+	PreventedBy string // What prevented it (if failed)
+}
+
+func (c CombatantFled) Type() string { return `CombatantFled` }
+
+// Room Events
+
+// ExitLockChanged fires when an exit's lock state changes
+type ExitLockChanged struct {
+	Event
+	RoomId   int
+	ExitName string
+	Locked   bool // true if now locked, false if now unlocked
+}
+
+func (e ExitLockChanged) Type() string { return `ExitLockChanged` }

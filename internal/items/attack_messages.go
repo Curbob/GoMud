@@ -118,6 +118,10 @@ func GetAttackMessage(subType ItemSubType, pctDamage int) AttackOptions {
 			return attackMsgOptions
 		}
 	}
-	// default to generic.
+	// default to generic, but prevent infinite recursion
+	if subType == Generic {
+		// Return empty attack options to prevent crash
+		return AttackOptions{}
+	}
 	return GetAttackMessage(Generic, pctDamage)
 }
