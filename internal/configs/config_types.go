@@ -21,15 +21,15 @@ type ConfigValue interface {
 func StringToConfigValue(strVal string, typeName string) ConfigValue {
 
 	switch typeName {
-	case "configs.ConfigInt":
+	case "configs.ConfigInt", "int":
 		v := ConfigInt(0)
 		v.Set(strVal)
 		return &v
-	case "configs.ConfigUInt64":
+	case "configs.ConfigUInt64", "uint64":
 		var v ConfigUInt64 = 0
 		v.Set(strVal)
 		return &v
-	case "configs.ConfigString":
+	case "configs.ConfigString", "string":
 		var v ConfigString = ""
 		v.Set(strVal)
 		return &v
@@ -37,15 +37,15 @@ func StringToConfigValue(strVal string, typeName string) ConfigValue {
 		var v ConfigSecret = ""
 		v.Set(strVal)
 		return &v
-	case "configs.ConfigFloat":
+	case "configs.ConfigFloat", "float64", "float32":
 		var v ConfigFloat = 0
 		v.Set(strVal)
 		return &v
-	case "configs.ConfigBool":
+	case "configs.ConfigBool", "bool":
 		var v ConfigBool = false
 		v.Set(strVal)
 		return &v
-	case "configs.ConfigSliceString":
+	case "configs.ConfigSliceString", "[]string":
 		var v ConfigSliceString = []string{}
 		v.Set(strVal)
 		return &v
@@ -71,7 +71,9 @@ func StringToConfigValue(strVal string, typeName string) ConfigValue {
 		return &v
 	}
 
-	var v ConfigSliceString = []string{}
+	// Default to string instead of ConfigSliceString for unknown types
+	// This is safer for module configs which are typically plain strings
+	var v ConfigString = ""
 	v.Set(strVal)
 	return &v
 }

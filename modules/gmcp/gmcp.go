@@ -1,6 +1,7 @@
 package gmcp
 
 import (
+	"embed"
 	"encoding/json"
 	"strconv"
 	"strings"
@@ -24,6 +25,9 @@ const (
 )
 
 var (
+	//go:embed files/*
+	files embed.FS
+
 	///////////////////////////
 	// GMCP COMMANDS
 	///////////////////////////
@@ -49,6 +53,15 @@ func init() {
 
 	gmcpModule.cache, _ = lru.New[uint64, GMCPSettings](128)
 
+	// Attach filesystem for config overlays
+	if err := gmcpModule.plug.AttachFileSystem(files); err != nil {
+		panic(err)
+	}
+
+	// Set callbacks for load/save
+	gmcpModule.plug.Callbacks.SetOnLoad(gmcpModule.load)
+	gmcpModule.plug.Callbacks.SetOnSave(gmcpModule.save)
+
 	gmcpModule.plug.ExportFunction(`SendGMCPEvent`, gmcpModule.sendGMCPEvent)
 	gmcpModule.plug.ExportFunction(`IsMudlet`, gmcpModule.IsMudletExportedFunction)
 	gmcpModule.plug.ExportFunction(`TriggerRoomUpdate`, gmcpModule.triggerRoomUpdate)
@@ -65,6 +78,9 @@ func init() {
 	events.RegisterListener(events.PlayerSpawn{}, gmcpModule.handlePlayerJoin)
 
 	InitCombatCooldownTimer()
+
+	// Initialize Mudlet handler
+	initMudlet()
 }
 
 func isGMCPEnabled(connectionId uint64) bool {
@@ -304,6 +320,14 @@ func (g *GMCPModule) isGMCPCommand(b []byte) bool {
 	return len(b) > 2 && b[0] == term.TELNET_IAC && b[2] == TELNET_GMCP
 }
 
+// load handles loading configuration from storage
+func (g *GMCPModule) load() {
+}
+
+// save handles saving configuration to storage
+func (g *GMCPModule) save() {
+}
+
 func (g *GMCPModule) sendGMCPEvent(userId int, moduleName string, payload any) {
 
 	evt := GMCPOut{
@@ -507,6 +531,11 @@ func (g *GMCPModule) HandleIAC(connectionId uint64, iacCmd []byte) bool {
 						events.AddToQueue(GMCPPartyUpdate{UserId: userId, Identifier: identifier})
 					} else if strings.HasPrefix(identifier, "Game") {
 						events.AddToQueue(GMCPGameUpdate{UserId: userId, Identifier: identifier})
+					} else if strings.HasPrefix(identifier, "Client.Map") {
+						// Handle Client.Map request for Mudlet clients
+						if mudletHandler != nil && mudletHandler.isMudletClient(userId) {
+							mudletHandler.sendMudletMapConfig(userId)
+						}
 					} else if strings.HasPrefix(identifier, "Comm") {
 						// For Comm.Channel, send an empty structure
 						events.AddToQueue(GMCPOut{
