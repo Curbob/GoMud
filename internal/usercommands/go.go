@@ -29,7 +29,7 @@ func Go(rest string, user *users.UserRecord, room *rooms.Room, flags events.Even
 		return true, nil
 	}
 
-	c := configs.GetTextFormatsConfig()
+	c := configs.GetUserInterfaceConfig().Formats
 
 	isSneaking := user.Character.HasBuffFlag(buffs.Hidden)
 

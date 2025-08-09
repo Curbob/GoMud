@@ -42,7 +42,6 @@ type Config struct {
 	GamePlay      GamePlay      `yaml:"GamePlay"`
 	UserInterface UserInterface `yaml:"UserInterface"`
 	Integrations  Integrations  `yaml:"Integrations"`
-	TextFormats   TextFormats   `yaml:"TextFormats"` // Deprecated: Use UserInterface.Formats
 	Translation   Translation   `yaml:"Translation"`
 	Network       Network       `yaml:"Network"`
 	Scripting     Scripting     `yaml:"Scripting"`
@@ -193,7 +192,6 @@ func (c *Config) Validate() {
 	c.GamePlay.Validate()
 	c.Integrations.Validate()
 	c.UserInterface.Validate()
-	c.TextFormats.Validate()
 	c.Translation.Validate()
 	c.Network.Validate()
 	c.Scripting.Validate()

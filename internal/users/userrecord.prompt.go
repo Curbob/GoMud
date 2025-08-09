@@ -48,7 +48,7 @@ func (u *UserRecord) GetCommandPrompt() string {
 	if len(promptOut) == 0 {
 
 		if promptDefaultCompiled == `` {
-			promptDefaultCompiled = util.ConvertColorShortTags(configs.GetTextFormatsConfig().Prompt.String())
+			promptDefaultCompiled = util.ConvertColorShortTags(configs.GetUserInterfaceConfig().Formats.Prompt.String())
 		}
 
 		var customPrompt any = nil
