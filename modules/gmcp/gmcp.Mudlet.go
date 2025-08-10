@@ -308,6 +308,25 @@ func (g *GMCPMudletHandler) sendMudletMapConfig(userId int) {
 	mudlog.Debug("GMCP", "type", "Mudlet", "action", "Sent Mudlet map config", "userId", userId)
 }
 
+// Send Mudlet mapper package installation message
+func (g *GMCPMudletHandler) sendMudletMapperInstall(userId int) {
+	if userId < 1 {
+		return
+	}
+
+	// Read config values dynamically to get latest overrides
+	payload := struct {
+		Version string `json:"version"`
+		URL     string `json:"url"`
+	}{
+		Version: getConfigString("mapper_version"),
+		URL:     getConfigString("mapper_url"),
+	}
+
+	sendGMCP(userId, "Client.GUI", payload)
+	mudlog.Debug("GMCP", "type", "Mudlet", "action", "Sent Mudlet mapper install config", "userId", userId)
+}
+
 // Send Mudlet UI package installation message
 func (g *GMCPMudletHandler) sendMudletUIInstall(userId int) {
 	if userId < 1 {
@@ -365,22 +384,11 @@ func (g *GMCPMudletHandler) sendMudletConfig(userId int) {
 		return
 	}
 
-	// Read config values dynamically to get latest overrides
-	// Send mapper info
-	payload := struct {
-		Version string `json:"version"`
-		URL     string `json:"url"`
-	}{
-		Version: getConfigString("mapper_version"),
-		URL:     getConfigString("mapper_url"),
-	}
-	sendGMCP(userId, "Client.GUI", payload)
+	// Send Client.Map first (before Client.GUI)
+	g.sendMudletMapConfig(userId)
 
-	// Get the user record
-	user := users.GetByUserId(userId)
-	if user == nil {
-		return
-	}
+	// Then send Client.GUI with mapper package installation info
+	g.sendMudletMapperInstall(userId)
 
 	// Send Discord info if enabled
 	g.sendDiscordInfo(userId)
