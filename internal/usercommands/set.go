@@ -15,7 +15,7 @@ import (
 func Set(rest string, user *users.UserRecord, room *rooms.Room, flags events.EventFlag) (bool, error) {
 
 	args := util.SplitButRespectQuotes(strings.ToLower(rest))
-	c := configs.GetTextFormatsConfig()
+	c := configs.GetUserInterfaceConfig().Formats
 
 	if len(args) == 0 {
 
