@@ -80,6 +80,17 @@ func IsWebsocket(id ConnectionId) bool {
 	return false
 }
 
+func GetConnectionPort(id ConnectionId) int {
+	lock.Lock()
+	defer lock.Unlock()
+
+	if cd, ok := netConnections[id]; ok {
+		return cd.GetLocalPort()
+	}
+
+	return 0
+}
+
 func GetAllConnectionIds() []ConnectionId {
 
 	lock.Lock()

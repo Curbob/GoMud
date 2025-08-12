@@ -3,6 +3,7 @@ package connections
 import (
 	"errors"
 	"net"
+	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -276,6 +277,32 @@ func (cd *ConnectionDetails) RemoteAddr() net.Addr {
 		return cd.wsConn.RemoteAddr()
 	}
 	return cd.conn.RemoteAddr()
+}
+
+// GetLocalPort returns the local port the connection came in on
+func (cd *ConnectionDetails) GetLocalPort() int {
+	var localAddr net.Addr
+	if cd.wsConn != nil {
+		localAddr = cd.wsConn.LocalAddr()
+	} else if cd.conn != nil {
+		localAddr = cd.conn.LocalAddr()
+	} else {
+		return 0
+	}
+
+	// Extract port from address
+	if tcpAddr, ok := localAddr.(*net.TCPAddr); ok {
+		return tcpAddr.Port
+	}
+
+	// Try parsing as string
+	_, portStr, err := net.SplitHostPort(localAddr.String())
+	if err != nil {
+		return 0
+	}
+
+	port, _ := strconv.Atoi(portStr)
+	return port
 }
 
 // get for uniqueId
