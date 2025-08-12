@@ -59,7 +59,7 @@ func getClientIP(r *http.Request) string {
 
 	// Only trust proxy headers if the connection is from localhost
 	// Check for various localhost representations
-	if host == "127.0.0.1" || host == "::1" || host == "localhost" || host == "0.0.0.0" {
+	if host == "127.0.0.1" || host == "::1" || host == "localhost" {
 		// Check X-Real-IP first (higher priority)
 		if realIP := r.Header.Get("X-Real-IP"); realIP != "" {
 			return realIP
