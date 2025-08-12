@@ -3,6 +3,7 @@ package configs
 type Network struct {
 	MaxTelnetConnections ConfigInt         `yaml:"MaxTelnetConnections"` // Maximum number of telnet connections to accept
 	TelnetPort           ConfigSliceString `yaml:"TelnetPort"`           // One or more Ports used to accept telnet connections
+	SecureTelnetPort     ConfigSliceString `yaml:"SecureTelnetPort"`     // One or more Ports used to accept secure telnet connections
 	LocalPort            ConfigInt         `yaml:"LocalPort"`            // Port used for admin connections, localhost only
 	HttpPort             ConfigInt         `yaml:"HttpPort"`             // Port used for web requests
 	HttpsPort            ConfigInt         `yaml:"HttpsPort"`            // Port used for web https requests
