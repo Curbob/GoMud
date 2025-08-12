@@ -4,7 +4,7 @@ type Network struct {
 	MaxTelnetConnections  ConfigInt         `yaml:"MaxTelnetConnections"`  // Maximum number of telnet connections to accept
 	TelnetPort            ConfigSliceString `yaml:"TelnetPort"`            // One or more Ports used to accept telnet connections
 	SecureTelnetPort      ConfigSliceString `yaml:"SecureTelnetPort"`      // Display-only: external ports where users connect via TLS
-	SecureTelnetLocalPort ConfigInt         `yaml:"SecureTelnetLocalPort"` // Internal port where TLS proxy forwards to (localhost only)
+	SecureTelnetLocalPort ConfigSliceString `yaml:"SecureTelnetLocalPort"` // Internal ports where TLS proxy forwards to (localhost only)
 	LocalPort             ConfigInt         `yaml:"LocalPort"`             // Port used for admin connections, localhost only
 	HttpPort              ConfigInt         `yaml:"HttpPort"`              // Port used for web requests
 	HttpsPort             ConfigInt         `yaml:"HttpsPort"`             // Port used for web https requests
