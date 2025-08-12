@@ -392,6 +392,11 @@ Network:
   #   The port the server listens on for telnet connections. Listen on multiple
   #   ports by separating them with commas. For example, [33333, 33334, 33335]
   TelnetPort: [33333, 44444]
+  # - SecureTelnetPort -
+  #   Localhost-only ports for secure telnet connections (e.g., TLS proxy forwarding).
+  #   Like LocalPort but shown on website. Multiple ports supported: [33334, 33335]
+  #   Set to [0] to disable.
+  SecureTelnetPort: [0]
   # - LocalPort -
   #   A port that can only be accessed via localhost, but will not limit based on connection count
   LocalPort: 9999
