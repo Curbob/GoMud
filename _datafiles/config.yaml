@@ -393,10 +393,18 @@ Network:
   #   ports by separating them with commas. For example, [33333, 33334, 33335]
   TelnetPort: [33333, 44444]
   # - SecureTelnetPort -
-  #   Localhost-only ports for secure telnet connections (e.g., TLS proxy forwarding).
-  #   Like LocalPort but shown on website. Multiple ports supported: [33334, 33335]
-  #   Set to [0] to disable.
+  #   Display-only: External ports where users connect via TLS proxy (e.g., stunnel4).
+  #   These ports are shown on the website but NOT bound by the game server.
+  #   Example: [33334] if stunnel4 listens on port 33334
+  #   Set to [0] to disable display.
   SecureTelnetPort: [0]
+  # - SecureTelnetLocalPort -
+  #   Internal ports where TLS proxy forwards secure connections (localhost only).
+  #   Game server binds to these ports to receive forwarded TLS connections.
+  #   Example: [9998] if stunnel4 forwards to localhost:9998
+  #   Multiple ports supported: [9998, 9997] for multiple TLS proxies
+  #   Set to [0] to disable.
+  SecureTelnetLocalPort: [0]
   # - LocalPort -
   #   A port that can only be accessed via localhost, but will not limit based on connection count
   LocalPort: 9999
