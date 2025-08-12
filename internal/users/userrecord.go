@@ -629,9 +629,6 @@ func (u *UserRecord) GetOnlineInfo() OnlineInfo {
 		port := connections.GetConnectionPort(u.connectionId)
 		networkConfig := configs.GetNetworkConfig()
 		
-		// Debug logging
-		mudlog.Debug("Connection type check", "connectionId", u.connectionId, "port", port, "secureLocalPorts", networkConfig.SecureTelnetLocalPort)
-		
 		for _, securePortStr := range networkConfig.SecureTelnetLocalPort {
 			securePort, _ := strconv.Atoi(securePortStr)
 			if securePort > 0 && port == securePort {
