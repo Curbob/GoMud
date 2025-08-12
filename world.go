@@ -1057,6 +1057,13 @@ func (w *World) UpdateStats() {
 		}
 	}
 
+	for _, t := range c.SecureTelnetPort {
+		p, _ := strconv.Atoi(t)
+		if p > 0 {
+			s.SecureTelnetPorts = append(s.SecureTelnetPorts, p)
+		}
+	}
+
 	s.WebSocketPort = int(c.HttpPort)
 
 	web.UpdateStats(s)
