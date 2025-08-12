@@ -10,5 +10,5 @@ type OnlineInfo struct {
 	OnlineTimeStr  string
 	IsAFK          bool
 	Role           string
-	ConnectionType string // "Web", "Telnet", or "Secure"
+	ConnectionType string // "Web", "Telnet", or "TLS"
 }
