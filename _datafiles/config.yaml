@@ -390,11 +390,12 @@ Network:
   #   Set to [0] to disable display.
   SecureTelnetPort: [0]
   # - SecureTelnetLocalPort -
-  #   Internal port where TLS proxy forwards secure connections (localhost only).
-  #   Game server binds to this port to receive forwarded TLS connections.
-  #   Example: 9998 if stunnel4 forwards to localhost:9998
-  #   Set to 0 to disable.
-  SecureTelnetLocalPort: 0
+  #   Internal ports where TLS proxy forwards secure connections (localhost only).
+  #   Game server binds to these ports to receive forwarded TLS connections.
+  #   Example: [9998] if stunnel4 forwards to localhost:9998
+  #   Multiple ports supported: [9998, 9997] for multiple TLS proxies
+  #   Set to [0] to disable.
+  SecureTelnetLocalPort: [0]
   # - LocalPort -
   #   A port that can only be accessed via localhost, but will not limit based on connection count
   LocalPort: 9999

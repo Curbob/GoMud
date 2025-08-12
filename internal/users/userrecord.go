@@ -625,15 +625,19 @@ func (u *UserRecord) GetOnlineInfo() OnlineInfo {
 	if connections.IsWebsocket(u.connectionId) {
 		connectionType = "Web"
 	} else {
-		// Check if connected through the secure telnet local port (where TLS proxy forwards)
+		// Check if connected through a secure telnet local port (where TLS proxy forwards)
 		port := connections.GetConnectionPort(u.connectionId)
 		networkConfig := configs.GetNetworkConfig()
 		
 		// Debug logging
-		mudlog.Debug("Connection type check", "connectionId", u.connectionId, "port", port, "secureLocalPort", networkConfig.SecureTelnetLocalPort)
+		mudlog.Debug("Connection type check", "connectionId", u.connectionId, "port", port, "secureLocalPorts", networkConfig.SecureTelnetLocalPort)
 		
-		if networkConfig.SecureTelnetLocalPort > 0 && port == int(networkConfig.SecureTelnetLocalPort) {
-			connectionType = "TLS"
+		for _, securePortStr := range networkConfig.SecureTelnetLocalPort {
+			securePort, _ := strconv.Atoi(securePortStr)
+			if securePort > 0 && port == securePort {
+				connectionType = "TLS"
+				break
+			}
 		}
 	}
 
