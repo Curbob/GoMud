@@ -628,10 +628,14 @@ func (u *UserRecord) GetOnlineInfo() OnlineInfo {
 		// Check if connected through a secure telnet port
 		port := connections.GetConnectionPort(u.connectionId)
 		networkConfig := configs.GetNetworkConfig()
+		
+		// Debug logging
+		mudlog.Debug("Connection type check", "connectionId", u.connectionId, "port", port, "securePorts", networkConfig.SecureTelnetPort)
+		
 		for _, securePortStr := range networkConfig.SecureTelnetPort {
 			securePort, _ := strconv.Atoi(securePortStr)
 			if securePort > 0 && port == securePort {
-				connectionType = "Secure"
+				connectionType = "TLS"
 				break
 			}
 		}
