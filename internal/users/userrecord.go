@@ -628,7 +628,7 @@ func (u *UserRecord) GetOnlineInfo() OnlineInfo {
 		// Check if connected through a secure telnet local port (where TLS proxy forwards)
 		port := connections.GetConnectionPort(u.connectionId)
 		networkConfig := configs.GetNetworkConfig()
-		
+
 		for _, securePortStr := range networkConfig.SecureTelnetLocalPort {
 			securePort, _ := strconv.Atoi(securePortStr)
 			if securePort > 0 && port == securePort {
