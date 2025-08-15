@@ -38,7 +38,6 @@ func AttackPlayerVsMob(user *users.UserRecord, mob *mobs.Mob) AttackResult {
 		newUserHealth := user.Character.Health
 		user.WimpyCheck()
 
-		// Fire CharacterVitalsChanged event for immediate GMCP update
 		if oldUserHealth != newUserHealth {
 			events.AddToQueue(events.CharacterVitalsChanged{
 				UserId: user.UserId,
@@ -50,7 +49,6 @@ func AttackPlayerVsMob(user *users.UserRecord, mob *mobs.Mob) AttackResult {
 	mob.Character.ApplyHealthChange(attackResult.DamageToTarget * -1)
 	newHealth := mob.Character.Health
 
-	// Fire MobVitalsChanged event if health changed
 	if oldHealth != newHealth {
 		events.AddToQueue(events.MobVitalsChanged{
 			MobId:      mob.InstanceId,
@@ -65,11 +63,9 @@ func AttackPlayerVsMob(user *users.UserRecord, mob *mobs.Mob) AttackResult {
 	// Remember who has hit him
 	mob.Character.TrackPlayerDamage(user.UserId, attackResult.DamageToTarget)
 
-	// Fire combat events
 	if attackResult.Hit {
 		user.PlaySound(`hit-other`, `combat`)
 
-		// Fire DamageDealt event if damage was actually dealt
 		if attackResult.DamageToTarget > 0 {
 			// Use priority 10 for damage events to ensure they're processed quickly
 			events.AddToQueue(events.DamageDealt{
@@ -90,7 +86,6 @@ func AttackPlayerVsMob(user *users.UserRecord, mob *mobs.Mob) AttackResult {
 	} else {
 		user.PlaySound(`miss`, `combat`)
 
-		// Fire AttackAvoided event for misses
 		events.AddToQueue(events.AttackAvoided{
 			AttackerId:   user.UserId,
 			AttackerType: "player",
@@ -117,7 +112,6 @@ func AttackPlayerVsPlayer(userAtk *users.UserRecord, userDef *users.UserRecord) 
 		newAtkHealth := userAtk.Character.Health
 		userAtk.WimpyCheck()
 
-		// Fire CharacterVitalsChanged event for immediate GMCP update
 		if oldAtkHealth != newAtkHealth {
 			events.AddToQueue(events.CharacterVitalsChanged{
 				UserId: userAtk.UserId,
@@ -131,7 +125,6 @@ func AttackPlayerVsPlayer(userAtk *users.UserRecord, userDef *users.UserRecord) 
 		newDefHealth := userDef.Character.Health
 		userDef.WimpyCheck()
 
-		// Fire CharacterVitalsChanged event for immediate GMCP update
 		if oldDefHealth != newDefHealth {
 			events.AddToQueue(events.CharacterVitalsChanged{
 				UserId: userDef.UserId,
@@ -139,12 +132,10 @@ func AttackPlayerVsPlayer(userAtk *users.UserRecord, userDef *users.UserRecord) 
 		}
 	}
 
-	// Fire combat events
 	if attackResult.Hit {
 		userAtk.PlaySound(`hit-other`, `combat`)
 		userDef.PlaySound(`hit-self`, `combat`)
 
-		// Fire DamageDealt event if damage was actually dealt
 		if attackResult.DamageToTarget > 0 {
 			events.AddToQueue(events.DamageDealt{
 				SourceId:      userAtk.UserId,
@@ -164,7 +155,6 @@ func AttackPlayerVsPlayer(userAtk *users.UserRecord, userDef *users.UserRecord) 
 	} else {
 		userAtk.PlaySound(`miss`, `combat`)
 
-		// Fire AttackAvoided event for misses
 		events.AddToQueue(events.AttackAvoided{
 			AttackerId:   userAtk.UserId,
 			AttackerType: "player",
@@ -189,7 +179,6 @@ func AttackMobVsPlayer(mob *mobs.Mob, user *users.UserRecord) AttackResult {
 	mob.Character.ApplyHealthChange(attackResult.DamageToSource * -1)
 	newHealth := mob.Character.Health
 
-	// Fire MobVitalsChanged event if health changed
 	if oldHealth != newHealth {
 		events.AddToQueue(events.MobVitalsChanged{
 			MobId:      mob.InstanceId,
@@ -207,7 +196,6 @@ func AttackMobVsPlayer(mob *mobs.Mob, user *users.UserRecord) AttackResult {
 		newUserHealth := user.Character.Health
 		user.WimpyCheck()
 
-		// Fire CharacterVitalsChanged event for immediate GMCP update
 		if oldUserHealth != newUserHealth {
 			events.AddToQueue(events.CharacterVitalsChanged{
 				UserId: user.UserId,
@@ -215,11 +203,9 @@ func AttackMobVsPlayer(mob *mobs.Mob, user *users.UserRecord) AttackResult {
 		}
 	}
 
-	// Fire combat events
 	if attackResult.Hit {
 		user.PlaySound(`hit-self`, `combat`)
 
-		// Fire DamageDealt event if damage was actually dealt
 		if attackResult.DamageToTarget > 0 {
 			events.AddToQueue(events.DamageDealt{
 				SourceId:      mob.InstanceId,
@@ -237,7 +223,6 @@ func AttackMobVsPlayer(mob *mobs.Mob, user *users.UserRecord) AttackResult {
 			})
 		}
 	} else {
-		// Fire AttackAvoided event for misses
 		events.AddToQueue(events.AttackAvoided{
 			AttackerId:   mob.InstanceId,
 			AttackerType: "mob",
@@ -296,9 +281,7 @@ func AttackMobVsMob(mobAtk *mobs.Mob, mobDef *mobs.Mob) AttackResult {
 		mobDef.Character.TrackPlayerDamage(charmedUserId, attackResult.DamageToTarget)
 	}
 
-	// Fire combat events
 	if attackResult.Hit {
-		// Fire DamageDealt event if damage was actually dealt
 		if attackResult.DamageToTarget > 0 {
 			events.AddToQueue(events.DamageDealt{
 				SourceId:      mobAtk.InstanceId,
@@ -316,7 +299,6 @@ func AttackMobVsMob(mobAtk *mobs.Mob, mobDef *mobs.Mob) AttackResult {
 			})
 		}
 	} else {
-		// Fire AttackAvoided event for misses
 		events.AddToQueue(events.AttackAvoided{
 			AttackerId:   mobAtk.InstanceId,
 			AttackerType: "mob",
