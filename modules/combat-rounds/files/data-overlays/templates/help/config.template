@@ -1,0 +1,40 @@
+<ansi fg="yellow-bold">config</ansi> - Configure game systems
+
+<ansi fg="cyan">Usage:</ansi>
+  config                           - Show available configuration categories
+  config combat                    - Show combat configuration options
+  config combat info               - Show current combat settings
+  config combat system <name>      - Switch combat system
+  config combat systems            - List available combat systems
+  config combat <setting> <value>  - Change a combat setting
+
+<ansi fg="cyan">Description:</ansi>
+  Allows administrators to configure various game systems at runtime.
+  Currently supports combat system configuration.
+
+<ansi fg="cyan">Combat Player Settings (Twitch Only):</ansi>
+  unarmed_base_ms     - Base cooldown for unarmed combat (milliseconds)
+  armed_base_ms       - Base cooldown for armed combat (milliseconds)
+  max_speed_reduction - Maximum speed reduction percentage (0-100)
+  speed_divisor       - Divisor for speed bonus calculation
+
+<ansi fg="cyan">Combat Mob Settings (Twitch Only):</ansi>
+  mob_unarmed_base_ms     - Base cooldown for mob unarmed combat
+  mob_armed_base_ms       - Base cooldown for mob armed combat
+  mob_max_speed_reduction - Maximum speed reduction for mobs
+  mob_speed_divisor       - Divisor for mob speed bonus
+
+<ansi fg="cyan">Examples:</ansi>
+  config                               - List config categories
+  config combat                        - Show combat config options
+  config combat info                   - View current settings
+  config combat systems                - List available combat systems
+  config combat system combat-twitch   - Switch to twitch combat
+  config combat unarmed_base_ms 3000   - Set player unarmed to 3 seconds
+  config combat mob_unarmed_base_ms 4000 - Set mob unarmed to 4 seconds
+
+<ansi fg="cyan">Note:</ansi>
+  This is an admin-only command. Changes to combat settings are
+  saved to the main configuration file and persist across restarts.
+
+<ansi fg="yellow">See Also:</ansi> combatinfo, server

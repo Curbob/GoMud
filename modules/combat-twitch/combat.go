@@ -136,7 +136,7 @@ func (tc *TwitchCombat) SendGMCPBalanceUpdate(userId int, remainingSeconds float
 		InCombat:    inCombat,
 		RoundNumber: 0, // Not applicable for twitch combat
 	})
-	
+
 	// Send GMCP cooldown update if in combat
 	if inCombat {
 		events.AddToQueue(gmcp.GMCPCombatCooldownUpdate{

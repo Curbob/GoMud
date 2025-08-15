@@ -1,0 +1,17 @@
+<ansi fg="yellow-bold">cleartarget</ansi> - Clear combat target
+
+<ansi fg="cyan">Usage:</ansi>
+  cleartarget
+
+<ansi fg="cyan">Description:</ansi>
+  Clears your current combat target in twitch combat. After using
+  this command, you will need to specify a target when using the
+  attack command.
+
+<ansi fg="cyan">Examples:</ansi>
+  cleartarget    - Clear your current target
+
+<ansi fg="cyan">Note:</ansi>
+  This command is only available when twitch combat is active.
+
+<ansi fg="yellow">See Also:</ansi> target, attack, balance

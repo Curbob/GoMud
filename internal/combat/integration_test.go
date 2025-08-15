@@ -66,8 +66,8 @@ func TestCombatDelegation(t *testing.T) {
 	require.NoError(t, err, "Failed to set combat system")
 
 	// Create test combatants
-	user := createTestUser(1, "TestPlayer", 100)
-	mob := createTestMob(1, "TestMob", 50)
+	user := createTestUserForIntegration(1, "TestPlayer", 100)
+	mob := createTestMobForIntegration(1, "TestMob", 50)
 
 	// Record initial health
 	initialMobHealth := mob.Character.Health
@@ -102,8 +102,8 @@ func TestMultipleCombatRounds(t *testing.T) {
 	}
 
 	// Create combatants
-	user := createTestUser(2, "Fighter", 150)
-	mob := createTestMob(2, "Orc", 100)
+	user := createTestUserForIntegration(2, "Fighter", 150)
+	mob := createTestMobForIntegration(2, "Orc", 100)
 
 	// Track damage across rounds
 	totalDamage := 0
@@ -178,8 +178,8 @@ func TestCombatSystemPersistence(t *testing.T) {
 	}
 
 	// Create combatants
-	user := createTestUser(4, "Warrior", 200)
-	mob := createTestMob(4, "Dragon", 300)
+	user := createTestUserForIntegration(4, "Warrior", 200)
+	mob := createTestMobForIntegration(4, "Dragon", 300)
 	initialMobHealth := mob.Character.Health
 
 	// Set first system
@@ -213,7 +213,7 @@ func TestCombatSystemPersistence(t *testing.T) {
 
 // Helper functions
 
-func createTestUser(id int, name string, health int) *users.UserRecord {
+func createTestUserForIntegration(id int, name string, health int) *users.UserRecord {
 	user := &users.UserRecord{
 		UserId: id,
 		Character: &characters.Character{
@@ -237,7 +237,7 @@ func createTestUser(id int, name string, health int) *users.UserRecord {
 	return user
 }
 
-func createTestMob(instanceId int, name string, health int) *mobs.Mob {
+func createTestMobForIntegration(instanceId int, name string, health int) *mobs.Mob {
 	mob := &mobs.Mob{
 		InstanceId: instanceId,
 		Character: characters.Character{

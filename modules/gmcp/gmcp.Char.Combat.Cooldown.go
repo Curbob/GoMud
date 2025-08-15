@@ -168,7 +168,7 @@ func (ct *CombatCooldownTimer) sendUpdates() {
 	for _, userId := range playerIds {
 		user := users.GetByUserId(userId)
 		if user == nil {
-				ct.playerMutex.Lock()
+			ct.playerMutex.Lock()
 			delete(ct.players, userId)
 			ct.playerMutex.Unlock()
 			mudlog.Warn("CombatCooldownTimer", "action", "sendUpdates", "issue", "user not found, cleaning up stale entry", "userId", userId)

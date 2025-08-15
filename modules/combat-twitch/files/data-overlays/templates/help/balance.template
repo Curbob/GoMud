@@ -1,0 +1,20 @@
+<ansi fg="yellow-bold">balance</ansi> - Check combat balance status
+
+<ansi fg="cyan">Usage:</ansi>
+  balance
+
+<ansi fg="cyan">Description:</ansi>
+  Shows your current balance status in twitch combat. Displays whether
+  you are balanced and ready to act, or how much time remains until
+  you regain balance.
+
+  Also shows your weapon recovery time and base wait information.
+
+<ansi fg="cyan">Examples:</ansi>
+  balance     - Check your current balance status
+
+<ansi fg="cyan">Note:</ansi>
+  This command is only available when twitch combat is active.
+  In round-based combat, attacks happen automatically each round.
+
+<ansi fg="yellow">See Also:</ansi> attack, target, cleartarget, combatinfo
