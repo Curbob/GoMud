@@ -47,31 +47,25 @@ type WebNav struct {
 // connection is from localhost (trusted proxy), otherwise returns the
 // direct connection IP.
 func getClientIP(r *http.Request) string {
-	// Get the direct connection IP
 	remoteAddr := r.RemoteAddr
 
-	// Extract just the IP part (remove port)
 	host, _, err := net.SplitHostPort(remoteAddr)
 	if err != nil {
-		// If splitting fails, use the whole remoteAddr
 		host = remoteAddr
 	}
 
 	// Only trust proxy headers if the connection is from localhost
-	// Check for various localhost representations
 	if host == "127.0.0.1" || host == "::1" || host == "localhost" {
-		// Check X-Real-IP first (higher priority)
+		// X-Real-IP has higher priority than X-Forwarded-For
 		if realIP := r.Header.Get("X-Real-IP"); realIP != "" {
 			return realIP
 		}
 
-		// Check X-Forwarded-For (may contain multiple IPs)
 		if forwardedFor := r.Header.Get("X-Forwarded-For"); forwardedFor != "" {
 			// X-Forwarded-For can contain comma-separated IPs
 			// The first one is the original client
 			ips := strings.Split(forwardedFor, ",")
 			if len(ips) > 0 {
-				// Trim any whitespace from the IP
 				clientIP := strings.TrimSpace(ips[0])
 				if clientIP != "" {
 					return clientIP
@@ -80,7 +74,6 @@ func getClientIP(r *http.Request) string {
 		}
 	}
 
-	// Return the direct connection IP if no proxy headers or not from localhost
 	return host
 }
 
