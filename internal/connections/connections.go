@@ -61,6 +61,28 @@ func Add(conn net.Conn, wsConn *websocket.Conn) *ConnectionDetails {
 	return connDetails
 }
 
+// AddWithId adds a connection with a specific ID (used during copyover restoration)
+func AddWithId(id ConnectionId, conn net.Conn, wsConn *websocket.Conn) *ConnectionDetails {
+	lock.Lock()
+	defer lock.Unlock()
+
+	// Update the counter if this ID is higher
+	if id > connectCounter {
+		connectCounter = id
+	}
+
+	connDetails := NewConnectionDetails(
+		id,
+		conn,
+		wsConn,
+		nil,
+	)
+
+	netConnections[connDetails.ConnectionId()] = connDetails
+
+	return connDetails
+}
+
 // Returns the total number of connections
 func Get(id ConnectionId) *ConnectionDetails {
 	lock.Lock()
@@ -216,7 +238,14 @@ func SendTo(b []byte, ids ...ConnectionId) {
 		if cd, ok := netConnections[id]; ok {
 
 			if _, err := cd.Write(b); err != nil {
-				mudlog.Warn("SendTo()", "connectionId", id, "remoteAddr", cd.RemoteAddr().String(), "error", err)
+				// Safely get remote address - could be nil during copyover restoration
+				remoteAddr := "unknown"
+				if cd != nil && cd.GetConn() != nil {
+					if addr := cd.RemoteAddr(); addr != nil {
+						remoteAddr = addr.String()
+					}
+				}
+				mudlog.Warn("SendTo()", "connectionId", id, "remoteAddr", remoteAddr, "error", err)
 				// Remove from the connections
 				removeIds = append(removeIds, id)
 				continue
@@ -282,4 +311,42 @@ func OverwriteClientSettings(id ConnectionId, cs ClientSettings) {
 	if cd, ok := netConnections[id]; ok {
 		cd.clientSettings = cs
 	}
+}
+
+// GetActiveConnections returns all active connections (for copyover)
+func GetActiveConnections() []*ConnectionDetails {
+	lock.Lock()
+	defer lock.Unlock()
+
+	conns := make([]*ConnectionDetails, 0, len(netConnections))
+	for _, conn := range netConnections {
+		if conn != nil {
+			conns = append(conns, conn)
+		}
+	}
+	return conns
+}
+
+var (
+	activeListeners = make(map[string]net.Listener)
+	listenerLock    sync.RWMutex
+)
+
+// RegisterListener stores a listener for copyover preservation
+func RegisterListener(name string, listener net.Listener) {
+	listenerLock.Lock()
+	defer listenerLock.Unlock()
+	activeListeners[name] = listener
+}
+
+// GetListeners returns all active listeners (for copyover)
+func GetListeners() map[string]net.Listener {
+	listenerLock.RLock()
+	defer listenerLock.RUnlock()
+
+	result := make(map[string]net.Listener)
+	for k, v := range activeListeners {
+		result[k] = v
+	}
+	return result
 }

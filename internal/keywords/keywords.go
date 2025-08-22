@@ -166,6 +166,13 @@ func GetAllHelpTopicInfo() []HelpTopic {
 	return helpTopics
 }
 
+func GetHelpTopicInfo(command string) *HelpTopic {
+	if helpTopic, ok := loadedKeywords.helpTopics[strings.ToLower(command)]; ok {
+		return &helpTopic
+	}
+	return nil
+}
+
 func GetAllCommandAliases() map[string]string {
 
 	ret := map[string]string{}

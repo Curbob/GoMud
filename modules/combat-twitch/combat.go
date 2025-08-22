@@ -40,6 +40,9 @@ func NewTwitchCombat(plug *plugins.Plugin) *TwitchCombat {
 func (tc *TwitchCombat) Initialize() error {
 	mudlog.Info("Combat System", "module", "combat-twitch", "action", "Initialize started")
 
+	// Store instance for copyover
+	SetCombatInstance(tc)
+
 	// Register combat commands
 	mudlog.Info("Combat System", "module", "combat-twitch", "action", "registering commands")
 	tc.registerCommands()

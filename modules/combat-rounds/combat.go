@@ -30,6 +30,9 @@ func NewRoundBasedCombat(plug *plugins.Plugin) *RoundBasedCombat {
 func (rbc *RoundBasedCombat) Initialize() error {
 	mudlog.Info("Combat System", "module", "combat-rounds", "action", "initializing commands")
 
+	// Store instance for copyover
+	SetCombatInstance(rbc)
+
 	// Register combat commands
 	rbc.registerCommands()
 

@@ -1,0 +1,6 @@
+<ansi fg="green-bold">╔══════════════════════════════════════════════════════╗</ansi>
+<ansi fg="green-bold">║           COPYOVER CANCELLED                          ║</ansi>
+<ansi fg="green-bold">╚══════════════════════════════════════════════════════╝</ansi>
+
+<ansi fg="white">The scheduled copyover has been cancelled.</ansi>
+<ansi fg="white">Normal gameplay continues.</ansi>

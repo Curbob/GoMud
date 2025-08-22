@@ -5,12 +5,15 @@ import (
 	"fmt"
 	"slices"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/GoMudEngine/GoMud/internal/configs"
+	"github.com/GoMudEngine/GoMud/internal/copyover"
 	"github.com/GoMudEngine/GoMud/internal/events"
 	"github.com/GoMudEngine/GoMud/internal/gametime"
+	"github.com/GoMudEngine/GoMud/internal/mudlog"
 	"github.com/GoMudEngine/GoMud/internal/rooms"
 	"github.com/GoMudEngine/GoMud/internal/templates"
 	"github.com/GoMudEngine/GoMud/internal/users"
@@ -39,6 +42,12 @@ func Server(rest string, user *users.UserRecord, room *rooms.Room, flags events.
 	}
 
 	args := util.SplitButRespectQuotes(rest)
+
+	// Handle copyover-related commands
+	if args[0] == "copyover" || args[0] == "restart" || args[0] == "shutdown" {
+		return server_Copyover(args[0], strings.TrimSpace(rest[len(args[0]):]), user, room, flags)
+	}
+
 	if args[0] == "config" {
 		return server_Config(strings.TrimSpace(rest[1:]), user, room, flags)
 	}
@@ -296,6 +305,126 @@ func Server(rest string, user *users.UserRecord, room *rooms.Room, flags events.
 	}
 
 	return true, nil
+}
+
+func server_Copyover(action string, rest string, user *users.UserRecord, room *rooms.Room, flags events.EventFlag) (bool, error) {
+	// Get the copyover manager
+	manager := copyover.GetManager()
+
+	// Parse rest for countdown or cancel
+	args := strings.Fields(strings.ToLower(rest))
+
+	switch action {
+	case "copyover", "restart":
+		// If no arguments, show help for this specific command
+		if len(args) == 0 {
+			templateName := fmt.Sprintf("admincommands/help/command.server.%s", action)
+			if helpOutput, err := templates.Process(templateName, nil, user.UserId); err == nil {
+				user.SendText(helpOutput)
+			} else {
+				// Fallback to basic help if template not found
+				user.SendText(fmt.Sprintf(`<ansi fg="yellow">Usage:</ansi> server %s [now|<seconds>|cancel|status]`, action))
+			}
+			return true, nil
+		}
+
+		// Check for cancel subcommand
+		if args[0] == "cancel" {
+			if err := manager.Cancel(); err != nil {
+				user.SendText(fmt.Sprintf(`<ansi fg="red">%s</ansi>`, err.Error()))
+				return true, nil
+			}
+			user.SendText(`<ansi fg="green">Server ` + action + ` cancelled.</ansi>`)
+			mudlog.Info("AdminCommand", "userId", user.UserId, "user", user.Character.Name, "command", fmt.Sprintf("server %s cancel", action))
+			return true, nil
+		}
+
+		// Check for status subcommand
+		if args[0] == "status" {
+			status := manager.GetStatus()
+			if status.State == copyover.StateIdle {
+				user.SendText(`<ansi fg="yellow">No ` + action + ` scheduled.</ansi>`)
+			} else {
+				user.SendText(fmt.Sprintf(`<ansi fg="yellow">Server %s Status:</ansi>`, action))
+				user.SendText(fmt.Sprintf(`  State: <ansi fg="cyan">%s</ansi>`, status.State))
+				if !status.ScheduledFor.IsZero() {
+					remaining := time.Until(status.ScheduledFor).Seconds()
+					user.SendText(fmt.Sprintf(`  Scheduled: <ansi fg="cyan">%.0f seconds</ansi>`, remaining))
+				}
+				if status.Progress > 0 {
+					user.SendText(fmt.Sprintf(`  Progress: <ansi fg="cyan">%d%%</ansi>`, status.Progress))
+				}
+			}
+			return true, nil
+		}
+
+		// Parse countdown - "now" means immediate, numbers mean countdown
+		countdown := 0
+		if args[0] == "now" {
+			countdown = 0 // Explicitly immediate
+		} else {
+			// Try to parse as number
+			if seconds, err := strconv.Atoi(args[0]); err == nil && seconds > 0 {
+				countdown = seconds
+			} else {
+				user.SendText(fmt.Sprintf(`<ansi fg="red">Invalid argument: %s</ansi>`, args[0]))
+				user.SendText(`Use "now" for immediate or a number of seconds for countdown.`)
+				return true, nil
+			}
+		}
+
+		// Set up the appropriate action
+		build := (action == "copyover")
+		actionText := "restart"
+		if build {
+			actionText = "copyover"
+		}
+
+		options := copyover.Options{
+			Countdown:   countdown,
+			Reason:      fmt.Sprintf("Server %s initiated by %s", actionText, user.Character.Name),
+			InitiatedBy: user.UserId,
+			Build:       build,
+		}
+
+		// Send appropriate messages based on countdown
+		if countdown > 0 {
+			user.SendText(fmt.Sprintf(`<ansi fg="yellow-bold">*** SERVER %s SCHEDULED ***</ansi>`, strings.ToUpper(actionText)))
+			user.SendText(fmt.Sprintf(`<ansi fg="cyan">Server will %s in %d seconds.</ansi>`, actionText, countdown))
+			user.SendText(fmt.Sprintf(`Use <ansi fg="command">server %s cancel</ansi> to abort.`, action))
+		} else {
+			user.SendText(fmt.Sprintf(`<ansi fg="yellow-bold">*** SERVER %s INITIATED ***</ansi>`, strings.ToUpper(actionText)))
+			if build {
+				user.SendText(`<ansi fg="cyan">Rebuilding executable and restarting server...</ansi>`)
+			} else {
+				user.SendText(`<ansi fg="cyan">Restarting server without rebuild...</ansi>`)
+			}
+		}
+
+		if err := manager.Initiate(options); err != nil {
+			user.SendText(fmt.Sprintf(`<ansi fg="red">%s failed: %s</ansi>`, strings.Title(actionText), err.Error()))
+			return true, nil
+		}
+
+		// Log the action
+		logCmd := fmt.Sprintf("server %s", action)
+		if countdown > 0 {
+			logCmd += fmt.Sprintf(" %d", countdown)
+		}
+		mudlog.Info("AdminCommand", "userId", user.UserId, "user", user.Character.Name, "command", logCmd)
+		return true, nil
+
+	case "shutdown":
+		// TODO: Implement proper shutdown
+		// This needs to save everything and exit cleanly
+		user.SendText(`<ansi fg="red">Server shutdown is not yet implemented.</ansi>`)
+		user.SendText(`Use system signals (Ctrl+C) to shut down the server properly.`)
+		return true, nil
+
+	default:
+		user.SendText(`<ansi fg="red">Unknown server action: ` + action + `</ansi>`)
+		return true, nil
+	}
 }
 
 func server_Config(_ string, user *users.UserRecord, room *rooms.Room, flags events.EventFlag) (bool, error) {

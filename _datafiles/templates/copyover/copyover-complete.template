@@ -1,0 +1,6 @@
+<ansi fg="green-bold">╔══════════════════════════════════════════════════════╗</ansi>
+<ansi fg="green-bold">║           COPYOVER COMPLETE                           ║</ansi>
+<ansi fg="green-bold">╚══════════════════════════════════════════════════════╝</ansi>
+
+<ansi fg="white">Welcome back! The server has been successfully restarted.</ansi>
+<ansi fg="cyan">You may continue playing normally.</ansi>

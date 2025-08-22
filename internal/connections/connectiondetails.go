@@ -273,13 +273,27 @@ func (cd *ConnectionDetails) Close() {
 }
 
 func (cd *ConnectionDetails) RemoteAddr() net.Addr {
+	if cd == nil {
+		return nil
+	}
 	if cd.wsConn != nil {
 		return cd.wsConn.RemoteAddr()
 	}
-	return cd.conn.RemoteAddr()
+	if cd.conn != nil {
+		return cd.conn.RemoteAddr()
+	}
+	return nil
 }
 
 // GetLocalPort returns the local port the connection came in on
+func (cd *ConnectionDetails) GetConn() net.Conn {
+	return cd.conn
+}
+
+func (cd *ConnectionDetails) GetWebsocket() *websocket.Conn {
+	return cd.wsConn
+}
+
 func (cd *ConnectionDetails) GetLocalPort() int {
 	var localAddr net.Addr
 	if cd.wsConn != nil {

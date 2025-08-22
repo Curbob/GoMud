@@ -74,7 +74,7 @@ type Character struct {
 	HealthMax        stats.StatInfo                 `yaml:"-"`                       // The maximum health of the character. Don't write to yaml since is dynamically calculated.
 	ManaMax          stats.StatInfo                 `yaml:"-"`                       // The maximum mana of the character. Don't write to yaml since is dynamically calculated.
 	ActionPointsMax  stats.StatInfo                 `yaml:"-"`                       // The maximum actions of character. Don't write to yaml since is dynamically calculated.
-	Aggro            *Aggro                         `yaml:"-"`                       // Dont' store this. If they leave they break their aggro
+	Aggro            *Aggro                         `yaml:"aggro,omitempty"`         // Combat aggro state - now preserved during copyover
 	Skills           map[string]int                 `yaml:"skills,omitempty"`        // The skills the character has, and what level they are at
 	Cooldowns        Cooldowns                      `yaml:"cooldowns,omitempty"`     // How many rounds until it is cooled down
 	Settings         map[string]string              `yaml:"settings,omitempty"`      // custom setting tracking, used for anything.
@@ -88,8 +88,9 @@ type Character struct {
 	Created          time.Time                      `yaml:"created"`                 // When this character was created
 	Timers           map[string]gametime.RoundTimer `yaml:"timers,omitempty"`        // any special timers added to this character
 	roomHistory      []int                          // A stack FILO of the last X rooms the character has been in
-	PlayerDamage     map[int]int                    `yaml:"-"` // key = who, value = how much
-	LastPlayerDamage uint64                         `yaml:"-"` // last round a player damaged this character
+	PlayerDamage     map[int]int                    `yaml:"player_damage,omitempty"`      // key = who, value = how much damage for kill credit
+	LastPlayerDamage uint64                         `yaml:"last_player_damage,omitempty"` // last round a player damaged this character
+	CombatStateData  *CombatState                   `yaml:"combat_state,omitempty"`       // Temporary storage for combat state during copyover
 	permaBuffIds     []int                          // Buff Id's that are always present for this character
 	userId           int                            // User ID of the character if any
 }

@@ -24,6 +24,7 @@ import (
 	"github.com/GoMudEngine/GoMud/internal/combat"
 	"github.com/GoMudEngine/GoMud/internal/configs"
 	"github.com/GoMudEngine/GoMud/internal/connections"
+	"github.com/GoMudEngine/GoMud/internal/copyover"
 	"github.com/GoMudEngine/GoMud/internal/events"
 	"github.com/GoMudEngine/GoMud/internal/flags"
 	"github.com/GoMudEngine/GoMud/internal/gametime"
@@ -105,6 +106,12 @@ func main() {
 
 	configs.ReloadConfig()
 	c := configs.GetConfig()
+
+	// Check if we're recovering from copyover
+	isCopyoverRecovery := os.Getenv("GOMUD_COPYOVER") == "1"
+	if isCopyoverRecovery {
+		mudlog.Info("Copyover", "status", "Recovery mode detected")
+	}
 
 	lastKnownVersion, err := version.Parse(string(configs.GetServerConfig().CurrentVersion))
 	if err != nil {
@@ -272,32 +279,94 @@ func main() {
 	serverAlive.Store(true)
 
 	mudlog.Info(`========================`)
+
+	// Handle copyover recovery if needed
+	var preservedListeners map[string]net.Listener
+	if isCopyoverRecovery {
+		mudlog.Info("Copyover", "status", "Starting recovery process")
+
+		// Recover state before starting listeners
+		if err := copyover.Recover(); err != nil {
+			mudlog.Error("Copyover", "error", "Recovery failed", "err", err)
+			// Continue with normal startup even if recovery fails
+		} else {
+			mudlog.Info("Copyover", "status", "Recovery completed successfully")
+			// Get preserved listeners after recovery
+			preservedListeners = copyover.GetPreservedListeners()
+
+			// Set up input handlers for recovered connections
+			setupRecoveredConnectionHandlers()
+		}
+	}
+
+	// Web listener is more complex to preserve due to HTTP server setup
+	// For now, always create new web listener
 	web.Listen(&wg, HandleWebSocketConnection)
 
 	allServerListeners := make([]net.Listener, 0, len(c.Network.TelnetPort))
+
+	// Check for preserved telnet listeners
 	for _, port := range c.Network.TelnetPort {
 		if p, err := strconv.Atoi(port); err == nil {
-			if s := TelnetListenOnPort(``, p, &wg, int(c.Network.MaxTelnetConnections)); s != nil {
-				allServerListeners = append(allServerListeners, s)
+			listenerName := fmt.Sprintf("telnet-%d", p)
+			if listener, exists := preservedListeners[listenerName]; exists {
+				mudlog.Info("Copyover", "status", "Using preserved telnet listener", "port", p)
+				allServerListeners = append(allServerListeners, listener)
+				connections.RegisterListener(listenerName, listener)
+				// Start accepting connections on preserved listener
+				go AcceptOnListener(listener, &wg, int(c.Network.MaxTelnetConnections))
+			} else {
+				if s := TelnetListenOnPort(``, p, &wg, int(c.Network.MaxTelnetConnections)); s != nil {
+					allServerListeners = append(allServerListeners, s)
+					connections.RegisterListener(listenerName, s)
+				}
 			}
 		}
 	}
 
 	if c.Network.LocalPort > 0 {
-		TelnetListenOnPort(`127.0.0.1`, int(c.Network.LocalPort), &wg, 0)
+		listenerName := fmt.Sprintf("local-%d", c.Network.LocalPort)
+		if listener, exists := preservedListeners[listenerName]; exists {
+			mudlog.Info("Copyover", "status", "Using preserved local listener", "port", c.Network.LocalPort)
+			connections.RegisterListener(listenerName, listener)
+			go AcceptOnListener(listener, &wg, 0)
+		} else {
+			if s := TelnetListenOnPort(`127.0.0.1`, int(c.Network.LocalPort), &wg, 0); s != nil {
+				connections.RegisterListener(listenerName, s)
+			}
+		}
 	}
 
 	// Secure telnet local ports - where TLS proxy forwards to
 	for _, port := range c.Network.SecureTelnetLocalPort {
 		if p, err := strconv.Atoi(port); err == nil && p > 0 {
-			mudlog.Info("Telnet", "stage", "Listening on secure local port (localhost only)", "port", p)
-			// Same as LocalPort - localhost only, no connection limit
-			TelnetListenOnPort(`127.0.0.1`, p, &wg, 0)
+			listenerName := fmt.Sprintf("secure-local-%d", p)
+			if listener, exists := preservedListeners[listenerName]; exists {
+				mudlog.Info("Copyover", "status", "Using preserved secure local listener", "port", p)
+				connections.RegisterListener(listenerName, listener)
+				go AcceptOnListener(listener, &wg, 0)
+			} else {
+				mudlog.Info("Telnet", "stage", "Listening on secure local port (localhost only)", "port", p)
+				if s := TelnetListenOnPort(`127.0.0.1`, p, &wg, 0); s != nil {
+					connections.RegisterListener(listenerName, s)
+				}
+			}
 		}
 	}
 
 	go worldManager.InputWorker(workerShutdownChan, &wg)
 	go worldManager.MainWorker(workerShutdownChan, &wg)
+
+	// Register pre-copyover hook to save all rooms
+	copyover.RegisterPreCopyoverHook(func() error {
+		mudlog.Info("Copyover", "pre-hook", "Saving all rooms")
+		if err := rooms.SaveAllRooms(); err != nil {
+			mudlog.Error("Copyover", "pre-hook", "Failed to save rooms", "err", err)
+			return err
+		}
+		mudlog.Info("Copyover", "pre-hook", "Rooms saved successfully")
+		return nil
+	})
 
 	mudlog.Info("Server Ready", "Time Taken", time.Since(serverStartTime))
 
@@ -729,6 +798,108 @@ func handleTelnetConnection(connDetails *connections.ConnectionDetails, wg *sync
 
 }
 
+// handleRestoredConnection handles connections restored from copyover (already logged in)
+func handleRestoredConnection(connDetails *connections.ConnectionDetails, wg *sync.WaitGroup) {
+	defer func() {
+		wg.Done()
+	}()
+
+	mudlog.Info("Restored Connection", "connectionID", connDetails.ConnectionId(), "remoteAddr", connDetails.RemoteAddr().String())
+
+	// The connection already has input handlers set up from setupRecoveredConnectionHandlers()
+	// and the user is already logged in and attached to this connection.
+	// We just need to read input and process it.
+
+	var sharedState map[string]any = make(map[string]any)
+
+	// Get the user associated with this connection
+	userObject := users.GetByConnectionId(connDetails.ConnectionId())
+	if userObject == nil {
+		mudlog.Error("Restored connection has no user", "connectionId", connDetails.ConnectionId())
+		connections.Remove(connDetails.ConnectionId())
+		return
+	}
+
+	// Send them their prompt
+	if connections.IsWebsocket(connDetails.ConnectionId()) {
+		connections.SendTo([]byte(userObject.GetCommandPrompt()), connDetails.ConnectionId())
+	} else {
+		connections.SendTo([]byte(templates.AnsiParse(userObject.GetCommandPrompt())), connDetails.ConnectionId())
+	}
+
+	// Input buffer for this connection
+	var clientInput connections.ClientInput
+	clientInput.ConnectionId = connDetails.ConnectionId()
+	readBuffer := make([]byte, connections.ReadBufferSize)
+	var sug suggestions.Suggestions
+
+	// Main input loop - similar to the logged-in portion of handleTelnetConnection
+	for {
+		n, err := connDetails.Read(readBuffer)
+		if err != nil {
+			mudlog.Warn("Telnet", "connectionID", connDetails.ConnectionId(), "error", err)
+			connections.Remove(connDetails.ConnectionId())
+			return
+		}
+
+		clientInput.DataIn = readBuffer[:n]
+
+		// Let input handlers process the data
+		runNextHandler, lastHandler, err := connDetails.HandleInput(&clientInput, sharedState)
+		if err != nil {
+			mudlog.Error("Input Handler Error", "handler", lastHandler, "connectionID", clientInput.ConnectionId, "error", err)
+			connections.Remove(connDetails.ConnectionId())
+			return
+		}
+
+		if !runNextHandler {
+			continue
+		}
+
+		// Check if user is still connected
+		userObject = users.GetByConnectionId(clientInput.ConnectionId)
+		if userObject == nil {
+			connections.Remove(clientInput.ConnectionId)
+			return
+		}
+
+		// Handle the input
+		if clientInput.EnterPressed {
+			// Process the command
+			if len(clientInput.Buffer) == 0 {
+				// Just resend the prompt
+				if connections.IsWebsocket(clientInput.ConnectionId) {
+					connections.SendTo([]byte(userObject.GetCommandPrompt()), clientInput.ConnectionId)
+				} else {
+					connections.SendTo([]byte(templates.AnsiParse(userObject.GetCommandPrompt())), clientInput.ConnectionId)
+				}
+			} else {
+				// Send command to world
+				wi := WorldInput{
+					FromId:    userObject.UserId,
+					InputText: string(clientInput.Buffer),
+				}
+				worldManager.SendInput(wi)
+				clientInput.Reset()
+			}
+		} else {
+			// Handle suggestions like in the original code
+			_, suggested := userObject.GetUnsentText()
+			if len(suggested) > 0 {
+				clientInput.Buffer = append(clientInput.Buffer, []byte(suggested)...)
+				sug.Clear()
+				userObject.SetUnsentText(string(clientInput.Buffer), ``)
+
+				if connections.IsWebsocket(clientInput.ConnectionId) {
+					connections.SendTo([]byte(userObject.GetCommandPrompt()), clientInput.ConnectionId)
+				} else {
+					connections.SendTo([]byte(templates.AnsiParse(userObject.GetCommandPrompt())), clientInput.ConnectionId)
+				}
+			}
+		}
+	}
+}
+
 func HandleWebSocketConnection(conn *websocket.Conn) {
 
 	var userObject *users.UserRecord
@@ -907,6 +1078,36 @@ func HandleWebSocketConnection(conn *websocket.Conn) {
 	}
 }
 
+// setupRecoveredConnectionHandlers sets up input handlers for connections restored from copyover
+func setupRecoveredConnectionHandlers() {
+	// Get all active connections
+	for _, connId := range connections.GetAllConnectionIds() {
+		cd := connections.Get(connId)
+		if cd == nil {
+			continue
+		}
+
+		// Only set up handlers for logged-in connections
+		if cd.State() == connections.LoggedIn {
+			// Add the standard telnet input handlers
+			cd.AddInputHandler("TelnetIACHandler", inputhandlers.TelnetIACHandler)
+			cd.AddInputHandler("AnsiHandler", inputhandlers.AnsiHandler)
+			cd.AddInputHandler("CleanserInputHandler", inputhandlers.CleanserInputHandler)
+			cd.AddInputHandler("EchoInputHandler", inputhandlers.EchoInputHandler)
+			cd.AddInputHandler("HistoryInputHandler", inputhandlers.HistoryInputHandler)
+			cd.AddInputHandler("SignalHandler", inputhandlers.SignalHandler, "AnsiHandler")
+
+			mudlog.Info("Copyover", "setup", "Added input handlers", "connId", connId)
+
+			// Start the input reading goroutine for this restored connection
+			// Use a special handler that skips login for already logged-in connections
+			wg.Add(1)
+			go handleRestoredConnection(cd, &wg)
+			mudlog.Info("Copyover", "setup", "Started input goroutine for restored connection", "connId", connId)
+		}
+	}
+}
+
 func TelnetListenOnPort(hostname string, portNum int, wg *sync.WaitGroup, maxConnections int) net.Listener {
 
 	server, err := net.Listen("tcp", fmt.Sprintf("%s:%d", hostname, portNum))
@@ -915,42 +1116,45 @@ func TelnetListenOnPort(hostname string, portNum int, wg *sync.WaitGroup, maxCon
 		return nil
 	}
 
-	// Start a goroutine to accept incoming connections, so that we can use a signal to stop the server
-	go func() {
+	// Start accepting connections on the listener
+	go AcceptOnListener(server, wg, maxConnections)
 
-		// Loop to accept connections
-		for {
-			conn, err := server.Accept()
-
-			if !serverAlive.Load() {
-				mudlog.Warn("Connections disabled.")
-				return
-			}
-
-			if err != nil {
-				mudlog.Warn("Connection error", "error", err)
-				continue
-			}
-
-			if maxConnections > 0 {
-				if connections.ActiveConnectionCount() >= maxConnections {
-					conn.Write([]byte(fmt.Sprintf("\n\n\n!!! Server is full (%d connections). Try again later. !!!\n\n\n", connections.ActiveConnectionCount())))
-					conn.Close()
-					continue
-				}
-			}
-
-			wg.Add(1)
-			// hand off the connection to a handler goroutine so that we can continue handling new connections
-			go handleTelnetConnection(
-				connections.Add(conn, nil),
-				wg,
-			)
-
-		}
-	}()
+	mudlog.Info("Telnet", "stage", "Listening", "address", server.Addr())
 
 	return server
+}
+
+// AcceptOnListener handles accepting connections on a listener (used for both new and preserved listeners)
+func AcceptOnListener(server net.Listener, wg *sync.WaitGroup, maxConnections int) {
+	// Loop to accept connections
+	for {
+		conn, err := server.Accept()
+
+		if !serverAlive.Load() {
+			mudlog.Warn("Connections disabled.")
+			return
+		}
+
+		if err != nil {
+			mudlog.Warn("Connection error", "error", err)
+			continue
+		}
+
+		if maxConnections > 0 {
+			if connections.ActiveConnectionCount() >= maxConnections {
+				conn.Write([]byte(fmt.Sprintf("\n\n\n!!! Server is full (%d connections). Try again later. !!!\n\n\n", connections.ActiveConnectionCount())))
+				conn.Close()
+				continue
+			}
+		}
+
+		wg.Add(1)
+		// hand off the connection to a handler goroutine so that we can continue handling new connections
+		go handleTelnetConnection(
+			connections.Add(conn, nil),
+			wg,
+		)
+	}
 }
 
 func loadAllDataFiles(isReload bool) {

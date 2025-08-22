@@ -1,0 +1,10 @@
+<ansi fg="red-bold">╔══════════════════════════════════════════════════════╗</ansi>
+<ansi fg="red-bold">║           COPYOVER FAILED                             ║</ansi>
+<parameter name="content"><ansi fg="red-bold">╚══════════════════════════════════════════════════════╝</ansi>
+
+<ansi fg="yellow">The copyover process encountered an error and was aborted.</ansi>
+{{if .Error}}
+<ansi fg="red">Error:</ansi> <ansi fg="white">{{.Error}}</ansi>
+{{end}}
+
+<ansi fg="white">Normal gameplay continues.</ansi>

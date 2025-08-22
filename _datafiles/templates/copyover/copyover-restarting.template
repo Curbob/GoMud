@@ -1,0 +1,6 @@
+<ansi fg="red-bold">╔══════════════════════════════════════════════════════╗</ansi>
+<ansi fg="red-bold">║           RESTARTING NOW                              ║</ansi>
+<ansi fg="red-bold">╚══════════════════════════════════════════════════════╝</ansi>
+
+<ansi fg="yellow">Please wait while the server restarts...</ansi>
+<ansi fg="green">Your connection is being preserved.</ansi>

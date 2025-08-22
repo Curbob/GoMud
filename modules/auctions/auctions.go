@@ -50,6 +50,9 @@ func init() {
 		},
 	}
 
+	// Store instance for copyover support
+	SetAuctionModuleInstance(&a)
+
 	//
 	// Add the embedded filesystem
 	//

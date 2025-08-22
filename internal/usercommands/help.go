@@ -175,5 +175,10 @@ func GetHelpContents(input string) (string, error) {
 		}
 	}
 
+	// Check if this is an admin command and adjust the template path accordingly
+	if helpTopicInfo := keywords.GetHelpTopicInfo(helpName); helpTopicInfo != nil && helpTopicInfo.AdminOnly {
+		return templates.Process("admincommands/help/command."+helpName, helpVars, 0)
+	}
+
 	return templates.Process("help/"+helpName, helpVars, 0)
 }

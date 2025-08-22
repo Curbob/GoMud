@@ -46,6 +46,9 @@ func init() {
 		followLimits: make(map[followId]uint64),
 	}
 
+	// Store instance for copyover support
+	SetFollowModuleInstance(&f)
+
 	//
 	// Add the embedded filesystem
 	//

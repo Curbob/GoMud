@@ -1,0 +1,14 @@
+
+<ansi fg="yellow-bold">╔══════════════════════════════════════════════════════╗</ansi>
+<ansi fg="yellow-bold">║           COPYOVER SCHEDULED                          ║</ansi>
+<ansi fg="yellow-bold">╚══════════════════════════════════════════════════════╝</ansi>
+
+<ansi fg="white">The server will restart in</ansi> <ansi fg="red-bold">{{.Seconds}} seconds</ansi>
+<ansi fg="white">Scheduled for:</ansi> <ansi fg="cyan">{{.Time}}</ansi>
+
+{{if .Reason}}
+<ansi fg="white">Reason:</ansi> <ansi fg="yellow">{{.Reason}}</ansi>
+{{end}}
+
+<ansi fg="green">Your connection will be preserved during the restart.</ansi>
+<ansi fg="green">You will experience a brief pause, then continue playing.</ansi>
