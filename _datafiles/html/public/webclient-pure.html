@@ -1,1255 +1,1447 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
-<head>
+  <head>
     <title>{{ .CONFIG.Server.MudName }} Web Terminal</title>
     <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
- 
-        body {
-            margin: 0;
-            padding: 0;
-            height: 100vh;
-            font-family: 'DejaVu Sans Mono', monospace;
-            display: flex;
-            flex-direction: column;
-            background-color: #1e1e1e;
-            position: relative; /* So absolutely positioned children can be placed relative to <body> */
-        }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
 
-        #main-container {
-            flex: 1;
-            position: relative;
-            display: flex;
-            flex-direction: row;
-            overflow: hidden;
-            background-color: #000;
-        }
+      body {
+        margin: 0;
+        padding: 0;
+        height: 100vh;
+        font-family: "DejaVu Sans Mono", monospace;
+        display: flex;
+        flex-direction: column;
+        background-color: #1e1e1e;
+        position: relative; /* So absolutely positioned children can be placed relative to <body> */
+      }
 
-        #terminal {
-            flex: 1;
-        }
+      #main-container {
+        flex: 1;
+        position: relative;
+        display: flex;
+        flex-direction: row;
+        overflow: hidden;
+        background-color: #000;
+      }
 
-        #input-area {
-            display: flex;
-            padding: 10px;
-            background-color: #1e1e1e;
-        }
-        #command-input {
-            flex: 1;
-            padding: 10px;
-            font-size: 16px;
-            border: none;
-            background-color: #333;
-            color: white;
-            border-radius: 0px 5px 5px 0px;
-        }
-        #command-input:focus {
-            outline: none;
-        }
+      #terminal {
+        flex: 1;
+      }
 
-        /* FLOATING CONNECT BUTTON IN THE CENTER */
-        #connect-button {
-            position: absolute;
-            /* Center in viewport */
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 9999;
+      #input-area {
+        display: flex;
+        padding: 10px;
+        background-color: #1e1e1e;
+      }
+      #command-input {
+        flex: 1;
+        padding: 10px;
+        font-size: 16px;
+        border: none;
+        background-color: #333;
+        color: white;
+        border-radius: 0px 5px 5px 0px;
+      }
+      #command-input:focus {
+        outline: none;
+      }
 
-            /* Larger styling */
-            padding: 20px 40px;
-            font-size: 20px;
+      /* FLOATING CONNECT BUTTON IN THE CENTER */
+      #connect-button {
+        position: absolute;
+        /* Center in viewport */
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 9999;
 
-            background-color: #555;
-            color: white;
-            border: none;
-            cursor: pointer;
-            border-radius: 5px;
+        /* Larger styling */
+        padding: 20px 40px;
+        font-size: 20px;
 
-            /* Keep the original pulsing effect */
-            animation: pulse 1s infinite alternate;
-        }
-        #connect-button:disabled {
-            color: #888;
-            pointer-events: none;
-            animation: none;
-            background-color: #555;
-            cursor: not-allowed;
-        }
-        @keyframes pulse {
-            0% {
-                background-color: #555;
-                color: white;
-            }
-            100% {
-                color: #d17a7a;
-                background-color: #9f4a4a;
-            }
-        }
+        background-color: #555;
+        color: white;
+        border: none;
+        cursor: pointer;
+        border-radius: 5px;
 
-        /* Sound icon in top-right corner */
-        #menu-icon {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            font-size: 26px;
-            color: white;
-            padding: 10px;
-            cursor: pointer;
-            z-index: 9999;
-            background-color: rgba(30,30,30, 0.8);
-            border-radius: 5px;
+        /* Keep the original pulsing effect */
+        animation: pulse 1s infinite alternate;
+      }
+      #connect-button:disabled {
+        color: #888;
+        pointer-events: none;
+        animation: none;
+        background-color: #555;
+        cursor: not-allowed;
+      }
+      @keyframes pulse {
+        0% {
+          background-color: #555;
+          color: white;
         }
+        100% {
+          color: #d17a7a;
+          background-color: #9f4a4a;
+        }
+      }
 
-        /* The floating menu container */
-        #floating-menu {
-            position: absolute;
-            top: 60px; /* Just below the icon */
-            right: 10px;
-            width: 450px;
-            padding: 10px;
-            background-color: #2e2e2e;
-            border: 1px solid #444;
-            border-radius: 5px;
-            display: none; /* hidden by default */
-            z-index: 9999;
-        }
-        #floating-menu h3 {
-            color: #fff;
-            margin-bottom: 10px;
-        }
+      /* Sound icon in top-right corner */
+      #menu-icon {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        font-size: 26px;
+        color: white;
+        padding: 10px;
+        cursor: pointer;
+        z-index: 9999;
+        background-color: rgba(30, 30, 30, 0.8);
+        border-radius: 5px;
+      }
 
-        .slider-container {
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-        }
-        .slider-container label {
-            color: #ccc;
-            width: 150px;
-        }
-        .slider-container input[type="range"] {
-            flex: 1;
-            margin: 0 10px;
-        }
-        .slider-icon {
-            width: 32px;
-            text-align: center;
-            font-size: 20px;
-            color: #ccc;
-        }
+      /* The floating menu container */
+      #floating-menu {
+        position: absolute;
+        top: 60px; /* Just below the icon */
+        right: 10px;
+        width: 450px;
+        padding: 10px;
+        background-color: #2e2e2e;
+        border: 1px solid #444;
+        border-radius: 5px;
+        display: none; /* hidden by default */
+        z-index: 9999;
+      }
+      #floating-menu h3 {
+        color: #fff;
+        margin-bottom: 10px;
+      }
 
-        /* Mute Checkbox */
-        #mute-container {
-            margin-bottom: 15px;
-            color: #ccc;
-            display: flex;
-            align-items: center;
-        }
-        #mute-container label {
-            cursor: pointer;
-        }
-        #mute-container input[type="checkbox"] {
-            margin-right: 8px;
-            transform: scale(1.2);
-            cursor: pointer;
-        }
+      .slider-container {
+        margin-bottom: 15px;
+        display: flex;
+        align-items: center;
+      }
+      .slider-container label {
+        color: #ccc;
+        width: 150px;
+      }
+      .slider-container input[type="range"] {
+        flex: 1;
+        margin: 0 10px;
+      }
+      .slider-icon {
+        width: 32px;
+        text-align: center;
+        font-size: 20px;
+        color: #ccc;
+      }
 
+      /* Mute Checkbox */
+      #mute-container {
+        margin-bottom: 15px;
+        color: #ccc;
+        display: flex;
+        align-items: center;
+      }
+      #mute-container label {
+        cursor: pointer;
+      }
+      #mute-container input[type="checkbox"] {
+        margin-right: 8px;
+        transform: scale(1.2);
+        cursor: pointer;
+      }
     </style>
 
-    <link rel="stylesheet" href="{{ .CONFIG.FilePaths.WebCDNLocation }}/static/css/xterm.css" />
+    <link
+      rel="stylesheet"
+      href="{{ .CONFIG.FilePaths.WebCDNLocation }}/static/css/xterm.css"
+    />
     <script src="{{ .CONFIG.FilePaths.WebCDNLocation }}/static/js/xterm.4.19.0.js"></script>
     <script src="{{ .CONFIG.FilePaths.WebCDNLocation }}/static/js/xterm-addon-fit.js"></script>
     <script src="{{ .CONFIG.FilePaths.WebCDNLocation }}/static/js/mp3.js"></script>
     <script src="{{ .CONFIG.FilePaths.WebCDNLocation }}/static/js/winbox.bundle.min.js"></script>
     <script src="{{ .CONFIG.FilePaths.WebCDNLocation }}/static/js/gmcp.js"></script>
-</head>
-<body onLoad="init(); return false;">
-
+  </head>
+  <body onLoad="init(); return false;">
     <!-- SOUND ICON (top-right). Click to toggle the volume sliders panel. -->
     <div id="menu-icon" onclick="toggleMenu()">🔊</div>
 
     <!-- FLOATING MENU - MULTIPLE SLIDERS -->
     <div id="floating-menu">
-        <h3>Volume Controls</h3>
+      <h3>Volume Controls</h3>
 
-        <div id="mute-container">
-            <input type="checkbox" id="mute-checkbox" onchange="toggleMuteAll()">
-            <label for="mute-checkbox"><span id="mute-icon">🔊</span> Mute All Sound</label>
-        </div>
+      <div id="mute-container">
+        <input type="checkbox" id="mute-checkbox" onchange="toggleMuteAll()" />
+        <label for="mute-checkbox"
+          ><span id="mute-icon">🔊</span> Mute All Sound</label
+        >
+      </div>
 
-        <div id="sliders-container">
-            <!-- Multiple sliders get built here -->
-        </div>
+      <div id="sliders-container">
+        <!-- Multiple sliders get built here -->
+      </div>
     </div>
 
     <div id="main-container">
-        <div id="terminal"></div>
+      <div id="terminal"></div>
     </div>
 
     <!-- CONNECT BUTTON FLOATED IN CENTER -->
     <button id="connect-button">Connect to {{ .CONFIG.Server.MudName }}</button>
 
     <div id="input-area">
-        <input type="text" id="command-input" placeholder="Enter command...">
+      <input type="text" id="command-input" placeholder="Enter command..." />
     </div>
 
     <script>
+      /////////////////////////////////////////////
+      //
+      // Music/Sound players:
+      //
+      /////////////////////////////////////////////
+      let baseMp3Url = "";
+      const MusicPlayer = new MP3Player(false);
+      const SoundPlayer = new MP3Player(true);
 
-        /////////////////////////////////////////////
-        //
-        // Music/Sound players:
-        //
-        /////////////////////////////////////////////
-        let baseMp3Url = "";
-        const MusicPlayer = new MP3Player(false);
-        const SoundPlayer = new MP3Player(true);
+      /////////////////////////////////////////////
+      //
+      // Terminal Setup
+      //
+      /////////////////////////////////////////////
+      const term = new window.Terminal({
+        cols: 80,
+        rows: 60,
+        cursorBlink: true,
+        fontSize: 20,
+      });
+      const fitAddon = new window.FitAddon.FitAddon();
+      term.loadAddon(fitAddon);
+      term.open(document.getElementById("terminal"));
 
-        /////////////////////////////////////////////
-        //
-        // Terminal Setup
-        //
-        /////////////////////////////////////////////
-        const term = new window.Terminal({
-            cols: 80,
-            rows: 60,
-            cursorBlink: true,
-            fontSize: 20
-        });
-        const fitAddon = new window.FitAddon.FitAddon();
-        term.loadAddon(fitAddon);
-        term.open(document.getElementById('terminal'));
+      function resizeTerminal() {
+        fitAddon.fit();
+      }
+      window.addEventListener("resize", resizeTerminal);
+      resizeTerminal();
 
-        function resizeTerminal() {
-            fitAddon.fit();
-        }
-        window.addEventListener('resize', resizeTerminal);
-        resizeTerminal();
+      /////////////////////////////////////////////
+      //
+      // Misc
+      //
+      /////////////////////////////////////////////
+      let payloadsReceived = 0;
+      let totalBytesReceived = 0;
+      let payloadsSent = 0;
+      let totalBytesSent = 0;
+      let commandHistory = [];
+      let historyPosition = 0;
+      let commandHistoryMaxLength = 30;
 
-        /////////////////////////////////////////////
-        //
-        // Misc
-        //
-        /////////////////////////////////////////////
-        let payloadsReceived = 0;
-        let totalBytesReceived = 0;
-        let payloadsSent = 0;
-        let totalBytesSent = 0;
-        let commandHistory = [];
-        let historyPosition = 0;
-        let commandHistoryMaxLength = 30;
+      /////////////////////////////////////////////
+      //
+      // GMCP
+      //
+      /////////////////////////////////////////////
+      let GMCPStructs = {};
+      let gr = {};
+      let allRooms = {
+        currentZoneKey: "",
+        roomZones: {},
+      };
+      let GMCPUpdateHandlers = {
+        "Room.Info.Basic": function () {
+          // Store Basic data
+          if (!GMCPStructs["Room"]) GMCPStructs["Room"] = {};
+          if (!GMCPStructs["Room"].Info) GMCPStructs["Room"].Info = {};
 
-        /////////////////////////////////////////////
-        //
-        // GMCP
-        //
-        /////////////////////////////////////////////
-        let GMCPStructs = {};
-        let gr = {};
-        let allRooms = {
-            currentZoneKey: "",
-            roomZones: {},
-        };
-        let GMCPUpdateHandlers = {
-            "Comm": function() {
+          var basic = GMCPStructs["Room"].Info.Basic;
+          if (basic) {
+            GMCPStructs["Room"].Info.num = basic.id;
+            GMCPStructs["Room"].Info.name = basic.name;
+            GMCPStructs["Room"].Info.area = basic.area;
+            GMCPStructs["Room"].Info.map_id = basic.map_id;
+            GMCPStructs["Room"].Info.environment = basic.environment;
+            GMCPStructs["Room"].Info.coords = basic.coordinates;
+            GMCPStructs["Room"].Info.details = basic.details;
+          }
+        },
+        "Room.Info.Exits": function () {
+          // Store exits data
+          if (!GMCPStructs["Room"]) GMCPStructs["Room"] = {};
+          if (!GMCPStructs["Room"].Info) GMCPStructs["Room"].Info = {};
 
-                var obj = GMCPStructs["Comm"];
-                if ( !obj.Channel ) {
-                    return;
-                }
-
-                if ( !GMCPWindows['Comm'] && GMCPWindows['Comm'] !== false ) {
-
-                    GMCPWindows['Comm'] = new WinBox({ title: "Communications",
-                                            mount: document.getElementById("comm-output"),
-                                            background: "#1c6b60", border: 1,
-                                            x: "right", y: 450,
-                                            width:363,  height:20+290,
-                                            header: 20,
-                                            bottom: 60, // Limit how far down it can go. This affects docking the minimized window.
-                                            // end limit position range
-                                            onclose: force => { GMCPWindows['Comm'] = false; return false; },
-                                        });
-                    
-                    GMCPWindows['Comm'].Message = function(channelName, fromName, fromSource, message) {
-
-                        // add new text output                
-                        var tab = document.getElementById("comm-tab-"+channelName);
-                        var panel = document.getElementById("comm-"+channelName);
-
-                        if ( tab.classList.contains('active') ) {
-                            tab.dataset.unread = 0;
-                            tab.innerText = tab.dataset.label;
-                        } else {
-                            tab.dataset.unread = parseInt(tab.dataset.unread)+1;
-                            tab.innerText = tab.dataset.label + "(" + String(tab.dataset.unread) + ")";
-                        }                 
-
-                        var p = document.createElement('p');
-                        p.innerHTML =   '<span class="text-name '+fromSource+'">' + 
-                                            fromName + 
-                                        '</span>: ' + 
-                                        '<span class="text-body '+fromSource+'">' + 
-                                            message + 
-                                        '</span>';
-                        panel.appendChild(p);
-        
-                        // clean up overflow
-                        panelContainer = GMCPWindows['Comm'].window;
-                        while (panel.scrollHeight > panelContainer.clientHeight-58) {
-                            if ( panel.childElementCount < 1) {
-                                break;
-                            }
-                            panel.removeChild(panel.firstElementChild);
-                        }
-                        
-                    };
-
-                }
-
-                if ( GMCPWindows['Comm'] === false ) {
-                    return;
-                }
-
-                GMCPWindows['Comm'].Message(obj.Channel.channel, obj.Channel.sender, obj.Channel.source, obj.Channel.text);
-
-            },
-            "Room": function() {
-
-                var obj = GMCPStructs["Room"];
-                if ( !obj.Info ) {
-                    return;
-                }
-
-                if ( !GMCPWindows['Map'] && GMCPWindows['Map'] !== false ) {
-
-                    GMCPWindows['Map'] = new WinBox({ title: "Map",
-                                            mount: document.getElementById("map-render"),
-                                            background: "#1c6b60",
-                                            border: 1,
-                                            x: "right",
-                                            y: 66,
-                                            width:363,
-                                            height:20+363,
-                                            header: 20,
-                                            bottom: 60, // Limit how far down it can go. This affects docking the minimized window.
-                                            // end limit position range
-                                            onclose: force => { GMCPWindows['Map'] = false; return false; },
-                                            oncreate: ops => {
-
-                                            var mapOptions = {  cellSize: 80,
-                                                                cellMargin: 80,
-                                                                initialZoom: 0.5 };
-                                            //mapOptions.onRoomClick = function(r) { alert(`Room ${r.RoomId} clicked`); }
-
-                                            gr = new RoomGridSVG('#map-render', mapOptions);
-
-
-                                            },
-                                        });
-
-
-                }
-
-                if ( GMCPWindows['Map'] === false ) {
-                    return;
-                }
-
-                if ( obj.Info ) {
-
-                    GMCPWindows['Map'].setTitle('Map ('+obj.Info.area+')');
-                    var coords = obj.Info.coords.split(",");
-                    for( var i=0; i<coords.length; i++ ) {
-                        coords[i] = coords[i].trim();
-                    }
-                    var zoneName = coords[0];
-
-                    var zoneKey = zoneName+"/z:"+coords[3];
-
-                    if ( allRooms.currentZoneKey != zoneKey ) {
-                        gr.reset();
-                        allRooms.currentZoneKey = zoneKey;
-                        if( !allRooms.roomZones[zoneKey] || !Array.isArray(allRooms.roomZones[zoneKey]) ) {
-                            allRooms.roomZones[zoneKey] = [];
-                        }
-                        gr.setRooms(allRooms.roomZones[zoneKey]);
-                    }
-
-                    var r = { 
-                        RoomId: obj.Info.num, 
-                        Text: "",
-                        x: parseInt(coords[1]), 
-                        y: parseInt(coords[2]), 
-                        z: parseInt(coords[3]), 
-                        Exits: [],
-                    }
-
-                    if ( obj.Info.Contents ) {
-
-                        if ( obj.Info.Contents.Npcs ) {
-                            for( var i in obj.Info.Contents.Npcs ) {
-                                if ( obj.Info.Contents.Npcs[i].adjectives.indexOf("shop") != -1 ) {
-                                    r.Color = "#AFE1AF"
-                                    r.Text = "💰";
-                                    break;
-                                }
-                            }
-                        }
-
-                    }
-                    
-                    if ( obj.Info.details ) {
-
-                        if ( obj.Info.details.indexOf("bank") != -1 ) {
-                            r.Color = "#56d44a"
-                            r.Text = "🏛️";
-                        } else if ( obj.Info.details.indexOf("trainer") != -1 ) {
-                            r.Color = "#fdd"
-                            r.Text = "🧠";
-                        } else if ( obj.Info.details.indexOf("storage") != -1 ) {
-                            r.Color = "#a88100"
-                            r.Text = "🗄️";
-                        } else if ( obj.Info.details.indexOf("character") != -1 ) {
-                            r.Color = "#757575"
-                            r.Text = "👤";
-                        }
-
-                    }
-
-
-                    for (var p in obj.Info.exitsv2 ) {
-                        var exitInfo = obj.Info.exitsv2[p];
-                        // Only add these rooms if there is no z delta, since it's a 2D rendering.
-                        if ( exitInfo.dz == 0 ) {
-                            r.Exits.push( { RoomId: exitInfo.num, x: exitInfo.dx+parseInt(coords[1]), y: exitInfo.dy+parseInt(coords[2]), Text: "" } );
-                        }
-                    }
-
-                    allRooms.roomZones[zoneKey].push(r);
-                    gr.addRoom(r);
-                    gr.centerOnRoom(r.RoomId);
-                }
-
-            },
-            "Char":function() {
-                
-                var obj = GMCPStructs["Char"];
-
-                if ( obj.Vitals ) {
-                    GMCPUpdateHandlers['Char.Vitals']();
-                }
-            },
-            "Char.Vitals": function() {
-                
-                var obj = GMCPStructs["Char"];
-                if ( !obj.Vitals ) {
-                    return;
-                }
-                
-                if ( !GMCPWindows['Char.Vitals'] && GMCPWindows['Char.Vitals'] !== false ) {
-
-                    GMCPWindows['Char.Vitals'] = new WinBox({ title: "Vitals",
-                                                              mount: document.getElementById("vitals-bars"),
-                                                              background: "#1c6b60",
-                                                              border: 1,
-                                                              x: window.innerWidth-300-63,//"right",
-                                                              y: 0,
-                                                              width:300,
-                                                              height:20+40,
-                                                              header: 20,
-                                                              bottom: 60, // Limit how far down it can go. This affects docking the minimized window.
-                                                              onclose: force => { GMCPWindows['Char.Vitals'] = false; return false; },
-                                                            });
-                }
-
-                if ( GMCPWindows['Char.Vitals'] === false ) {
-                    return;
-                }
-
-                var p    = Math.max(0, Math.min(100, Math.floor(obj.Vitals.hp/obj.Vitals.hp_max*100)));  // clamp 0–100
-                var fill = document.querySelector('#health-bar .health-fill');
-                var txt  = document.querySelector('#health-bar .health-text');
-                fill.style.width       = 100-p + '%';
-                txt.textContent       = obj.Vitals.hp + '/' + obj.Vitals.hp_max + ' hp'; 
-
-                p    = Math.max(0, Math.min(100, Math.floor(obj.Vitals.sp/obj.Vitals.sp_max*100)));  // clamp 0–100
-                fill = document.querySelector('#mana-bar .mana-fill');
-                txt  = document.querySelector('#mana-bar .mana-text');
-                fill.style.width       = 100-p + '%';
-                txt.textContent       = obj.Vitals.sp + '/' + obj.Vitals.sp_max + ' mp'; 
-                
-            },
-        };
-        let GMCPWindows = {};
-        function handleGMCP(objNamespace, objBody) {
-
-
-            var nameParts = objNamespace.split(".");
-            var lastProperty = nameParts.pop();
-
-            var rootName = nameParts[0];
-            var cursor = GMCPStructs;
-
-            objectPosition = null;
-            for (let propertyName of nameParts) {
-
-                if ( !cursor[propertyName] ) {
-                    cursor[propertyName] = {};
-                }
-
-                cursor = cursor[propertyName];
+          var exits = GMCPStructs["Room"].Info.Exits;
+          if (exits) {
+            var exitsv2 = {};
+            for (var dir in exits) {
+              var exit = exits[dir];
+              exitsv2[dir] = {
+                num: exit.room_id,
+                dx: exit.delta_x,
+                dy: exit.delta_y,
+                dz: exit.delta_z,
+              };
             }
+            GMCPStructs["Room"].Info.exitsv2 = exitsv2;
+          }
 
-            cursor[lastProperty] = objBody;
-            nameParts = objNamespace.split(".");
-            for ( let i=nameParts.length-1; i>=0; i-- ) {
-                var path = nameParts.slice(0, i+1).join(".");
-                if ( GMCPUpdateHandlers[path] ) {
-                    GMCPUpdateHandlers[path]();
-                    return;
-                }
-            }
+          // Trigger the Room handler now that we have exits
+          if (GMCPStructs["Room"].Info.coords && GMCPStructs["Room"].Info.num) {
+            GMCPUpdateHandlers["Room"]();
+          }
+        },
+        "Room.Info.Contents.Players": function () {
+          // Store players data
+          if (!GMCPStructs["Room"]) GMCPStructs["Room"] = {};
+          if (!GMCPStructs["Room"].Info) GMCPStructs["Room"].Info = {};
+          if (!GMCPStructs["Room"].Info.Contents)
+            GMCPStructs["Room"].Info.Contents = {};
+        },
+        "Room.Info.Contents.Npcs": function () {
+          // Store NPCs data
+          if (!GMCPStructs["Room"]) GMCPStructs["Room"] = {};
+          if (!GMCPStructs["Room"].Info) GMCPStructs["Room"].Info = {};
+          if (!GMCPStructs["Room"].Info.Contents)
+            GMCPStructs["Room"].Info.Contents = {};
 
-            console.log("GMCP:", gmcpNamespace, gmcpObject);
-        }
-        /////////////////////////////////////////////
-        //
-        // WebSocket
-        //
-        /////////////////////////////////////////////
-        let socket = null;
-        let debugOutput = false;
-        let isDragging = false;
+          // Trigger the Room handler to update NPC-based room colors
+          if (GMCPStructs["Room"].Info.coords && GMCPStructs["Room"].Info.num) {
+            GMCPUpdateHandlers["Room"]();
+          }
+        },
+        "Room.Info.Contents.Items": function () {
+          // Store items data
+          if (!GMCPStructs["Room"]) GMCPStructs["Room"] = {};
+          if (!GMCPStructs["Room"].Info) GMCPStructs["Room"].Info = {};
+          if (!GMCPStructs["Room"].Info.Contents)
+            GMCPStructs["Room"].Info.Contents = {};
+        },
+        "Room.Info.Contents.Containers": function () {
+          // Store containers data
+          if (!GMCPStructs["Room"]) GMCPStructs["Room"] = {};
+          if (!GMCPStructs["Room"].Info) GMCPStructs["Room"].Info = {};
+          if (!GMCPStructs["Room"].Info.Contents)
+            GMCPStructs["Room"].Info.Contents = {};
+        },
+        Comm: function () {
+          var obj = GMCPStructs["Comm"];
+          if (!obj.Channel) {
+            return;
+          }
 
-        const connectButton = document.getElementById('connect-button');
-        const textOutput = document.getElementById('terminal');
-        const textInput = document.getElementById('command-input');
-
-        const codeShortcuts = {
-            "Numpad1": "southwest",
-            "Numpad2": "south",
-            "Numpad3": "southeast",
-            "Numpad4": "west",
-            "Numpad5": "default",
-            "Numpad6": "east",
-            "Numpad7": "northwest",
-            "Numpad8": "north",
-            "Numpad9": "northeast",
-            "F1": "=1",
-            "F2": "=2",
-            "F3": "=3",
-            "F4": "=4",
-            "F5": "=5",
-            "F6": "=6",
-            "F7": "=7",
-            "F8": "=8",
-            "F9": "=9",
-            "F10": "=10",
-            "ArrowUp": "north",
-            "ArrowDown": "south",
-            "ArrowLeft": "west",
-            "ArrowRight": "east",
-        };
-
-        function handleWebclientCommand(cmdString) {
-            const cmd = cmdString.substring(0, 9);
-            if (cmd === "TEXTMASK:") {
-                debugLog(cmdString);
-                if (cmdString.substring(9) === "true") {
-                    textInput.type = "password";
-                } else {
-                    textInput.type = "text";
-                }
-                return true;
-            }
-            return false;
-        }
-
-        connectButton.addEventListener('click', () => {
-            if (socket && socket.readyState === WebSocket.OPEN) {
-                socket.close();
-                return;
-            }
-
-            debugLog("Connecting to: " + 'ws://'+location.host +'/ws');
-            socket = new WebSocket('ws://'+location.host +'/ws');
-
-            socket.onopen = function() {
-                term.writeln("Connected to the server!");
-                term.clear();
-
-                // Hide the button when connected
-                connectButton.style.display = 'none';
-
-                // We also disable it right away to prevent double-click confusion
-                connectButton.disabled = true;
-                textInput.focus();
-            };
-
-            socket.onmessage = function(event) {
-                payloadsReceived++;
-                totalBytesReceived += event.data.length;
-
-                // Check if it's a webclient command
-                if (event.data.length > 9 && event.data.substring(8, 9) === ':') {
-                    if (handleWebclientCommand(event.data)) {
-                        return;
-                    }
-                }
-
-                // MSP commands
-                if (event.data.length > 9 && event.data.slice(0, 2) === "!!") {
-
-                    // Handle incoming GMCP data
-                    if (event.data.slice(0, 7) === "!!GMCP(") {
-                        var gmcpPayload = event.data.trim().slice(7, event.data.length - 1).trim()
-                        var jsonIndex = 0;
-                        
-                        if ( gmcpPayload[gmcpPayload.length-1] == "}" ) jsonIndex = gmcpPayload.indexOf("{");
-                        else jsonIndex = gmcpPayload.indexOf("[");
-                        
-                        if ( jsonIndex == -1 ) {
-                            return;
-                        }
-                        gmcpNamespace = gmcpPayload.slice(0, jsonIndex).trim();
-                        //gmcpJSON = gmcpPayload.slice(jsonIndex, gmcpPayload.length).trim();
-                        gmcpObject = JSON.parse(gmcpPayload.slice(jsonIndex, gmcpPayload.length).trim());
-
-                        handleGMCP(gmcpNamespace, gmcpObject);
-                        
-                        return;
-                    } 
-
-                    // Handle music events
-                    if (event.data.slice(0, 8) === "!!MUSIC(") {
-                        const parts = event.data.slice(8, event.data.length - 1).split(" ");
-                        let fileName = parts[0];
-                        let obj = {};
-                        for (let i = 1; i < parts.length; i++) {
-                            const prop = parts[i].split("=");
-                            if (prop.length == 2) {
-                                obj[prop[0]] = prop[1];
-                            }
-                        }
-                        if (fileName === "Off") {
-                            if (obj.U) {
-                                baseMp3Url = obj.U;
-                                if (baseMp3Url[baseMp3Url.length - 1] !== "/") {
-                                    baseMp3Url += "/";
-                                }
-                            } else {
-                                MusicPlayer.stop();
-                            }
-                        } else {
-                            let soundLevel = 1.0;
-                            let loopMusic = true;
-
-                            if (obj.L && obj.L !== "-1") {
-                                loopMusic = false;
-                            }
-                            if (obj.V) {
-                                soundLevel = Number(obj.V)/100;
-                            }
-
-                            if (!MusicPlayer.isPlaying(baseMp3Url + fileName)) {
-                                MusicPlayer.play(baseMp3Url + fileName, loopMusic, soundLevel*(sliderValues["music"] / 100));
-                            }
-                        }
-
-                        return;
-                    } 
-                    
-                    // Handle a playersound event
-                    if (event.data.slice(0, 8) === "!!SOUND(") {
-                        const parts = event.data.slice(8, event.data.length - 1).split(" ");
-                        let fileName = parts[0];
-                        let obj = {};
-                        for (let i = 1; i < parts.length; i++) {
-                            const prop = parts[i].split("=");
-                            if (prop.length == 2) {
-                                obj[prop[0]] = prop[1];
-                            }
-                        }
-
-                        if (fileName === "Off") {
-                            if (obj.U) {
-                                baseMp3Url = obj.U;
-                                if (baseMp3Url[baseMp3Url.length - 1] !== "/") {
-                                    baseMp3Url += "/";
-                                }
-                            } else {
-                                SoundPlayer.stop();
-                            }
-                        } else {
-                            let soundLevel = 1.0;
-                            let loopSound = true;
-
-                            if (obj.L && obj.L !== "-1") {
-                                loopSound = false;
-                            }
-                            if (obj.V) {
-                                soundLevel = Number(obj.V)/100;
-                            }
-
-                            const typeKey = (obj.T || "other").toLowerCase() + " sounds";
-                            SoundPlayer.play(baseMp3Url + fileName, false, soundLevel*(sliderValues[typeKey] / 100));
-                        }
-
-                        return;
-                    }
-
-                }
-
-                // Otherwise, just write to terminal
-                term.write(event.data);
-            };
-
-            socket.onerror = function(error) {
-                term.writeln("Error: " + error.message);
-            };
-
-            socket.onclose = function(event) {
-                if (event.wasClean) {
-                    term.writeln(`Connection closed cleanly, code=${event.code}, reason=${event.reason}`);
-                } else {
-                    term.writeln("Connection died");
-                }
-                // Show the button again when disconnected
-                connectButton.style.display = 'block';
-                connectButton.disabled = false;
-
-                if (textInput.type === "password") {
-                    textInput.value = '';
-                    textInput.type = "text";
-                }
-            };
-        });
-
-        textInput.addEventListener('keydown', function(event) {
-            // Macro support: F-keys
-            if (event.key.substring(0, 1) === "F" && event.key.length === 2) {
-                let macroNum = event.key.substring(1);
-                SendData("=" + macroNum);
-                if (event.preventDefault) event.preventDefault();
+          if (!GMCPWindows["Comm"] && GMCPWindows["Comm"] !== false) {
+            GMCPWindows["Comm"] = new WinBox({
+              title: "Communications",
+              mount: document.getElementById("comm-output"),
+              background: "#1c6b60",
+              border: 1,
+              x: "right",
+              y: 450,
+              width: 363,
+              height: 20 + 290,
+              header: 20,
+              bottom: 60, // Limit how far down it can go. This affects docking the minimized window.
+              // end limit position range
+              onclose: (force) => {
+                GMCPWindows["Comm"] = false;
                 return false;
-            }
-
-            // ArrowUp / ArrowDown for command history
-            if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
-                if (event.key === 'ArrowUp') {
-                    historyPosition += 1;
-                } else {
-                    historyPosition -= 1;
-                }
-                if (historyPosition < 1) historyPosition = 1;
-                if (historyPosition > commandHistory.length) historyPosition = commandHistory.length;
-                event.target.value = commandHistory[ commandHistory.length - historyPosition ];
-            }
-
-            // If input is empty, check for numeric keypad / arrow key shortcuts
-            if ( textInput.value.length === 0 && codeShortcuts[event.code] ) {
-                SendData(codeShortcuts[event.code]);
-                if (event.preventDefault) event.preventDefault();
-                return false;
-            }
-
-            // ENTER key
-            if (event.key === 'Enter') {
-                if (event.target.value !== '') {
-                    if (textInput.type !== "password") {
-                        commandHistory.push(event.target.value);
-                        historyPosition = 0;
-                        if (commandHistory.length > commandHistoryMaxLength) {
-                            commandHistory = commandHistory.slice(commandHistory.length - commandHistoryMaxLength);
-                        }
-                    }
-                }
-
-                if ( event.target.value === "!net" ) {
-                    printNetStats();
-                    event.target.value = '';
-                    return;
-                }
-
-                if ( SendData(event.target.value) ) {
-                    event.target.value = '';
-                } else {
-                    term.writeln("Not connected to the server. Did you click the Connect button?");
-                }
-            }
-        });
-
-        function SendData(dataToSend) {
-            if (!socket || socket.readyState !== WebSocket.OPEN) {
-                return false;
-            }
-            payloadsSent++;
-            totalBytesSent += dataToSend.length;
-            socket.send(dataToSend);
-            return true;
-        }
-
-        function printNetStats() {
-            term.writeln("");
-            term.writeln(" Request Ct: " + String(payloadsSent));
-            term.writeln(" Bytes Sent: " + String(Math.round(totalBytesSent/1024 * 100) / 100) + "kb");
-            term.writeln("Response Ct: " + String(payloadsReceived));
-            term.writeln(" Bytes Rcvd: " + String(Math.round(totalBytesReceived/1024 * 100) / 100) + "kb");
-            term.writeln("");
-        }
-
-        function debugLog(message) {
-            if (debugOutput) {
-                console.log(message);
-            }
-        }
-
-        // Keep focus on terminal if user clicks inside
-        textOutput.addEventListener('mousedown', () => { isDragging = false; });
-        textOutput.addEventListener('mousemove', () => { isDragging = true; });
-        textOutput.addEventListener('mouseup', () => {
-            const selectedText = window.getSelection().toString();
-            if (!isDragging && !selectedText) {
-                textInput.focus();
-            }
-            isDragging = false;
-        });
-
-        /////////////////////////////////////////////
-        //
-        // Volume Sliders + Mute
-        //
-        /////////////////////////////////////////////
-
-        // 1) Define default sliders (and new ones if needed!)
-        const defaultSliders = {
-            "music": 75,
-            "combat sounds": 75,
-            "movement sounds": 75,
-            "environment sounds": 75,
-            "other sounds": 75,
-        };
-
-        // 2) We'll store final slider values
-        let sliderValues = { ...defaultSliders };
-
-        // 3) We'll also store unmuted slider values if user checks "Mute"
-        let unmutedSliderValues = null;
-
-        // Return speaker icon
-        function getSpeakerIcon(value) {
-            value = Number(value);
-            if (value === 0) {
-                return "🔇";
-            } else if (value < 33) {
-                return "🔈";
-            } else if (value < 66) {
-                return "🔉";
-            } else {
-                return "🔊";
-            }
-        }
-
-        // Build the sliders from sliderValues
-        function buildSliders() {
-            const container = document.getElementById('sliders-container');
-            container.innerHTML = "";
-
-            Object.keys(sliderValues).forEach(function(key) {
-                const wrapper = document.createElement('div');
-                wrapper.className = "slider-container";
-
-                const label = document.createElement('label');
-                label.textContent = key.toLowerCase().split(' ').map(function(word) {
-                    return word.charAt(0).toUpperCase() + word.slice(1);
-                }).join(' ');
-
-                const slider = document.createElement('input');
-                slider.type = "range";
-                slider.min = 0;
-                slider.max = 100;
-                slider.value = sliderValues[key];
-
-                const iconSpan = document.createElement('span');
-                iconSpan.className = "slider-icon";
-                iconSpan.textContent = getSpeakerIcon(sliderValues[key]);
-
-                // On slider change
-                slider.addEventListener('input', function(e) {
-                    const val = e.target.value;
-                    sliderValues[key] = Number(val);
-                    iconSpan.textContent = getSpeakerIcon(val);
-
-                    // Update local storage
-                    localStorage.setItem('sliderValues', JSON.stringify(sliderValues));
-
-                    // Update music volume
-                    MusicPlayer.setGlobalVolume(sliderValues["music"] / 100);
-
-                    // If user moves any slider up from 0, uncheck Mute
-                    const muteCheckbox = document.getElementById('mute-checkbox');
-                    if (muteCheckbox.checked && val > 0) {
-                        muteCheckbox.checked = false;
-                        localStorage.setItem('muteAllSound', JSON.stringify(false));
-                        document.getElementById('mute-icon').textContent = "🔊";
-                    }
-                });
-
-                wrapper.appendChild(label);
-                wrapper.appendChild(slider);
-                wrapper.appendChild(iconSpan);
-                container.appendChild(wrapper);
+              },
             });
-        }
 
-        // Handle Mute
-        function toggleMuteAll() {
-            const muteCheckbox = document.getElementById('mute-checkbox');
-            const isChecked = muteCheckbox.checked;
-            const muteIcon = document.getElementById('mute-icon');
+            GMCPWindows["Comm"].Message = function (
+              channelName,
+              fromName,
+              fromSource,
+              message,
+            ) {
+              // add new text output
+              var tab = document.getElementById("comm-tab-" + channelName);
+              var panel = document.getElementById("comm-" + channelName);
 
-            if (isChecked) {
-                // Save the unmuted state
-                unmutedSliderValues = { ...sliderValues };
-                localStorage.setItem('unmutedSliderValues', JSON.stringify(unmutedSliderValues));
+              if (tab.classList.contains("active")) {
+                tab.dataset.unread = 0;
+                tab.innerText = tab.dataset.label;
+              } else {
+                tab.dataset.unread = parseInt(tab.dataset.unread) + 1;
+                tab.innerText =
+                  tab.dataset.label + "(" + String(tab.dataset.unread) + ")";
+              }
 
-                // Set all to 0
-                Object.keys(sliderValues).forEach(key => {
-                    sliderValues[key] = 0;
-                });
-                localStorage.setItem('sliderValues', JSON.stringify(sliderValues));
+              var p = document.createElement("p");
+              p.innerHTML =
+                '<span class="text-name ' +
+                fromSource +
+                '">' +
+                fromName +
+                "</span>: " +
+                '<span class="text-body ' +
+                fromSource +
+                '">' +
+                message +
+                "</span>";
+              panel.appendChild(p);
 
-                buildSliders();
-
-                muteIcon.textContent = "🔇";
-                MusicPlayer.setGlobalVolume(0);
-                localStorage.setItem('muteAllSound', JSON.stringify(true));
-            } else {
-                // Restore from unmuted
-                const savedUnmuted = localStorage.getItem('unmutedSliderValues');
-                if (savedUnmuted) {
-                    // Merge defaultSliders just in case new keys appear
-                    let loadedUnmuted = JSON.parse(savedUnmuted) || {};
-                    loadedUnmuted = { ...defaultSliders, ...loadedUnmuted };
-                    unmutedSliderValues = { ...loadedUnmuted };
-
-                    sliderValues = { ...unmutedSliderValues };
-                    localStorage.setItem('sliderValues', JSON.stringify(sliderValues));
+              // clean up overflow
+              panelContainer = GMCPWindows["Comm"].window;
+              while (panel.scrollHeight > panelContainer.clientHeight - 58) {
+                if (panel.childElementCount < 1) {
+                  break;
                 }
-                buildSliders();
+                panel.removeChild(panel.firstElementChild);
+              }
+            };
+          }
 
-                muteIcon.textContent = "🔊";
-                MusicPlayer.setGlobalVolume(sliderValues["music"] / 100);
-                localStorage.setItem('muteAllSound', JSON.stringify(false));
+          if (GMCPWindows["Comm"] === false) {
+            return;
+          }
+
+          GMCPWindows["Comm"].Message(
+            obj.Channel.channel,
+            obj.Channel.sender,
+            obj.Channel.source,
+            obj.Channel.text,
+          );
+        },
+        Room: function () {
+          var obj = GMCPStructs["Room"];
+          if (!obj.Info) {
+            return;
+          }
+
+          if (!GMCPWindows["Map"] && GMCPWindows["Map"] !== false) {
+            GMCPWindows["Map"] = new WinBox({
+              title: "Map",
+              mount: document.getElementById("map-render"),
+              background: "#1c6b60",
+              border: 1,
+              x: "right",
+              y: 66,
+              width: 363,
+              height: 20 + 363,
+              header: 20,
+              bottom: 60, // Limit how far down it can go. This affects docking the minimized window.
+              // end limit position range
+              onclose: (force) => {
+                GMCPWindows["Map"] = false;
+                return false;
+              },
+              oncreate: (ops) => {
+                var mapOptions = {
+                  cellSize: 80,
+                  cellMargin: 80,
+                  initialZoom: 0.5,
+                };
+                //mapOptions.onRoomClick = function(r) { alert(`Room ${r.RoomId} clicked`); }
+
+                gr = new RoomGridSVG("#map-render", mapOptions);
+              },
+            });
+          }
+
+          if (GMCPWindows["Map"] === false) {
+            return;
+          }
+
+          if (obj.Info) {
+            GMCPWindows["Map"].setTitle("Map (" + obj.Info.area + ")");
+            var coords = obj.Info.coords.split(",");
+            for (var i = 0; i < coords.length; i++) {
+              coords[i] = coords[i].trim();
             }
+            var zoneName = coords[0];
+
+            var zoneKey = zoneName + "/z:" + coords[3];
+
+            if (allRooms.currentZoneKey != zoneKey) {
+              gr.reset();
+              allRooms.currentZoneKey = zoneKey;
+              if (
+                !allRooms.roomZones[zoneKey] ||
+                !Array.isArray(allRooms.roomZones[zoneKey])
+              ) {
+                allRooms.roomZones[zoneKey] = [];
+              }
+              gr.setRooms(allRooms.roomZones[zoneKey]);
+            }
+
+            var r = {
+              RoomId: obj.Info.num,
+              Text: "",
+              x: parseInt(coords[1]),
+              y: parseInt(coords[2]),
+              z: parseInt(coords[3]),
+              Exits: [],
+            };
+
+            if (obj.Info.Contents) {
+              if (obj.Info.Contents.Npcs) {
+                for (var i in obj.Info.Contents.Npcs) {
+                  if (
+                    obj.Info.Contents.Npcs[i].adjectives.indexOf("shop") != -1
+                  ) {
+                    r.Color = "#AFE1AF";
+                    r.Text = "💰";
+                    break;
+                  }
+                }
+              }
+            }
+
+            if (obj.Info.details) {
+              if (obj.Info.details.indexOf("bank") != -1) {
+                r.Color = "#56d44a";
+                r.Text = "🏛️";
+              } else if (obj.Info.details.indexOf("trainer") != -1) {
+                r.Color = "#fdd";
+                r.Text = "🧠";
+              } else if (obj.Info.details.indexOf("storage") != -1) {
+                r.Color = "#a88100";
+                r.Text = "🗄️";
+              } else if (obj.Info.details.indexOf("character") != -1) {
+                r.Color = "#757575";
+                r.Text = "👤";
+              }
+            }
+
+            for (var p in obj.Info.exitsv2) {
+              var exitInfo = obj.Info.exitsv2[p];
+              // Only add these rooms if there is no z delta, since it's a 2D rendering.
+              if (exitInfo.dz == 0) {
+                r.Exits.push({
+                  RoomId: exitInfo.num,
+                  x: exitInfo.dx + parseInt(coords[1]),
+                  y: exitInfo.dy + parseInt(coords[2]),
+                  Text: "",
+                });
+              }
+            }
+
+            allRooms.roomZones[zoneKey].push(r);
+            gr.addRoom(r);
+            gr.centerOnRoom(r.RoomId);
+          }
+        },
+        Char: function () {
+          var obj = GMCPStructs["Char"];
+
+          if (obj.Vitals) {
+            GMCPUpdateHandlers["Char.Vitals"]();
+          }
+        },
+        "Char.Vitals": function () {
+          var obj = GMCPStructs["Char"];
+          if (!obj.Vitals) {
+            return;
+          }
+
+          if (
+            !GMCPWindows["Char.Vitals"] &&
+            GMCPWindows["Char.Vitals"] !== false
+          ) {
+            GMCPWindows["Char.Vitals"] = new WinBox({
+              title: "Vitals",
+              mount: document.getElementById("vitals-bars"),
+              background: "#1c6b60",
+              border: 1,
+              x: window.innerWidth - 300 - 63, //"right",
+              y: 0,
+              width: 300,
+              height: 20 + 40,
+              header: 20,
+              bottom: 60, // Limit how far down it can go. This affects docking the minimized window.
+              onclose: (force) => {
+                GMCPWindows["Char.Vitals"] = false;
+                return false;
+              },
+            });
+          }
+
+          if (GMCPWindows["Char.Vitals"] === false) {
+            return;
+          }
+
+          var p = Math.max(
+            0,
+            Math.min(
+              100,
+              Math.floor((obj.Vitals.health / obj.Vitals.health_max) * 100),
+            ),
+          ); // clamp 0–100
+          var fill = document.querySelector("#health-bar .health-fill");
+          var txt = document.querySelector("#health-bar .health-text");
+          fill.style.width = 100 - p + "%";
+          txt.textContent = obj.Vitals.health + "/" + obj.Vitals.health_max + " hp";
+
+          p = Math.max(
+            0,
+            Math.min(
+              100,
+              Math.floor((obj.Vitals.spell_points / obj.Vitals.spell_points_max) * 100),
+            ),
+          ); // clamp 0–100
+          fill = document.querySelector("#mana-bar .mana-fill");
+          txt = document.querySelector("#mana-bar .mana-text");
+          fill.style.width = 100 - p + "%";
+          txt.textContent = obj.Vitals.spell_points + "/" + obj.Vitals.spell_points_max + " mp";
+        },
+      };
+      let GMCPWindows = {};
+      function handleGMCP(objNamespace, objBody) {
+        var nameParts = objNamespace.split(".");
+        var lastProperty = nameParts.pop();
+
+        var rootName = nameParts[0];
+        var cursor = GMCPStructs;
+
+        objectPosition = null;
+        for (let propertyName of nameParts) {
+          if (!cursor[propertyName]) {
+            cursor[propertyName] = {};
+          }
+
+          cursor = cursor[propertyName];
         }
 
-        // Show/hide the floating menu
-        function toggleMenu() {
-            const menu = document.getElementById('floating-menu');
-            if (menu.style.display === "none" || menu.style.display === "") {
-                menu.style.display = "block";
-            } else {
-                menu.style.display = "none";
-            }
+        cursor[lastProperty] = objBody;
+        nameParts = objNamespace.split(".");
+        for (let i = nameParts.length - 1; i >= 0; i--) {
+          var path = nameParts.slice(0, i + 1).join(".");
+          if (GMCPUpdateHandlers[path]) {
+            GMCPUpdateHandlers[path]();
+            return;
+          }
         }
 
-        /////////////////////////////////////////////
-        //
-        // Initialization
-        //
-        /////////////////////////////////////////////
-        const specialCommands = {
-            "!net": "Print out network traffic stats"
+        console.log("GMCP:", gmcpNamespace, gmcpObject);
+      }
+      /////////////////////////////////////////////
+      //
+      // WebSocket
+      //
+      /////////////////////////////////////////////
+      let socket = null;
+      let debugOutput = false;
+      let isDragging = false;
+
+      const connectButton = document.getElementById("connect-button");
+      const textOutput = document.getElementById("terminal");
+      const textInput = document.getElementById("command-input");
+
+      const codeShortcuts = {
+        Numpad1: "southwest",
+        Numpad2: "south",
+        Numpad3: "southeast",
+        Numpad4: "west",
+        Numpad5: "default",
+        Numpad6: "east",
+        Numpad7: "northwest",
+        Numpad8: "north",
+        Numpad9: "northeast",
+        F1: "=1",
+        F2: "=2",
+        F3: "=3",
+        F4: "=4",
+        F5: "=5",
+        F6: "=6",
+        F7: "=7",
+        F8: "=8",
+        F9: "=9",
+        F10: "=10",
+        ArrowUp: "north",
+        ArrowDown: "south",
+        ArrowLeft: "west",
+        ArrowRight: "east",
+      };
+
+      function handleWebclientCommand(cmdString) {
+        const cmd = cmdString.substring(0, 9);
+        if (cmd === "TEXTMASK:") {
+          debugLog(cmdString);
+          if (cmdString.substring(9) === "true") {
+            textInput.type = "password";
+          } else {
+            textInput.type = "text";
+          }
+          return true;
+        }
+        return false;
+      }
+
+      connectButton.addEventListener("click", () => {
+        if (socket && socket.readyState === WebSocket.OPEN) {
+          socket.close();
+          return;
+        }
+
+        var wsUrl =
+          (location.protocol === "https:" ? "wss://" : "ws://") +
+          location.host +
+          "/ws";
+        debugLog("Connecting to: " + wsUrl);
+        socket = new WebSocket(wsUrl);
+
+        socket.onopen = function () {
+          term.writeln("Connected to the server!");
+          term.clear();
+
+          // Hide the button when connected
+          connectButton.style.display = "none";
+
+          // We also disable it right away to prevent double-click confusion
+          connectButton.disabled = true;
+          textInput.focus();
         };
 
-        function init() {
-            console.log("%cterminal commands:", "font-weight:bold;");
-            let longest = 0;
-            for (let i in specialCommands) {
-                if (i.length > longest) longest = i.length;
-            }
-            for (let i in specialCommands) {
-                console.log("  " + i.padEnd(longest) + " - " + specialCommands[i]);
-            }
-            console.log("%cconsole commands:", "font-weight:bold;");
+        socket.onmessage = function (event) {
+          payloadsReceived++;
+          totalBytesReceived += event.data.length;
 
-            // 1) Load from localStorage, if available
-            const savedValues = localStorage.getItem('sliderValues');
-            if (savedValues) {
-                try {
-                    // Merge existing local storage with defaultSliders
-                    const loaded = JSON.parse(savedValues);
-                    sliderValues = { ...defaultSliders, ...loaded };
-                } catch (e) {
-                    console.warn("Could not parse saved sliderValues, using defaults.");
+          // Check if it's a webclient command
+          if (event.data.length > 9 && event.data.substring(8, 9) === ":") {
+            if (handleWebclientCommand(event.data)) {
+              return;
+            }
+          }
+
+          // MSP commands
+          if (event.data.length > 9 && event.data.slice(0, 2) === "!!") {
+            // Handle incoming GMCP data
+            if (event.data.slice(0, 7) === "!!GMCP(") {
+              var gmcpPayload = event.data
+                .trim()
+                .slice(7, event.data.length - 1)
+                .trim();
+              var jsonIndex = 0;
+
+              if (gmcpPayload[gmcpPayload.length - 1] == "}")
+                jsonIndex = gmcpPayload.indexOf("{");
+              else jsonIndex = gmcpPayload.indexOf("[");
+
+              if (jsonIndex == -1) {
+                return;
+              }
+              gmcpNamespace = gmcpPayload.slice(0, jsonIndex).trim();
+              //gmcpJSON = gmcpPayload.slice(jsonIndex, gmcpPayload.length).trim();
+              gmcpObject = JSON.parse(
+                gmcpPayload.slice(jsonIndex, gmcpPayload.length).trim(),
+              );
+
+              handleGMCP(gmcpNamespace, gmcpObject);
+
+              return;
+            }
+
+            // Handle music events
+            if (event.data.slice(0, 8) === "!!MUSIC(") {
+              const parts = event.data
+                .slice(8, event.data.length - 1)
+                .split(" ");
+              let fileName = parts[0];
+              let obj = {};
+              for (let i = 1; i < parts.length; i++) {
+                const prop = parts[i].split("=");
+                if (prop.length == 2) {
+                  obj[prop[0]] = prop[1];
                 }
-            } else {
-                // If no localStorage, ensure we set the defaults
-                localStorage.setItem('sliderValues', JSON.stringify(sliderValues));
-            }
-
-            // 2) Check if we have a "muteAllSound" property
-            const savedMute = localStorage.getItem('muteAllSound');
-            if (savedMute) {
-                try {
-                    const isMuted = JSON.parse(savedMute);
-                    document.getElementById('mute-checkbox').checked = isMuted;
-                } catch (e) {
-                    console.warn("Could not parse muteAllSound, ignoring.");
+              }
+              if (fileName === "Off") {
+                if (obj.U) {
+                  baseMp3Url = obj.U;
+                  if (baseMp3Url[baseMp3Url.length - 1] !== "/") {
+                    baseMp3Url += "/";
+                  }
+                } else {
+                  MusicPlayer.stop();
                 }
-            }
+              } else {
+                let soundLevel = 1.0;
+                let loopMusic = true;
 
-            // 3) Build the sliders
-            buildSliders();
-
-            // 4) If currently muted, re-apply zero volumes
-            const muteCheckbox = document.getElementById('mute-checkbox');
-            const muteIcon = document.getElementById('mute-icon');
-
-            if (muteCheckbox.checked) {
-                // Possibly retrieve unmuted values from storage
-                const savedUnmuted = localStorage.getItem('unmutedSliderValues');
-                if (savedUnmuted) {
-                    // Merge defaultSliders here, too
-                    try {
-                        let loadedUnmuted = JSON.parse(savedUnmuted) || {};
-                        unmutedSliderValues = { ...defaultSliders, ...loadedUnmuted };
-                    } catch(e) {
-                        console.warn("Could not parse unmutedSliderValues.");
-                    }
+                if (obj.L && obj.L !== "-1") {
+                  loopMusic = false;
                 }
-                // Force all current sliders to 0
-                Object.keys(sliderValues).forEach(key => {
-                    sliderValues[key] = 0;
-                });
-                localStorage.setItem('sliderValues', JSON.stringify(sliderValues));
-                buildSliders();
+                if (obj.V) {
+                  soundLevel = Number(obj.V) / 100;
+                }
 
-                muteIcon.textContent = "🔇";
-                MusicPlayer.setGlobalVolume(0);
-            } else {
-                // If not muted, set music volume from slider
-                MusicPlayer.setGlobalVolume(sliderValues["music"] / 100);
-                muteIcon.textContent = "🔊";
+                if (!MusicPlayer.isPlaying(baseMp3Url + fileName)) {
+                  MusicPlayer.play(
+                    baseMp3Url + fileName,
+                    loopMusic,
+                    soundLevel * (sliderValues["music"] / 100),
+                  );
+                }
+              }
+
+              return;
             }
+
+            // Handle a playersound event
+            if (event.data.slice(0, 8) === "!!SOUND(") {
+              const parts = event.data
+                .slice(8, event.data.length - 1)
+                .split(" ");
+              let fileName = parts[0];
+              let obj = {};
+              for (let i = 1; i < parts.length; i++) {
+                const prop = parts[i].split("=");
+                if (prop.length == 2) {
+                  obj[prop[0]] = prop[1];
+                }
+              }
+
+              if (fileName === "Off") {
+                if (obj.U) {
+                  baseMp3Url = obj.U;
+                  if (baseMp3Url[baseMp3Url.length - 1] !== "/") {
+                    baseMp3Url += "/";
+                  }
+                } else {
+                  SoundPlayer.stop();
+                }
+              } else {
+                let soundLevel = 1.0;
+                let loopSound = true;
+
+                if (obj.L && obj.L !== "-1") {
+                  loopSound = false;
+                }
+                if (obj.V) {
+                  soundLevel = Number(obj.V) / 100;
+                }
+
+                const typeKey = (obj.T || "other").toLowerCase() + " sounds";
+                SoundPlayer.play(
+                  baseMp3Url + fileName,
+                  false,
+                  soundLevel * (sliderValues[typeKey] / 100),
+                );
+              }
+
+              return;
+            }
+          }
+
+          // Otherwise, just write to terminal
+          term.write(event.data);
+        };
+
+        socket.onerror = function (error) {
+          term.writeln("Error: " + error.message);
+        };
+
+        socket.onclose = function (event) {
+          if (event.wasClean) {
+            term.writeln(
+              `Connection closed cleanly, code=${event.code}, reason=${event.reason}`,
+            );
+          } else {
+            term.writeln("Connection died");
+          }
+          // Show the button again when disconnected
+          connectButton.style.display = "block";
+          connectButton.disabled = false;
+
+          if (textInput.type === "password") {
+            textInput.value = "";
+            textInput.type = "text";
+          }
+        };
+      });
+
+      textInput.addEventListener("keydown", function (event) {
+        // Macro support: F-keys
+        if (event.key.substring(0, 1) === "F" && event.key.length === 2) {
+          let macroNum = event.key.substring(1);
+          SendData("=" + macroNum);
+          if (event.preventDefault) event.preventDefault();
+          return false;
         }
+
+        // ArrowUp / ArrowDown for command history
+        if (event.key === "ArrowUp" || event.key === "ArrowDown") {
+          if (event.key === "ArrowUp") {
+            historyPosition += 1;
+          } else {
+            historyPosition -= 1;
+          }
+          if (historyPosition < 1) historyPosition = 1;
+          if (historyPosition > commandHistory.length)
+            historyPosition = commandHistory.length;
+          event.target.value =
+            commandHistory[commandHistory.length - historyPosition];
+        }
+
+        // If input is empty, check for numeric keypad / arrow key shortcuts
+        if (textInput.value.length === 0 && codeShortcuts[event.code]) {
+          SendData(codeShortcuts[event.code]);
+          if (event.preventDefault) event.preventDefault();
+          return false;
+        }
+
+        // ENTER key
+        if (event.key === "Enter") {
+          if (event.target.value !== "") {
+            if (textInput.type !== "password") {
+              commandHistory.push(event.target.value);
+              historyPosition = 0;
+              if (commandHistory.length > commandHistoryMaxLength) {
+                commandHistory = commandHistory.slice(
+                  commandHistory.length - commandHistoryMaxLength,
+                );
+              }
+            }
+          }
+
+          if (event.target.value === "!net") {
+            printNetStats();
+            event.target.value = "";
+            return;
+          }
+
+          if (SendData(event.target.value)) {
+            event.target.value = "";
+          } else {
+            term.writeln(
+              "Not connected to the server. Did you click the Connect button?",
+            );
+          }
+        }
+      });
+
+      function SendData(dataToSend) {
+        if (!socket || socket.readyState !== WebSocket.OPEN) {
+          return false;
+        }
+        payloadsSent++;
+        totalBytesSent += dataToSend.length;
+        socket.send(dataToSend);
+        return true;
+      }
+
+      function printNetStats() {
+        term.writeln("");
+        term.writeln(" Request Ct: " + String(payloadsSent));
+        term.writeln(
+          " Bytes Sent: " +
+            String(Math.round((totalBytesSent / 1024) * 100) / 100) +
+            "kb",
+        );
+        term.writeln("Response Ct: " + String(payloadsReceived));
+        term.writeln(
+          " Bytes Rcvd: " +
+            String(Math.round((totalBytesReceived / 1024) * 100) / 100) +
+            "kb",
+        );
+        term.writeln("");
+      }
+
+      function debugLog(message) {
+        if (debugOutput) {
+          console.log(message);
+        }
+      }
+
+      // Keep focus on terminal if user clicks inside
+      textOutput.addEventListener("mousedown", () => {
+        isDragging = false;
+      });
+      textOutput.addEventListener("mousemove", () => {
+        isDragging = true;
+      });
+      textOutput.addEventListener("mouseup", () => {
+        const selectedText = window.getSelection().toString();
+        if (!isDragging && !selectedText) {
+          textInput.focus();
+        }
+        isDragging = false;
+      });
+
+      /////////////////////////////////////////////
+      //
+      // Volume Sliders + Mute
+      //
+      /////////////////////////////////////////////
+
+      // 1) Define default sliders (and new ones if needed!)
+      const defaultSliders = {
+        music: 75,
+        "combat sounds": 75,
+        "movement sounds": 75,
+        "environment sounds": 75,
+        "other sounds": 75,
+      };
+
+      // 2) We'll store final slider values
+      let sliderValues = { ...defaultSliders };
+
+      // 3) We'll also store unmuted slider values if user checks "Mute"
+      let unmutedSliderValues = null;
+
+      // Return speaker icon
+      function getSpeakerIcon(value) {
+        value = Number(value);
+        if (value === 0) {
+          return "🔇";
+        } else if (value < 33) {
+          return "🔈";
+        } else if (value < 66) {
+          return "🔉";
+        } else {
+          return "🔊";
+        }
+      }
+
+      // Build the sliders from sliderValues
+      function buildSliders() {
+        const container = document.getElementById("sliders-container");
+        container.innerHTML = "";
+
+        Object.keys(sliderValues).forEach(function (key) {
+          const wrapper = document.createElement("div");
+          wrapper.className = "slider-container";
+
+          const label = document.createElement("label");
+          label.textContent = key
+            .toLowerCase()
+            .split(" ")
+            .map(function (word) {
+              return word.charAt(0).toUpperCase() + word.slice(1);
+            })
+            .join(" ");
+
+          const slider = document.createElement("input");
+          slider.type = "range";
+          slider.min = 0;
+          slider.max = 100;
+          slider.value = sliderValues[key];
+
+          const iconSpan = document.createElement("span");
+          iconSpan.className = "slider-icon";
+          iconSpan.textContent = getSpeakerIcon(sliderValues[key]);
+
+          // On slider change
+          slider.addEventListener("input", function (e) {
+            const val = e.target.value;
+            sliderValues[key] = Number(val);
+            iconSpan.textContent = getSpeakerIcon(val);
+
+            // Update local storage
+            localStorage.setItem("sliderValues", JSON.stringify(sliderValues));
+
+            // Update music volume
+            MusicPlayer.setGlobalVolume(sliderValues["music"] / 100);
+
+            // If user moves any slider up from 0, uncheck Mute
+            const muteCheckbox = document.getElementById("mute-checkbox");
+            if (muteCheckbox.checked && val > 0) {
+              muteCheckbox.checked = false;
+              localStorage.setItem("muteAllSound", JSON.stringify(false));
+              document.getElementById("mute-icon").textContent = "🔊";
+            }
+          });
+
+          wrapper.appendChild(label);
+          wrapper.appendChild(slider);
+          wrapper.appendChild(iconSpan);
+          container.appendChild(wrapper);
+        });
+      }
+
+      // Handle Mute
+      function toggleMuteAll() {
+        const muteCheckbox = document.getElementById("mute-checkbox");
+        const isChecked = muteCheckbox.checked;
+        const muteIcon = document.getElementById("mute-icon");
+
+        if (isChecked) {
+          // Save the unmuted state
+          unmutedSliderValues = { ...sliderValues };
+          localStorage.setItem(
+            "unmutedSliderValues",
+            JSON.stringify(unmutedSliderValues),
+          );
+
+          // Set all to 0
+          Object.keys(sliderValues).forEach((key) => {
+            sliderValues[key] = 0;
+          });
+          localStorage.setItem("sliderValues", JSON.stringify(sliderValues));
+
+          buildSliders();
+
+          muteIcon.textContent = "🔇";
+          MusicPlayer.setGlobalVolume(0);
+          localStorage.setItem("muteAllSound", JSON.stringify(true));
+        } else {
+          // Restore from unmuted
+          const savedUnmuted = localStorage.getItem("unmutedSliderValues");
+          if (savedUnmuted) {
+            // Merge defaultSliders just in case new keys appear
+            let loadedUnmuted = JSON.parse(savedUnmuted) || {};
+            loadedUnmuted = { ...defaultSliders, ...loadedUnmuted };
+            unmutedSliderValues = { ...loadedUnmuted };
+
+            sliderValues = { ...unmutedSliderValues };
+            localStorage.setItem("sliderValues", JSON.stringify(sliderValues));
+          }
+          buildSliders();
+
+          muteIcon.textContent = "🔊";
+          MusicPlayer.setGlobalVolume(sliderValues["music"] / 100);
+          localStorage.setItem("muteAllSound", JSON.stringify(false));
+        }
+      }
+
+      // Show/hide the floating menu
+      function toggleMenu() {
+        const menu = document.getElementById("floating-menu");
+        if (menu.style.display === "none" || menu.style.display === "") {
+          menu.style.display = "block";
+        } else {
+          menu.style.display = "none";
+        }
+      }
+
+      /////////////////////////////////////////////
+      //
+      // Initialization
+      //
+      /////////////////////////////////////////////
+      const specialCommands = {
+        "!net": "Print out network traffic stats",
+      };
+
+      function init() {
+        console.log("%cterminal commands:", "font-weight:bold;");
+        let longest = 0;
+        for (let i in specialCommands) {
+          if (i.length > longest) longest = i.length;
+        }
+        for (let i in specialCommands) {
+          console.log("  " + i.padEnd(longest) + " - " + specialCommands[i]);
+        }
+        console.log("%cconsole commands:", "font-weight:bold;");
+
+        // 1) Load from localStorage, if available
+        const savedValues = localStorage.getItem("sliderValues");
+        if (savedValues) {
+          try {
+            // Merge existing local storage with defaultSliders
+            const loaded = JSON.parse(savedValues);
+            sliderValues = { ...defaultSliders, ...loaded };
+          } catch (e) {
+            console.warn("Could not parse saved sliderValues, using defaults.");
+          }
+        } else {
+          // If no localStorage, ensure we set the defaults
+          localStorage.setItem("sliderValues", JSON.stringify(sliderValues));
+        }
+
+        // 2) Check if we have a "muteAllSound" property
+        const savedMute = localStorage.getItem("muteAllSound");
+        if (savedMute) {
+          try {
+            const isMuted = JSON.parse(savedMute);
+            document.getElementById("mute-checkbox").checked = isMuted;
+          } catch (e) {
+            console.warn("Could not parse muteAllSound, ignoring.");
+          }
+        }
+
+        // 3) Build the sliders
+        buildSliders();
+
+        // 4) If currently muted, re-apply zero volumes
+        const muteCheckbox = document.getElementById("mute-checkbox");
+        const muteIcon = document.getElementById("mute-icon");
+
+        if (muteCheckbox.checked) {
+          // Possibly retrieve unmuted values from storage
+          const savedUnmuted = localStorage.getItem("unmutedSliderValues");
+          if (savedUnmuted) {
+            // Merge defaultSliders here, too
+            try {
+              let loadedUnmuted = JSON.parse(savedUnmuted) || {};
+              unmutedSliderValues = { ...defaultSliders, ...loadedUnmuted };
+            } catch (e) {
+              console.warn("Could not parse unmutedSliderValues.");
+            }
+          }
+          // Force all current sliders to 0
+          Object.keys(sliderValues).forEach((key) => {
+            sliderValues[key] = 0;
+          });
+          localStorage.setItem("sliderValues", JSON.stringify(sliderValues));
+          buildSliders();
+
+          muteIcon.textContent = "🔇";
+          MusicPlayer.setGlobalVolume(0);
+        } else {
+          // If not muted, set music volume from slider
+          MusicPlayer.setGlobalVolume(sliderValues["music"] / 100);
+          muteIcon.textContent = "🔊";
+        }
+      }
     </script>
 
     <style>
-        /* add these styles once (e.g. in your global <style> block) */
+      /* add these styles once (e.g. in your global <style> block) */
 
-        #health-bar {
-            position: relative;
-            width: 100%;         /* or fixed px width */
-            height: 50%;
-            background: linear-gradient(
-                to right,
-                #f44336 0%,   /* red */
-                #ffeb3b 50%,   /* yellow */
-                #4caf50 100%    /* green */
-            );
-            border-radius: 12px;
-            box-shadow: inset 0 2px 4px rgba(0,0,0,0.6);
-            overflow: hidden;
-            margin: 0 2px;
-        }
+      #health-bar {
+        position: relative;
+        width: 100%; /* or fixed px width */
+        height: 50%;
+        background: linear-gradient(
+          to right,
+          #f44336 0%,
+          /* red */ #ffeb3b 50%,
+          /* yellow */ #4caf50 100% /* green */
+        );
+        border-radius: 12px;
+        box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.6);
+        overflow: hidden;
+        margin: 0 2px;
+      }
 
-        #health-bar .health-fill {
-            height: 100%;
-            width: 0%;
-            background: #333;
-            float:right;
-            transition: width 0.4s ease-out;
-        }
+      #health-bar .health-fill {
+        height: 100%;
+        width: 0%;
+        background: #333;
+        float: right;
+        transition: width 0.4s ease-out;
+      }
 
-        #health-bar .health-text {
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-family: monospace;
-            font-size: 0.85em;
-            color: white;
-            text-shadow: 0 1px 2px rgba(0,0,0,0.8);
-            pointer-events: none;
-        }
+      #health-bar .health-text {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: monospace;
+        font-size: 0.85em;
+        color: white;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+        pointer-events: none;
+      }
 
+      #mana-bar {
+        position: relative;
+        width: 100%; /* or fixed px width */
+        height: 50%;
+        background: linear-gradient(to right, #1e108b 0%, #3a20fe 100%);
+        border-radius: 12px;
+        box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.6);
+        overflow: hidden;
+        margin: 0;
+      }
 
-        #mana-bar {
-            position: relative;
-            width: 100%;         /* or fixed px width */
-            height: 50%;
-            background: linear-gradient(
-                to right,
-                #1e108b 0%,
-                #3a20fe 100%
-            );
-            border-radius: 12px;
-            box-shadow: inset 0 2px 4px rgba(0,0,0,0.6);
-            overflow: hidden;
-            margin: 0;
-        }
+      #mana-bar .mana-fill {
+        height: 100%;
+        width: 0%;
+        background: #333;
+        float: right;
+        transition: width 0.4s ease-out;
+      }
 
-        #mana-bar .mana-fill {
-            height: 100%;
-            width: 0%;
-            background: #333;
-            float:right;
-            transition: width 0.4s ease-out;
-        }
+      #mana-bar .mana-text {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: monospace;
+        font-size: 0.85em;
+        color: white;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+        pointer-events: none;
+      }
+      #vitals-bars {
+        height: 100%;
+      }
+      .wb-body {
+        background: #000;
+        overflow: hidden;
+      }
+      .wb-max {
+        display: none;
+      }
+      .wb-full {
+        display: none;
+      }
 
-        #mana-bar .mana-text {
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-family: monospace;
-            font-size: 0.85em;
-            color: white;
-            text-shadow: 0 1px 2px rgba(0,0,0,0.8);
-            pointer-events: none;
-        }
-        #vitals-bars {
-            height:100%;
-        }
-        .wb-body { background:#000; overflow:hidden; }
-        .wb-max { display:none; }
-        .wb-full { display:none; }
+      .tabs {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        height: 100%; /* if you want full‐height panels */
+      }
 
-        .tabs {
-            width: 100%;
-            display: flex;
-            flex-direction: column;
-            height: 100%; /* if you want full‐height panels */
-        }
+      .tab-buttons {
+        display: flex;
+        border-bottom: 1px solid #0f3333;
+      }
 
-        .tab-buttons {
-            display: flex;
-            border-bottom: 1px solid #0f3333;
-        }
+      .tab-button {
+        flex: 1;
+        padding: 0.75em;
+        background: #279888;
+        border: none;
+        cursor: pointer;
+        font: inherit;
+        font-size: small;
+        transition: background 0.2s;
+      }
 
-        .tab-button {
-            flex: 1;
-            padding: 0.75em;
-            background: #279888;
-            border: none;
-            cursor: pointer;
-            font: inherit;
-            font-size: small;
-            transition: background 0.2s;
-        }
+      .tab-button:not(.active):hover {
+        background: #0f3333;
+        color: #dffbd1;
+      }
 
-        .tab-button:not(.active):hover {
-            background: #0f3333;
-            color:#dffbd1;
-        }
+      .tab-button.active {
+        background: #dffbd1;
+        border-bottom: 2px solid #0f3333;
+      }
 
-        .tab-button.active {
-            background: #dffbd1;
-            border-bottom: 2px solid #0f3333;
-        }
+      .tab-contents {
+        flex: 1;
+        padding: 0.25em;
+        background: #000;
+      }
 
-        .tab-contents {
-            flex: 1;
-            padding: 0.25em;
-            background: #000;
-        }
+      .tab-content {
+        display: none;
+        height: 100%;
+      }
 
-        .tab-content {
-            display: none;
-            height: 100%;
-        }
+      .tab-content.active {
+        display: block;
+      }
 
-        .tab-content.active {
-            display: block;
-        }
-
-        .text-name.mob {
-            color: #00ffff;
-        }
-        .text-name.player {
-            color: #fce94f;
-        }
-        .chat-window {
-            overflow:scroll;
-            background-color:#000;
-            color:#fff;
-        }
-        .chat-window.broadcast {
-            color: #d700d7;
-        }
-        .chat-window.whisper {
-            color: #737670;
-        }
+      .text-name.mob {
+        color: #00ffff;
+      }
+      .text-name.player {
+        color: #fce94f;
+      }
+      .chat-window {
+        overflow: scroll;
+        background-color: #000;
+        color: #fff;
+      }
+      .chat-window.broadcast {
+        color: #d700d7;
+      }
+      .chat-window.whisper {
+        color: #737670;
+      }
     </style>
 
-
-
     <script>
-        // on DOM ready
-        document.addEventListener('DOMContentLoaded', () => {
-            const buttons = document.querySelectorAll('.tab-button');
-            const panels  = document.querySelectorAll('.tab-content');
-            
-            buttons.forEach(btn => {
-                btn.addEventListener('click', () => {
-                const target = btn.dataset.tab;
+      // on DOM ready
+      document.addEventListener("DOMContentLoaded", () => {
+        const buttons = document.querySelectorAll(".tab-button");
+        const panels = document.querySelectorAll(".tab-content");
 
-                // deactivate all
-                buttons.forEach(b => b.classList.remove('active'));
-                panels.forEach(p => p.classList.remove('active'));
-            
-                // activate the clicked one and its panel
-                btn.classList.add('active');
-                btn.dataset.unread = 0;
-                btn.innerText = btn.dataset.label;
-                document.getElementById(target).classList.add('active');
-                });
-            });
+        buttons.forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const target = btn.dataset.tab;
+
+            // deactivate all
+            buttons.forEach((b) => b.classList.remove("active"));
+            panels.forEach((p) => p.classList.remove("active"));
+
+            // activate the clicked one and its panel
+            btn.classList.add("active");
+            btn.dataset.unread = 0;
+            btn.innerText = btn.dataset.label;
+            document.getElementById(target).classList.add("active");
+          });
         });
+      });
     </script>
-    
-    <div style="display:none;">
 
-        <!-- VITALS window -->
-        <div id="vitals-bars">
-            <div id="health-bar">
-                <div class="health-fill" style="width: 100%;"></div>
-                <span class="health-text">100%</span>
-            </div>
-            <div id="mana-bar">
-                <div class="mana-fill" style="width: 100%;"></div>
-                <span class="mana-text">100%</span>
-            </div>
+    <div style="display: none">
+      <!-- VITALS window -->
+      <div id="vitals-bars">
+        <div id="health-bar">
+          <div class="health-fill" style="width: 100%"></div>
+          <span class="health-text">100%</span>
         </div>
-
-        <!-- MAP window -->
-        <div id="map-render" style="width:100%; height:100%;"></div>
-    
-        <!-- COMM window -->
-        <div id="comm-output" class="tabs">
-            <div class="tab-buttons">
-                <button id="comm-tab-say" class="tab-button active" data-tab="comm-say" data-label="Say" data-unread="0">Say</button>
-                <button id="comm-tab-whisper" class="tab-button" data-tab="comm-whisper" data-label="Whisper" data-unread="0">Whisper</button>
-                <button id="comm-tab-party" class="tab-button" data-tab="comm-party" data-label="Party" data-unread="0">Party</button>
-                <button id="comm-tab-broadcast" class="tab-button" data-tab="comm-broadcast" data-label="Broadcasts" data-unread="0">Broadcasts</button>
-            </div>
-            <div class="tab-contents">
-                <div id="comm-say" class="chat-window say tab-content active"></div>
-                <div id="comm-whisper" class="chat-window whisper tab-content"></div>
-                <div id="comm-party" class="chat-window party tab-content"></div>
-                <div id="comm-broadcast" class="chat-window broadcast tab-content"></div>
-            </div>
+        <div id="mana-bar">
+          <div class="mana-fill" style="width: 100%"></div>
+          <span class="mana-text">100%</span>
         </div>
+      </div>
 
+      <!-- MAP window -->
+      <div id="map-render" style="width: 100%; height: 100%"></div>
+
+      <!-- COMM window -->
+      <div id="comm-output" class="tabs">
+        <div class="tab-buttons">
+          <button
+            id="comm-tab-say"
+            class="tab-button active"
+            data-tab="comm-say"
+            data-label="Say"
+            data-unread="0"
+          >
+            Say
+          </button>
+          <button
+            id="comm-tab-whisper"
+            class="tab-button"
+            data-tab="comm-whisper"
+            data-label="Whisper"
+            data-unread="0"
+          >
+            Whisper
+          </button>
+          <button
+            id="comm-tab-party"
+            class="tab-button"
+            data-tab="comm-party"
+            data-label="Party"
+            data-unread="0"
+          >
+            Party
+          </button>
+          <button
+            id="comm-tab-broadcast"
+            class="tab-button"
+            data-tab="comm-broadcast"
+            data-label="Broadcasts"
+            data-unread="0"
+          >
+            Broadcasts
+          </button>
+        </div>
+        <div class="tab-contents">
+          <div id="comm-say" class="chat-window say tab-content active"></div>
+          <div id="comm-whisper" class="chat-window whisper tab-content"></div>
+          <div id="comm-party" class="chat-window party tab-content"></div>
+          <div
+            id="comm-broadcast"
+            class="chat-window broadcast tab-content"
+          ></div>
+        </div>
+      </div>
     </div>
-
-</body>
+  </body>
 </html>

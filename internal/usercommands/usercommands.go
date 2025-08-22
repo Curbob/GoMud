@@ -440,7 +440,7 @@ func TryRoomScripts(input, alias, rest string, userId int) (bool, error) {
 			// Send GMCP message for script-blocked direction
 			if f, ok := GetExportedFunction(`SendGMCPEvent`); ok {
 				if gmcpSendFunc, ok := f.(func(int, string, any)); ok { // make sure the func definition is `func(int, string, any)`
-					gmcpSendFunc(user.UserId, `Room.WrongDir`, fmt.Sprintf(`"%s"`, alias))
+					gmcpSendFunc(user.UserId, `Room.Wrongdir`, map[string]string{"dir": alias})
 				}
 			}
 

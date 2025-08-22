@@ -91,9 +91,11 @@ func (r *Race) Validate() error {
 		return errors.New("race has no description")
 	}
 	if r.Size == "" {
-		return errors.New("race has no size")
+		mudlog.Error("Race validation", "raceId", r.RaceId, "name", r.Name, "issue", fmt.Sprintf("Race has no size defined, defaulting to medium. Add 'size: medium' (or small/large) to the race file"))
+		r.Size = Medium
+	} else {
+		r.Size = Size(strings.ToLower(string(r.Size))) // Sometimes a mismatching CaSe value is provided.
 	}
-	r.Size = Size(strings.ToLower(string(r.Size))) // Sometimes a mismatching CaSe value is provided.
 
 	// Recalculate stats, based on level one because this is actually the baseline for the race
 	r.Stats.Strength.Recalculate(1)
@@ -193,4 +195,19 @@ func LoadDataFiles() {
 
 	mudlog.Info("races.LoadDataFiles()", "loadedCount", len(races), "Time Taken", time.Since(start))
 
+}
+
+// SetRaceForTesting allows test code to inject race data directly.
+// This should only be used in test code.
+func SetRaceForTesting(race *Race) {
+	if races == nil {
+		races = make(map[int]*Race)
+	}
+	races[race.RaceId] = race
+}
+
+// ClearRacesForTesting removes all races from the map.
+// This should only be used in test cleanup.
+func ClearRacesForTesting() {
+	races = make(map[int]*Race)
 }
