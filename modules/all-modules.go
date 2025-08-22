@@ -8,6 +8,8 @@ package modules
 import (
 	_ "github.com/GoMudEngine/GoMud/modules/auctions"
 	_ "github.com/GoMudEngine/GoMud/modules/cleanup"
+	_ "github.com/GoMudEngine/GoMud/modules/combat-rounds"
+	_ "github.com/GoMudEngine/GoMud/modules/combat-twitch"
 	_ "github.com/GoMudEngine/GoMud/modules/follow"
 	_ "github.com/GoMudEngine/GoMud/modules/gmcp"
 	_ "github.com/GoMudEngine/GoMud/modules/leaderboards"

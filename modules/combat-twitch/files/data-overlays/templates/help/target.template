@@ -1,0 +1,21 @@
+<ansi fg="yellow-bold">target</ansi> - Set or show combat target
+
+<ansi fg="cyan">Usage:</ansi>
+  target          - Show current target
+  target <name>   - Set a new target
+
+<ansi fg="cyan">Description:</ansi>
+  In twitch combat, allows you to set a persistent combat target.
+  Once set, you can use the attack command without specifying a
+  target to continue attacking the same opponent.
+
+<ansi fg="cyan">Examples:</ansi>
+  target          - Show who you're currently targeting
+  target rat      - Set your target to a rat
+  target guard    - Set your target to a guard
+
+<ansi fg="cyan">Note:</ansi>
+  This command is only available when twitch combat is active.
+  Your target is automatically cleared when you leave the room.
+
+<ansi fg="yellow">See Also:</ansi> attack, cleartarget, balance

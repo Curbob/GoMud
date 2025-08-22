@@ -1,0 +1,26 @@
+<ansi fg="yellow-bold">combatinfo</ansi> - Show detailed combat calculations
+
+<ansi fg="cyan">Usage:</ansi>
+  combatinfo [target]
+
+<ansi fg="cyan">Description:</ansi>
+  Displays detailed combat information and calculations for a target character
+  or mob. If no target is specified, shows information for yourself.
+
+  This command shows:
+  - Speed statistics and bonuses
+  - Weapon information and cooldown calculations (twitch combat)
+  - Attack intervals and weapon speeds (round-based combat)
+  - All character stats
+  - Active combat system information
+
+<ansi fg="cyan">Examples:</ansi>
+  combatinfo          - Show your own combat information
+  combatinfo rat      - Show combat info for a rat
+  combatinfo guard    - Show combat info for a guard
+
+<ansi fg="cyan">Note:</ansi>
+  This is an admin-only command used for debugging and understanding
+  combat calculations.
+
+<ansi fg="yellow">See Also:</ansi> attack, balance, consider

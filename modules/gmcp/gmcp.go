@@ -42,8 +42,8 @@ var (
 	GmcpRefuse = term.TerminalCommand{Chars: []byte{term.TELNET_IAC, term.TELNET_DONT, TELNET_GMCP}, EndChars: []byte{}}
 
 	// GMCP payload wrappers for different transport types
-	GmcpPayload    = term.TerminalCommand{Chars: []byte{term.TELNET_IAC, term.TELNET_SB, TELNET_GMCP}, EndChars: []byte{term.TELNET_IAC, term.TELNET_SE}}
-	GmcpWebPayload = term.TerminalCommand{Chars: []byte("!!GMCP("), EndChars: []byte{')'}}
+	GmcpPayload               = term.TerminalCommand{Chars: []byte{term.TELNET_IAC, term.TELNET_SB, TELNET_GMCP}, EndChars: []byte{term.TELNET_IAC, term.TELNET_SE}}
+	GmcpWebPayload            = term.TerminalCommand{Chars: []byte("!!GMCP("), EndChars: []byte{')'}}
 	gmcpModule     GMCPModule = GMCPModule{}
 
 	// Central combat state tracking - shared by all combat modules

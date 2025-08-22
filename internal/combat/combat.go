@@ -27,8 +27,8 @@ const (
 	Mob  SourceTarget = "mob"
 )
 
-// Performs a combat round from a player to a mob
-func AttackPlayerVsMob(user *users.UserRecord, mob *mobs.Mob) AttackResult {
+// attackPlayerVsMob performs a combat round from a player to a mob (legacy implementation)
+func attackPlayerVsMob(user *users.UserRecord, mob *mobs.Mob) AttackResult {
 
 	attackResult := calculateCombat(*user.Character, mob.Character, User, Mob)
 
@@ -101,8 +101,8 @@ func AttackPlayerVsMob(user *users.UserRecord, mob *mobs.Mob) AttackResult {
 	return attackResult
 }
 
-// Performs a combat round from a player to a player
-func AttackPlayerVsPlayer(userAtk *users.UserRecord, userDef *users.UserRecord) AttackResult {
+// attackPlayerVsPlayer performs a combat round from a player to a player (legacy implementation)
+func attackPlayerVsPlayer(userAtk *users.UserRecord, userDef *users.UserRecord) AttackResult {
 
 	attackResult := calculateCombat(*userAtk.Character, *userDef.Character, User, User)
 
@@ -170,8 +170,8 @@ func AttackPlayerVsPlayer(userAtk *users.UserRecord, userDef *users.UserRecord) 
 	return attackResult
 }
 
-// Performs a combat round from a mob to a player
-func AttackMobVsPlayer(mob *mobs.Mob, user *users.UserRecord) AttackResult {
+// attackMobVsPlayer performs a combat round from a mob to a player (legacy implementation)
+func attackMobVsPlayer(mob *mobs.Mob, user *users.UserRecord) AttackResult {
 
 	attackResult := calculateCombat(mob.Character, *user.Character, Mob, User)
 
@@ -238,8 +238,8 @@ func AttackMobVsPlayer(mob *mobs.Mob, user *users.UserRecord) AttackResult {
 	return attackResult
 }
 
-// Performs a combat round from a mob to a mob
-func AttackMobVsMob(mobAtk *mobs.Mob, mobDef *mobs.Mob) AttackResult {
+// attackMobVsMob performs a combat round from a mob to a mob (legacy implementation)
+func attackMobVsMob(mobAtk *mobs.Mob, mobDef *mobs.Mob) AttackResult {
 
 	attackResult := calculateCombat(mobAtk.Character, mobDef.Character, Mob, Mob)
 

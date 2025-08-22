@@ -21,6 +21,7 @@ import (
 	"github.com/GoMudEngine/GoMud/internal/buffs"
 	"github.com/GoMudEngine/GoMud/internal/characters"
 	"github.com/GoMudEngine/GoMud/internal/colorpatterns"
+	"github.com/GoMudEngine/GoMud/internal/combat"
 	"github.com/GoMudEngine/GoMud/internal/configs"
 	"github.com/GoMudEngine/GoMud/internal/connections"
 	"github.com/GoMudEngine/GoMud/internal/events"
@@ -200,6 +201,21 @@ func main() {
 	)
 
 	mudlog.Info(`========================`)
+
+	// Initialize combat registry event handlers
+	combat.InitializeRegistry()
+
+	// Initialize combat system before loading data files
+	// This ensures combat commands are available during module loading
+	gamePlayConfig := configs.GetGamePlayConfig()
+	mudlog.Info("Combat System", "info", "Initializing combat system", "style", gamePlayConfig.Combat.Style.String())
+	if err := combat.SetActiveCombatSystem(gamePlayConfig.Combat.Style.String()); err != nil {
+		mudlog.Error("Combat System", "error", err, "module", gamePlayConfig.Combat.Style.String())
+		mudlog.Info("Combat System", "info", "Using default combat system")
+		// The fallback will be to use the existing hardcoded combat
+	} else {
+		mudlog.Info("Combat System", "info", "Successfully initialized", "style", gamePlayConfig.Combat.Style.String())
+	}
 
 	// Load all the data files up front.
 	loadAllDataFiles(false)
