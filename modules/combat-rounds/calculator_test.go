@@ -5,7 +5,13 @@ import (
 
 	"github.com/GoMudEngine/GoMud/internal/characters"
 	"github.com/GoMudEngine/GoMud/internal/items"
+	"github.com/GoMudEngine/GoMud/internal/mudlog"
 )
+
+func init() {
+	// Initialize mudlog for tests
+	mudlog.SetupLogger(nil, "ERROR", "", false)
+}
 
 func createTestCharacter(name string) *characters.Character {
 	char := &characters.Character{
