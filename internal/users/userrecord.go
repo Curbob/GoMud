@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math"
 	"math/big"
+	"strconv"
 	"strings"
 	"time"
 
@@ -619,6 +620,24 @@ func (u *UserRecord) GetOnlineInfo() OnlineInfo {
 		isAfk = true
 	}
 
+	// Determine connection type
+	connectionType := "Telnet"
+	if connections.IsWebsocket(u.connectionId) {
+		connectionType = "Web"
+	} else {
+		// Check if connected through a secure telnet local port (where TLS proxy forwards)
+		port := connections.GetConnectionPort(u.connectionId)
+		networkConfig := configs.GetNetworkConfig()
+
+		for _, securePortStr := range networkConfig.SecureTelnetLocalPort {
+			securePort, _ := strconv.Atoi(securePortStr)
+			if securePort > 0 && port == securePort {
+				connectionType = "TLS"
+				break
+			}
+		}
+	}
+
 	return OnlineInfo{
 		u.Username,
 		u.Character.Name,
@@ -629,6 +648,7 @@ func (u *UserRecord) GetOnlineInfo() OnlineInfo {
 		timeStr,
 		isAfk,
 		u.Role,
+		connectionType,
 	}
 }
 

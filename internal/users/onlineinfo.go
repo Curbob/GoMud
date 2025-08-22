@@ -1,13 +1,14 @@
 package users
 
 type OnlineInfo struct {
-	Username      string
-	CharacterName string
-	Level         int
-	Alignment     string
-	Profession    string
-	OnlineTime    int64
-	OnlineTimeStr string
-	IsAFK         bool
-	Role          string
+	Username       string
+	CharacterName  string
+	Level          int
+	Alignment      string
+	Profession     string
+	OnlineTime     int64
+	OnlineTimeStr  string
+	IsAFK          bool
+	Role           string
+	ConnectionType string // "Web", "Telnet", or "TLS"
 }

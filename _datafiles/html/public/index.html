@@ -1,13 +1,40 @@
 {{template "header" .}}
 
-  <div class="play-button">
-    <a href="/webclient">
-      <img src="{{ .CONFIG.FilePaths.WebCDNLocation }}/static/images/btn_play.png" alt="Play" />
-    </a>
+<div class="play-button">
+  <a href="/webclient">
+    <img
+      src="{{ .CONFIG.FilePaths.WebCDNLocation }}/static/images/btn_play.png"
+      alt="Play"
+    />
+  </a>
+</div>
+<p>&nbsp;</p>
+<div style="text-align: center;">
+  <div class="underlay" style="width: auto; display: inline-block; padding-left: 20px; padding-right: 20px;">
+    <div style="display: table; margin: 0 auto">
+    <div style="display: table-row">
+      <h3 style="display: table-cell; text-align: right; padding-right: 0.5em">
+        Telnet Port{{ if gt (len .CONFIG.Network.TelnetPort) 1 }}s{{end}}
+      </h3>
+      <h3 style="display: table-cell; text-align: left">
+        : {{ join .CONFIG.Network.TelnetPort ", " }}
+      </h3>
+    </div>
+    {{ if and .CONFIG.Network.SecureTelnetPort (ne (index
+    .CONFIG.Network.SecureTelnetPort 0) "0") }}
+    <br />
+    <div style="display: table-row">
+      <h3 style="display: table-cell; text-align: right; padding-right: 0.5em">
+        Secure Telnet Port{{ if gt (len .CONFIG.Network.SecureTelnetPort) 1
+        }}s{{end}}
+      </h3>
+      <h3 style="display: table-cell; text-align: left">
+        : {{ join .CONFIG.Network.SecureTelnetPort ", " }}
+      </h3>
+    </div>
+    {{ end }}
   </div>
-  <p>&nbsp;</p>
-  <div class="underlay">
-    <h3>Telnet Port{{ if gt (len .CONFIG.Network.TelnetPort) 1 }}s{{end}}: {{ join .CONFIG.Network.TelnetPort ", " }}</h3>
   </div>
+</div>
 
 {{template "footer" .}}

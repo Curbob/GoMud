@@ -42,6 +42,41 @@ type WebNav struct {
 	Target string
 }
 
+// getClientIP extracts the real client IP address from the request.
+// It checks for X-Real-IP and X-Forwarded-For headers when the direct
+// connection is from localhost (trusted proxy), otherwise returns the
+// direct connection IP.
+func getClientIP(r *http.Request) string {
+	remoteAddr := r.RemoteAddr
+
+	host, _, err := net.SplitHostPort(remoteAddr)
+	if err != nil {
+		host = remoteAddr
+	}
+
+	// Only trust proxy headers if the connection is from localhost
+	if host == "127.0.0.1" || host == "::1" || host == "localhost" {
+		// X-Real-IP has higher priority than X-Forwarded-For
+		if realIP := r.Header.Get("X-Real-IP"); realIP != "" {
+			return realIP
+		}
+
+		if forwardedFor := r.Header.Get("X-Forwarded-For"); forwardedFor != "" {
+			// X-Forwarded-For can contain comma-separated IPs
+			// The first one is the original client
+			ips := strings.Split(forwardedFor, ",")
+			if len(ips) > 0 {
+				clientIP := strings.TrimSpace(ips[0])
+				if clientIP != "" {
+					return clientIP
+				}
+			}
+		}
+	}
+
+	return host
+}
+
 type WebPlugin interface {
 	NavLinks() map[string]string                                                    // Name=>Path pairs
 	WebRequest(r *http.Request) (html string, templateData map[string]any, ok bool) // Get the first handler of a given request
@@ -106,7 +141,7 @@ func serveTemplate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !pageFound || len(fileBase) > 0 && fileBase[0] == '_' {
-		mudlog.Info("Web", "ip", r.RemoteAddr, "ref", r.Header.Get("Referer"), "file path", fullPath, "file extension", fileExt, "error", "Not found")
+		mudlog.Info("Web", "ip", getClientIP(r), "ref", r.Header.Get("Referer"), "file path", fullPath, "file extension", fileExt, "error", "Not found")
 
 		fullPath = filepath.Join(httpRoot, `404.html`)
 		fInfo, err = os.Stat(fullPath)
@@ -122,7 +157,7 @@ func serveTemplate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Log the request
-	mudlog.Info("Web", "ip", r.RemoteAddr, "ref", r.Header.Get("Referer"), "file path", fullPath, "file extension", fileExt, "file source", source, "size", fmt.Sprintf(`%.2fk`, float64(fSize)/1024))
+	mudlog.Info("Web", "ip", getClientIP(r), "ref", r.Header.Get("Referer"), "file path", fullPath, "file extension", fileExt, "file source", source, "size", fmt.Sprintf(`%.2fk`, float64(fSize)/1024))
 
 	// For non-HTML files, serve them statically.
 	if fileExt != ".html" {

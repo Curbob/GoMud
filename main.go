@@ -287,6 +287,15 @@ func main() {
 		TelnetListenOnPort(`127.0.0.1`, int(c.Network.LocalPort), &wg, 0)
 	}
 
+	// Secure telnet local ports - where TLS proxy forwards to
+	for _, port := range c.Network.SecureTelnetLocalPort {
+		if p, err := strconv.Atoi(port); err == nil && p > 0 {
+			mudlog.Info("Telnet", "stage", "Listening on secure local port (localhost only)", "port", p)
+			// Same as LocalPort - localhost only, no connection limit
+			TelnetListenOnPort(`127.0.0.1`, p, &wg, 0)
+		}
+	}
+
 	go worldManager.InputWorker(workerShutdownChan, &wg)
 	go worldManager.MainWorker(workerShutdownChan, &wg)
 
