@@ -30,7 +30,7 @@ func Go(rest string, mob *mobs.Mob, room *rooms.Room) (bool, error) {
 		}
 
 		if !foundRoomExit {
-			c := configs.GetTextFormatsConfig()
+			c := configs.GetUserInterfaceConfig().Formats
 
 			if forceRoomId == room.RoomId {
 				return true, nil
@@ -112,7 +112,7 @@ func Go(rest string, mob *mobs.Mob, room *rooms.Room) (bool, error) {
 		room.RemoveMob(mob.InstanceId)
 		destRoom.AddMob(mob.InstanceId)
 
-		c := configs.GetTextFormatsConfig()
+		c := configs.GetUserInterfaceConfig().Formats
 
 		// Tell the old room they are leaving
 		room.SendText(

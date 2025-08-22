@@ -124,7 +124,7 @@ func (g *GMCPGameModule) sendAllGameNodes(userId int) {
 	}
 
 	c := configs.GetConfig()
-	tFormat := string(c.TextFormats.Time)
+	tFormat := string(c.UserInterface.Formats.Time)
 
 	// Send Game.Info
 	infoPayload := map[string]interface{}{

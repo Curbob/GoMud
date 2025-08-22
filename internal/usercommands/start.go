@@ -211,7 +211,7 @@ func Start(rest string, user *users.UserRecord, room *rooms.Room, flags events.E
 				// Tell the new room they have arrived
 
 				destRoom.SendText(
-					fmt.Sprintf(configs.GetTextFormatsConfig().EnterRoomMessageWrapper.String(),
+					fmt.Sprintf(configs.GetUserInterfaceConfig().Formats.EnterRoomMessageWrapper.String(),
 						fmt.Sprintf(`<ansi fg="username">%s</ansi> enters from <ansi fg="exit">somewhere</ansi>.`, user.Character.Name),
 					),
 					user.UserId,
