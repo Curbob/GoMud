@@ -21,7 +21,7 @@ func History(rest string, user *users.UserRecord, room *rooms.Room, flags events
 		`<ansi fg="white-bold">%s</ansi>`,
 	}
 
-	tFormat := string(configs.GetTextFormatsConfig().TimeShort)
+	tFormat := string(configs.GetUserInterfaceConfig().Formats.TimeShort)
 
 	for itm := range user.EventLog.Items {
 

@@ -1,0 +1,69 @@
+{{/* Screenreader-friendly template for looking at mobs */}}
+Name: {{ .Character.Name }}{{ if .IsCharmed }} (charmed by {{ .CharmedBy }}){{ end }}{{ if .IsShop }} (merchant){{ end }}
+
+Description:
+{{ .Character.GetDescription }}
+
+Health Status: {{ .HealthStatus }}
+{{- $showEmpty := showEmptyEquipmentSlots }}
+{{- $hasEquipment := false }}
+{{- if and (not .Equipment.Weapon.IsDisabled) (gt .Equipment.Weapon.ItemId 0) }}{{ $hasEquipment = true }}{{ end }}
+{{- if and (not .Equipment.Offhand.IsDisabled) (gt .Equipment.Offhand.ItemId 0) }}{{ $hasEquipment = true }}{{ end }}
+{{- if and (not .Equipment.Head.IsDisabled) (gt .Equipment.Head.ItemId 0) }}{{ $hasEquipment = true }}{{ end }}
+{{- if and (not .Equipment.Neck.IsDisabled) (gt .Equipment.Neck.ItemId 0) }}{{ $hasEquipment = true }}{{ end }}
+{{- if and (not .Equipment.Body.IsDisabled) (gt .Equipment.Body.ItemId 0) }}{{ $hasEquipment = true }}{{ end }}
+{{- if and (not .Equipment.Belt.IsDisabled) (gt .Equipment.Belt.ItemId 0) }}{{ $hasEquipment = true }}{{ end }}
+{{- if and (not .Equipment.Gloves.IsDisabled) (gt .Equipment.Gloves.ItemId 0) }}{{ $hasEquipment = true }}{{ end }}
+{{- if and (not .Equipment.Ring.IsDisabled) (gt .Equipment.Ring.ItemId 0) }}{{ $hasEquipment = true }}{{ end }}
+{{- if and (not .Equipment.Legs.IsDisabled) (gt .Equipment.Legs.ItemId 0) }}{{ $hasEquipment = true }}{{ end }}
+{{- if and (not .Equipment.Feet.IsDisabled) (gt .Equipment.Feet.ItemId 0) }}{{ $hasEquipment = true }}{{ end }}
+{{- if and (not $hasEquipment) (not $showEmpty) }}
+
+{{ .Character.Name }} is not wearing anything.
+{{- else if or $hasEquipment $showEmpty }}
+
+Equipment:
+{{- $showItem := false }}
+{{- $showItem = or (and (not .Equipment.Weapon.IsDisabled) (gt .Equipment.Weapon.ItemId 0)) (and $showEmpty (not .Equipment.Weapon.IsDisabled)) }}
+{{- if $showItem }}
+Weapon: {{ if gt .Equipment.Weapon.ItemId 0 }}{{ .Equipment.Weapon.NameSimple }}{{ else }}nothing{{ end }}
+{{- end }}
+{{- $showItem = or (and (not .Equipment.Offhand.IsDisabled) (gt .Equipment.Offhand.ItemId 0)) (and $showEmpty (not .Equipment.Offhand.IsDisabled)) }}
+{{- if $showItem }}
+Offhand: {{ if gt .Equipment.Offhand.ItemId 0 }}{{ .Equipment.Offhand.NameSimple }}{{ else }}nothing{{ end }}
+{{- end }}
+{{- $showItem = or (and (not .Equipment.Head.IsDisabled) (gt .Equipment.Head.ItemId 0)) (and $showEmpty (not .Equipment.Head.IsDisabled)) }}
+{{- if $showItem }}
+Head: {{ if gt .Equipment.Head.ItemId 0 }}{{ .Equipment.Head.NameSimple }}{{ else }}nothing{{ end }}
+{{- end }}
+{{- $showItem = or (and (not .Equipment.Neck.IsDisabled) (gt .Equipment.Neck.ItemId 0)) (and $showEmpty (not .Equipment.Neck.IsDisabled)) }}
+{{- if $showItem }}
+Neck: {{ if gt .Equipment.Neck.ItemId 0 }}{{ .Equipment.Neck.NameSimple }}{{ else }}nothing{{ end }}
+{{- end }}
+{{- $showItem = or (and (not .Equipment.Body.IsDisabled) (gt .Equipment.Body.ItemId 0)) (and $showEmpty (not .Equipment.Body.IsDisabled)) }}
+{{- if $showItem }}
+Body: {{ if gt .Equipment.Body.ItemId 0 }}{{ .Equipment.Body.NameSimple }}{{ else }}nothing{{ end }}
+{{- end }}
+{{- $showItem = or (and (not .Equipment.Belt.IsDisabled) (gt .Equipment.Belt.ItemId 0)) (and $showEmpty (not .Equipment.Belt.IsDisabled)) }}
+{{- if $showItem }}
+Belt: {{ if gt .Equipment.Belt.ItemId 0 }}{{ .Equipment.Belt.NameSimple }}{{ else }}nothing{{ end }}
+{{- end }}
+{{- $showItem = or (and (not .Equipment.Gloves.IsDisabled) (gt .Equipment.Gloves.ItemId 0)) (and $showEmpty (not .Equipment.Gloves.IsDisabled)) }}
+{{- if $showItem }}
+Gloves: {{ if gt .Equipment.Gloves.ItemId 0 }}{{ .Equipment.Gloves.NameSimple }}{{ else }}nothing{{ end }}
+{{- end }}
+{{- $showItem = or (and (not .Equipment.Ring.IsDisabled) (gt .Equipment.Ring.ItemId 0)) (and $showEmpty (not .Equipment.Ring.IsDisabled)) }}
+{{- if $showItem }}
+Ring: {{ if gt .Equipment.Ring.ItemId 0 }}{{ .Equipment.Ring.NameSimple }}{{ else }}nothing{{ end }}
+{{- end }}
+{{- $showItem = or (and (not .Equipment.Legs.IsDisabled) (gt .Equipment.Legs.ItemId 0)) (and $showEmpty (not .Equipment.Legs.IsDisabled)) }}
+{{- if $showItem }}
+Legs: {{ if gt .Equipment.Legs.ItemId 0 }}{{ .Equipment.Legs.NameSimple }}{{ else }}nothing{{ end }}
+{{- end }}
+{{- $showItem = or (and (not .Equipment.Feet.IsDisabled) (gt .Equipment.Feet.ItemId 0)) (and $showEmpty (not .Equipment.Feet.IsDisabled)) }}
+{{- if $showItem }}
+Feet: {{ if gt .Equipment.Feet.ItemId 0 }}{{ .Equipment.Feet.NameSimple }}{{ else }}nothing{{ end }}
+{{- end }}
+{{- end }}
+
+Carrying: {{ .CarryingStatus }} objects

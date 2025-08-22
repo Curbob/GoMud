@@ -34,20 +34,20 @@ var (
 
 type Config struct {
 	// Start config subsections
-	Server       Server       `yaml:"Server"`
-	Memory       Memory       `yaml:"Memory"`
-	LootGoblin   LootGoblin   `yaml:"LootGoblin"`
-	Timing       Timing       `yaml:"Timing"`
-	FilePaths    FilePaths    `yaml:"FilePaths"`
-	GamePlay     GamePlay     `yaml:"GamePlay"`
-	Integrations Integrations `yaml:"Integrations"`
-	TextFormats  TextFormats  `yaml:"TextFormats"`
-	Translation  Translation  `yaml:"Translation"`
-	Network      Network      `yaml:"Network"`
-	Scripting    Scripting    `yaml:"Scripting"`
-	SpecialRooms SpecialRooms `yaml:"SpecialRooms"`
-	Validation   Validation   `yaml:"Validation"`
-	Roles        Roles        `yaml:"Roles"`
+	Server        Server        `yaml:"Server"`
+	Memory        Memory        `yaml:"Memory"`
+	LootGoblin    LootGoblin    `yaml:"LootGoblin"`
+	Timing        Timing        `yaml:"Timing"`
+	FilePaths     FilePaths     `yaml:"FilePaths"`
+	GamePlay      GamePlay      `yaml:"GamePlay"`
+	UserInterface UserInterface `yaml:"UserInterface"`
+	Integrations  Integrations  `yaml:"Integrations"`
+	Translation   Translation   `yaml:"Translation"`
+	Network       Network       `yaml:"Network"`
+	Scripting     Scripting     `yaml:"Scripting"`
+	SpecialRooms  SpecialRooms  `yaml:"SpecialRooms"`
+	Validation    Validation    `yaml:"Validation"`
+	Roles         Roles         `yaml:"Roles"`
 	// Plugins is a special case
 	Modules Modules `yaml:"Modules"`
 
@@ -191,7 +191,7 @@ func (c *Config) Validate() {
 	c.FilePaths.Validate()
 	c.GamePlay.Validate()
 	c.Integrations.Validate()
-	c.TextFormats.Validate()
+	c.UserInterface.Validate()
 	c.Translation.Validate()
 	c.Network.Validate()
 	c.Scripting.Validate()

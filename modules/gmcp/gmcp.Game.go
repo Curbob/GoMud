@@ -40,7 +40,7 @@ func (g *GMCPGameModule) onJoinLeave(e events.Event) events.ListenerReturn {
 
 	c := configs.GetConfig()
 
-	tFormat := string(c.TextFormats.Time)
+	tFormat := string(c.UserInterface.Formats.Time)
 
 	whoPayload := `"Who": { "Players": [`
 

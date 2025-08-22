@@ -199,6 +199,9 @@ var (
 		"permadeath": func() bool {
 			return bool(configs.GetGamePlayConfig().Death.PermaDeath)
 		},
+		"showEmptyEquipmentSlots": func() bool {
+			return configs.GetConfig().ShouldShowEmptyEquipmentSlots()
+		},
 		"zodiac": func(year int) string {
 			return gametime.GetZodiac(year)
 		},

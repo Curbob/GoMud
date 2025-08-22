@@ -57,6 +57,6 @@ func (i *Inbox) Empty() {
 }
 
 func (m Message) DateString() string {
-	tFormat := string(configs.GetConfig().TextFormats.Time)
+	tFormat := string(configs.GetConfig().UserInterface.Formats.Time)
 	return m.DateSent.Format(tFormat)
 }

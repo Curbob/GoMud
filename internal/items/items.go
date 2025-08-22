@@ -168,6 +168,69 @@ func (i *Item) Validate() {
 
 }
 
+// ItemLookData contains all the data needed for the look-item template
+type ItemLookData struct {
+	Item          *Item
+	ItemSpec      ItemSpec
+	Location      string          // "in your backpack", "you are wearing"
+	Type          string          // Item type for template comparisons
+	Subtype       string          // Item subtype for template comparisons
+	Adjectives    map[string]bool // Extensible flags (cursed, enchanted, etc)
+	WeaponHands   int
+	WeaponType    string // "claws", "shooting", etc.
+	WaitRounds    int
+	HasUses       bool
+	UsesRemaining int
+	MaxUses       int
+	EnchantLevel  int
+}
+
+// GetLookData returns data structure for template-based item descriptions
+func (i *Item) GetLookData(location string) ItemLookData {
+	// Defensive check for nil item
+	if i == nil {
+		return ItemLookData{
+			Location:   location,
+			Type:       "",
+			Subtype:    "",
+			Adjectives: make(map[string]bool),
+		}
+	}
+
+	iSpec := i.GetSpec()
+
+	data := ItemLookData{
+		Item:          i,
+		ItemSpec:      iSpec,
+		Location:      location,
+		Type:          string(iSpec.Type),
+		Subtype:       string(iSpec.Subtype),
+		Adjectives:    make(map[string]bool),
+		HasUses:       iSpec.Uses > 0,
+		UsesRemaining: i.Uses,
+		MaxUses:       iSpec.Uses,
+		EnchantLevel:  int(i.Enchantments),
+	}
+
+	// Set adjectives for extensibility
+	data.Adjectives["cursed"] = i.IsCursed()
+	data.Adjectives["enchanted"] = i.Enchantments > 0
+
+	if iSpec.Type == Weapon {
+		data.WeaponHands = iSpec.Hands
+		data.WaitRounds = iSpec.WaitRounds
+
+		switch iSpec.Subtype {
+		case Claws:
+			data.WeaponType = "claws"
+		case Shooting:
+			data.WeaponType = "shooting"
+		}
+	}
+
+	return data
+}
+
 func (i *Item) GetLongDescription() string {
 
 	iSpec := i.GetSpec()
