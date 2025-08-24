@@ -80,6 +80,15 @@ func init() {
 
 // gatherGMCPState collects GMCP state before copyover
 func gatherGMCPState() (interface{}, error) {
+	// Send IAC WONT GMCP to all connections before copyover
+	// This tells clients to clear their GMCP state as per protocol specification
+	for _, conn := range connections.GetActiveConnections() {
+		if conn != nil && isGMCPEnabled(conn.ConnectionId()) {
+			connections.SendTo(GmcpDisable.BytesWithPayload(nil), conn.ConnectionId())
+			mudlog.Info("GMCP", "copyover", "Sent IAC WONT GMCP", "connId", conn.ConnectionId())
+		}
+	}
+
 	state := GMCPState{
 		ConnectionSettings: make(map[uint64]GMCPSettings),
 		CombatUsers:        make(map[int]struct{}),
@@ -169,6 +178,8 @@ func restoreGMCPState(data interface{}) error {
 
 	if gmcpModule.cache != nil {
 		for connId, settings := range state.ConnectionSettings {
+			// Clear the GMCPAccepted flag to force re-negotiation
+			settings.GMCPAccepted = false
 			gmcpModule.cache.Add(connId, settings)
 		}
 	} else {
@@ -207,9 +218,12 @@ func restoreGMCPState(data interface{}) error {
 	// The event queue gets cleared during copyover, so any events added here would be lost.
 	// Instead, we'll send the updates after the workers start via a delayed function.
 
-	// Delay GMCP updates to ensure event workers are running first
+	// Re-establish GMCP after copyover following protocol specification
 	go func() {
+		// Wait for event workers to be fully initialized
 		time.Sleep(500 * time.Millisecond)
+
+		// Send IAC WILL GMCP to all active connections to re-initiate negotiation
 		for _, user := range users.GetAllActiveUsers() {
 			if user == nil {
 				continue
@@ -217,11 +231,14 @@ func restoreGMCPState(data interface{}) error {
 
 			connId := user.ConnectionId()
 
-			if !isGMCPEnabled(connId) {
-				continue
-			}
+			// Send IAC WILL GMCP to re-establish protocol
+			connections.SendTo(GmcpEnable.BytesWithPayload(nil), connId)
+			mudlog.Info("GMCP", "copyover", "Sent IAC WILL GMCP for re-negotiation",
+				"userId", user.UserId, "connId", connId)
 
-			SendFullGMCPUpdate(user.UserId)
+			// Mark connection as pending GMCP negotiation
+			// The actual GMCP data will be sent when we receive IAC DO GMCP response
+			// This is handled by the existing GMCP negotiation handler
 		}
 	}()
 

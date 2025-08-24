@@ -382,8 +382,23 @@ func (g *GMCPModule) HandleIAC(connectionId uint64, iacCmd []byte) bool {
 		if !ok {
 			gmcpData = GMCPSettings{}
 		}
+
+		wasAccepted := gmcpData.GMCPAccepted
 		gmcpData.GMCPAccepted = true
 		g.cache.Add(connectionId, gmcpData)
+
+		// If this is a re-negotiation after copyover, send full GMCP update
+		if !wasAccepted {
+			// Find the user for this connection
+			for _, user := range users.GetAllActiveUsers() {
+				if user.ConnectionId() == connectionId {
+					mudlog.Info("GMCP", "negotiation", "Received IAC DO GMCP, sending initial data",
+						"userId", user.UserId, "connId", connectionId)
+					SendFullGMCPUpdate(user.UserId)
+					break
+				}
+			}
+		}
 
 		return true
 	}
