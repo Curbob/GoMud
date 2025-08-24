@@ -20,7 +20,7 @@ func Grace(rest string, user *users.UserRecord, room *rooms.Room, flags events.E
 	if len(args) == 0 || (len(args) == 1 && args[0] == "all") {
 		ApplyGraceToAll()
 		onlineCount := len(users.GetOnlineUserIds())
-		user.SendText(fmt.Sprintf("<ansi fg=\"green-bold\">*** Grace of Renewal applied to all %d online players ***</ansi>", onlineCount))
+		user.SendText(fmt.Sprintf(`<ansi fg="green-bold">*** Grace of Renewal applied to all %d online players ***</ansi>`, onlineCount))
 		return true, nil
 	}
 
@@ -29,16 +29,18 @@ func Grace(rest string, user *users.UserRecord, room *rooms.Room, flags events.E
 	targetName := "yourself"
 
 	if len(args) >= 1 && args[0] != "all" {
-		room := rooms.LoadRoom(user.Character.RoomId)
 		if room == nil {
-			return false, fmt.Errorf(`room %d not found`, user.Character.RoomId)
+			room = rooms.LoadRoom(user.Character.RoomId)
+			if room == nil {
+				return false, fmt.Errorf(`room %d not found`, user.Character.RoomId)
+			}
 		}
 		targetUserId, targetMobInstanceId = room.FindByName(args[0])
 	}
 
 	buffSpec := buffs.GetBuffSpec(GraceOfRenewalBuffId)
 	if buffSpec == nil {
-		user.SendText("Error: Grace of Renewal buff not found. Please ensure buff ID 100 exists.")
+		user.SendText(`Error: Grace of Renewal buff not found. Please ensure buff ID 100 exists.`)
 		return true, nil
 	}
 
@@ -46,10 +48,10 @@ func Grace(rest string, user *users.UserRecord, room *rooms.Room, flags events.E
 		if targetUser := users.GetByUserId(targetUserId); targetUser != nil {
 			targetUser.AddBuff(GraceOfRenewalBuffId, "admin-grace")
 			targetName = targetUser.Character.Name
-			targetUser.SendText("<ansi fg=\"cyan-bold\">*** You have been granted the Grace of Renewal ***</ansi>")
-			targetUser.SendText("<ansi fg=\"cyan\">Aggressive creatures will not attack you during this grace period.</ansi>")
+			targetUser.SendText(`<ansi fg="cyan-bold">*** You have been granted the Grace of Renewal ***</ansi>`)
+			targetUser.SendText(`<ansi fg="cyan">Aggressive creatures will not attack you during this grace period.</ansi>`)
 		} else {
-			user.SendText("Target user not found.")
+			user.SendText(`Target user not found.`)
 			return true, nil
 		}
 	} else if targetMobInstanceId > 0 {
@@ -57,7 +59,7 @@ func Grace(rest string, user *users.UserRecord, room *rooms.Room, flags events.E
 			targetMob.AddBuff(GraceOfRenewalBuffId, "admin-grace")
 			targetName = targetMob.Character.Name
 		} else {
-			user.SendText("Target mob not found.")
+			user.SendText(`Target mob not found.`)
 			return true, nil
 		}
 	} else {
@@ -65,15 +67,15 @@ func Grace(rest string, user *users.UserRecord, room *rooms.Room, flags events.E
 		targetName = "yourself"
 	}
 	if targetName == "yourself" {
-		user.SendText("<ansi fg=\"cyan-bold\">*** You have granted yourself the Grace of Renewal ***</ansi>")
-		user.SendText("<ansi fg=\"cyan\">Aggressive creatures will not attack you during this time.</ansi>")
+		user.SendText(`<ansi fg="cyan-bold">*** You have granted yourself the Grace of Renewal ***</ansi>`)
+		user.SendText(`<ansi fg="cyan">Aggressive creatures will not attack you during this time.</ansi>`)
 	} else {
-		user.SendText(fmt.Sprintf("<ansi fg=\"green\">Grace of Renewal applied to %s.</ansi>", targetName))
+		user.SendText(fmt.Sprintf(`<ansi fg="green">Grace of Renewal applied to %s.</ansi>`, targetName))
 	}
 
 	if targetName != "yourself" {
 		room.SendText(
-			fmt.Sprintf("<ansi fg=\"cyan\">A divine light briefly surrounds %s.</ansi>", targetName),
+			fmt.Sprintf(`<ansi fg="cyan">A divine light briefly surrounds %s.</ansi>`, targetName),
 			user.UserId,
 		)
 	}
@@ -88,13 +90,11 @@ func ApplyGraceToAll() {
 		return
 	}
 
-	appliedCount := 0
 	for _, userId := range users.GetOnlineUserIds() {
 		if user := users.GetByUserId(userId); user != nil {
 			user.AddBuff(GraceOfRenewalBuffId, "admin-grace")
-			user.SendText("<ansi fg=\"cyan-bold\">*** You have been granted the Grace of Renewal ***</ansi>")
-			user.SendText("<ansi fg=\"cyan\">Aggressive creatures will not attack you during this grace period.</ansi>")
-			appliedCount++
+			user.SendText(`<ansi fg="cyan-bold">*** You have been granted the Grace of Renewal ***</ansi>`)
+			user.SendText(`<ansi fg="cyan">Aggressive creatures will not attack you during this grace period.</ansi>`)
 		}
 	}
 }
