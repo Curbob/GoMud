@@ -99,6 +99,18 @@ func (e PostCopyover) Type() string {
 	return "PostCopyover"
 }
 
+// CopyoverRecoveryComplete event fired when all copyover recovery tasks are done
+// This includes: workers started, users restored to rooms, connections re-established
+type CopyoverRecoveryComplete struct {
+	Timestamp      time.Time // When recovery completed
+	UsersRestored  int       // Number of users restored from copyover
+	RoomsWithUsers int       // Number of rooms containing active users
+}
+
+func (e CopyoverRecoveryComplete) Type() string {
+	return "CopyoverRecoveryComplete"
+}
+
 // Helper functions that would need to be implemented
 
 // PauseEventProcessing stops processing events

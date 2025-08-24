@@ -3,7 +3,6 @@ package gmcp
 import (
 	"encoding/json"
 	"fmt"
-	"time"
 
 	"github.com/GoMudEngine/GoMud/internal/connections"
 	"github.com/GoMudEngine/GoMud/internal/copyover"
@@ -76,6 +75,38 @@ type TargetState struct {
 func init() {
 	// Register with copyover system
 	copyover.Register("gmcp", gatherGMCPState, restoreGMCPState)
+
+	// Register listener for copyover recovery complete event
+	events.RegisterListener(events.CopyoverRecoveryComplete{}, handleGMCPCopyoverRecovery)
+}
+
+// handleGMCPCopyoverRecovery re-establishes GMCP connections after copyover
+func handleGMCPCopyoverRecovery(e events.Event) events.ListenerReturn {
+	if _, ok := e.(events.CopyoverRecoveryComplete); !ok {
+		return events.Continue
+	}
+
+	mudlog.Info("GMCP", "copyover", "Re-establishing GMCP connections after recovery")
+
+	// Send IAC WILL GMCP to all active connections to re-initiate negotiation
+	for _, user := range users.GetAllActiveUsers() {
+		if user == nil {
+			continue
+		}
+
+		connId := user.ConnectionId()
+
+		// Send IAC WILL GMCP to re-establish protocol
+		connections.SendTo(GmcpEnable.BytesWithPayload(nil), connId)
+		mudlog.Info("GMCP", "copyover", "Sent IAC WILL GMCP for re-negotiation",
+			"userId", user.UserId, "connId", connId)
+
+		// Mark connection as pending GMCP negotiation
+		// The actual GMCP data will be sent when we receive IAC DO GMCP response
+		// This is handled by the existing GMCP negotiation handler
+	}
+
+	return events.Continue
 }
 
 // gatherGMCPState collects GMCP state before copyover
@@ -216,31 +247,7 @@ func restoreGMCPState(data interface{}) error {
 
 	// Note: We cannot send GMCP updates here because the event workers haven't started yet.
 	// The event queue gets cleared during copyover, so any events added here would be lost.
-	// Instead, we'll send the updates after the workers start via a delayed function.
-
-	// Re-establish GMCP after copyover following protocol specification
-	go func() {
-		// Wait for event workers to be fully initialized
-		time.Sleep(500 * time.Millisecond)
-
-		// Send IAC WILL GMCP to all active connections to re-initiate negotiation
-		for _, user := range users.GetAllActiveUsers() {
-			if user == nil {
-				continue
-			}
-
-			connId := user.ConnectionId()
-
-			// Send IAC WILL GMCP to re-establish protocol
-			connections.SendTo(GmcpEnable.BytesWithPayload(nil), connId)
-			mudlog.Info("GMCP", "copyover", "Sent IAC WILL GMCP for re-negotiation",
-				"userId", user.UserId, "connId", connId)
-
-			// Mark connection as pending GMCP negotiation
-			// The actual GMCP data will be sent when we receive IAC DO GMCP response
-			// This is handled by the existing GMCP negotiation handler
-		}
-	}()
+	// GMCP re-negotiation will be handled via the CopyoverRecoveryComplete event listener.
 
 	mudlog.Info("Copyover", "subsystem", "gmcp",
 		"restored", len(state.ConnectionSettings), "connections",

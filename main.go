@@ -357,13 +357,24 @@ func main() {
 	go worldManager.InputWorker(workerShutdownChan, &wg)
 	go worldManager.MainWorker(workerShutdownChan, &wg)
 
-	// If this was a copyover recovery, apply grace to all reconnected users
+	// If this was a copyover recovery, fire the recovery complete event
+	// This allows all systems to hook into post-copyover initialization
 	if isCopyoverRecovery {
-		// Give workers and GMCP time to fully initialize
-		go func() {
-			time.Sleep(1 * time.Second)
-			usercommands.ApplyGraceToAll()
-		}()
+		// Count restored users and rooms
+		activeUsers := users.GetAllActiveUsers()
+		roomsWithUsers := len(rooms.GetRoomsWithPlayers())
+
+		// Fire the recovery complete event
+		// The workers are already running and will process this event
+		events.AddToQueue(events.CopyoverRecoveryComplete{
+			Timestamp:      time.Now(),
+			UsersRestored:  len(activeUsers),
+			RoomsWithUsers: roomsWithUsers,
+		})
+
+		mudlog.Info("Copyover", "recovery", "complete",
+			"users", len(activeUsers),
+			"rooms_with_users", roomsWithUsers)
 	}
 
 	// Register pre-copyover hook to save all rooms
