@@ -139,7 +139,6 @@ func gatherGMCPState() (interface{}, error) {
 		// Gather Status state
 		state.StatusStates[userId] = gatherStatusState(userId)
 
-		// Gather Target state
 		state.TargetStates[userId] = gatherTargetState(userId)
 	}
 
@@ -168,27 +167,18 @@ func restoreGMCPState(data interface{}) error {
 		return fmt.Errorf("failed to unmarshal GMCP state: %w", err)
 	}
 
-	// Restore connection settings to cache
 	if gmcpModule.cache != nil {
-		mudlog.Info("Copyover", "gmcp", "Restoring GMCP cache", "connections", len(state.ConnectionSettings))
 		for connId, settings := range state.ConnectionSettings {
 			gmcpModule.cache.Add(connId, settings)
-			mudlog.Info("Copyover", "subsystem", "gmcp",
-				"restored", "connection settings",
-				"connId", connId,
-				"client", settings.Client.Name,
-				"gmcpAccepted", settings.GMCPAccepted)
 		}
 	} else {
 		mudlog.Error("Copyover", "gmcp", "GMCP cache is nil, cannot restore settings")
 	}
 
-	// Restore combat users
 	combatUsersMutex.Lock()
 	combatUsers = state.CombatUsers
 	combatUsersMutex.Unlock()
 
-	// Restore combat module states
 	for userId, cooldown := range state.CooldownStates {
 		restoreCooldownState(userId, cooldown)
 	}
@@ -217,15 +207,9 @@ func restoreGMCPState(data interface{}) error {
 	// The event queue gets cleared during copyover, so any events added here would be lost.
 	// Instead, we'll send the updates after the workers start via a delayed function.
 
-	// Schedule GMCP updates to be sent after event workers are running
+	// Delay GMCP updates to ensure event workers are running first
 	go func() {
-		// Wait for event workers to start processing
-		// This delay ensures the MainWorker and InputWorker are running
 		time.Sleep(500 * time.Millisecond)
-
-		mudlog.Info("Copyover", "gmcp", "Sending delayed GMCP updates after workers started")
-
-		// Re-send initial GMCP data to reconnected users
 		for _, user := range users.GetAllActiveUsers() {
 			if user == nil {
 				continue
@@ -234,19 +218,10 @@ func restoreGMCPState(data interface{}) error {
 			connId := user.ConnectionId()
 
 			if !isGMCPEnabled(connId) {
-				mudlog.Warn("Copyover", "gmcp", "GMCP not enabled for reconnected user",
-					"userId", user.UserId,
-					"username", user.Username,
-					"connId", connId)
 				continue
 			}
 
-			// Send full GMCP update for reconnected user
 			SendFullGMCPUpdate(user.UserId)
-			mudlog.Info("Copyover", "gmcp", "Sent full GMCP update",
-				"userId", user.UserId,
-				"username", user.Username,
-				"connId", connId)
 		}
 	}()
 
@@ -257,25 +232,19 @@ func restoreGMCPState(data interface{}) error {
 	return nil
 }
 
-// Helper functions to gather module states
 func gatherCooldownState(userId int) CooldownState {
-	// This would gather actual cooldown state from the cooldown module
-	// For now, return empty state
 	return CooldownState{}
 }
 
 func gatherDamageState(userId int) DamageState {
-	// This would gather actual damage history
 	return DamageState{}
 }
 
 func gatherEnemiesState(userId int) EnemiesState {
-	// This would gather current enemy list
 	return EnemiesState{}
 }
 
 func gatherEventsState(userId int) EventsState {
-	// This would gather recent combat events
 	return EventsState{}
 }
 

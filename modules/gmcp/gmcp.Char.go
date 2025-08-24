@@ -102,10 +102,6 @@ func (g *GMCPCharModule) buffTriggeredHandler(e events.Event) events.ListenerRet
 		return events.Continue
 	}
 
-	mudlog.Debug("GMCP", "buffTriggeredHandler", "Queuing Char.Affects update",
-		"userId", evt.UserId,
-		"buffIds", evt.BuffIds)
-
 	events.AddToQueue(GMCPCharUpdate{
 		UserId:     evt.UserId,
 		Identifier: `Char.Affects`,
@@ -377,14 +373,6 @@ func (g *GMCPCharModule) buildAndSendGMCPPayload(e events.Event) events.Listener
 			"connId", user.ConnectionId(),
 			"identifier", evt.Identifier)
 		return events.Cancel
-	}
-
-	// Debug logging for Char.Affects updates
-	if evt.Identifier == "Char.Affects" {
-		mudlog.Debug("GMCP", "buildAndSendGMCPPayload", "Processing Char.Affects update",
-			"userId", evt.UserId,
-			"username", user.Username,
-			"connId", user.ConnectionId())
 	}
 
 	if len(evt.Identifier) >= 4 {

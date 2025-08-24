@@ -91,16 +91,10 @@ func ApplyGraceToAll() {
 	appliedCount := 0
 	for _, userId := range users.GetOnlineUserIds() {
 		if user := users.GetByUserId(userId); user != nil {
-			mudlog.Info("Grace", "applying", "About to apply grace",
-				"userId", userId,
-				"username", user.Username,
-				"connId", user.ConnectionId())
 			user.AddBuff(GraceOfRenewalBuffId, "admin-grace")
 			user.SendText("<ansi fg=\"cyan-bold\">*** You have been granted the Grace of Renewal ***</ansi>")
 			user.SendText("<ansi fg=\"cyan\">Aggressive creatures will not attack you during this grace period.</ansi>")
 			appliedCount++
-			mudlog.Info("Grace", "applied", "User granted grace", "userId", userId, "username", user.Username)
 		}
 	}
-	mudlog.Info("Grace", "complete", "Applied grace to users", "count", appliedCount)
 }

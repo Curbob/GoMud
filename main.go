@@ -362,7 +362,6 @@ func main() {
 		// Give workers and GMCP time to fully initialize
 		go func() {
 			time.Sleep(1 * time.Second)
-			mudlog.Info("Copyover", "grace", "Applying grace period to all reconnected users")
 			usercommands.ApplyGraceToAll()
 		}()
 	}
@@ -1117,22 +1116,18 @@ func setupRecoveredConnectionHandlers() {
 		}
 	}
 
-	// Restore users to their rooms after all connections are set up
 	restoreUsersToRooms()
 }
 
 // restoreUsersToRooms adds users back to their room's player lists after copyover
 func restoreUsersToRooms() {
-	// Get all active users
 	for _, user := range users.GetAllActiveUsers() {
 		if user == nil || user.Character.RoomId <= 0 {
 			continue
 		}
 
-		// Use MoveToRoom with the same room ID to properly restore room tracking
-		// This will add the user to the room's player list and update roomManager.roomsWithUsers
+		// MoveToRoom updates roomManager.roomsWithUsers which is required for round ticks to process buffs
 		rooms.MoveToRoom(user.UserId, user.Character.RoomId, false)
-		mudlog.Info("Copyover", "restore", "Restored user to room", "userId", user.UserId, "username", user.Username, "roomId", user.Character.RoomId)
 	}
 }
 
