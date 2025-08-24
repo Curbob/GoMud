@@ -357,6 +357,16 @@ func main() {
 	go worldManager.InputWorker(workerShutdownChan, &wg)
 	go worldManager.MainWorker(workerShutdownChan, &wg)
 
+	// If this was a copyover recovery, apply grace to all reconnected users
+	if isCopyoverRecovery {
+		// Give workers and GMCP time to fully initialize
+		go func() {
+			time.Sleep(1 * time.Second)
+			mudlog.Info("Copyover", "grace", "Applying grace period to all reconnected users")
+			usercommands.ApplyGraceToAll()
+		}()
+	}
+
 	// Register pre-copyover hook to save all rooms
 	copyover.RegisterPreCopyoverHook(func() error {
 		mudlog.Info("Copyover", "pre-hook", "Saving all rooms")
@@ -1105,6 +1115,24 @@ func setupRecoveredConnectionHandlers() {
 			go handleRestoredConnection(cd, &wg)
 			mudlog.Info("Copyover", "setup", "Started input goroutine for restored connection", "connId", connId)
 		}
+	}
+
+	// Restore users to their rooms after all connections are set up
+	restoreUsersToRooms()
+}
+
+// restoreUsersToRooms adds users back to their room's player lists after copyover
+func restoreUsersToRooms() {
+	// Get all active users
+	for _, user := range users.GetAllActiveUsers() {
+		if user == nil || user.Character.RoomId <= 0 {
+			continue
+		}
+
+		// Use MoveToRoom with the same room ID to properly restore room tracking
+		// This will add the user to the room's player list and update roomManager.roomsWithUsers
+		rooms.MoveToRoom(user.UserId, user.Character.RoomId, false)
+		mudlog.Info("Copyover", "restore", "Restored user to room", "userId", user.UserId, "username", user.Username, "roomId", user.Character.RoomId)
 	}
 }
 

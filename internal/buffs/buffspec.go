@@ -38,6 +38,7 @@ const (
 	CancelIfCombat Flag = `cancel-on-combat`
 	CancelOnAction Flag = `cancel-on-action`
 	CancelOnWater  Flag = `cancel-on-water`
+	Grace          Flag = `grace` // Prevents aggressive mobs from attacking
 
 	// Death preventing
 	ReviveOnDeath Flag = `revive-on-death`

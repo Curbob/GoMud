@@ -19,7 +19,6 @@ type MobState struct {
 	LastCommand    string                 `json:"last_command,omitempty"`
 	Charmed        bool                   `json:"charmed,omitempty"`
 	CharmedUserId  int                    `json:"charmed_user_id,omitempty"`
-	Aggro          map[int]int            `json:"aggro,omitempty"` // userId -> damage
 	CustomData     map[string]interface{} `json:"custom_data,omitempty"`
 }
 
@@ -66,12 +65,8 @@ func gatherMobState() (interface{}, error) {
 			mobState.CharmedUserId = mob.Character.GetCharmedUserId()
 		}
 
-		// Save aggro table
-		if mob.Character.Aggro != nil && mob.Character.Aggro.UserId > 0 {
-			mobState.Aggro = make(map[int]int)
-			// Simplified - just track the main aggro target
-			mobState.Aggro[mob.Character.Aggro.UserId] = 1
-		}
+		// Clear combat state before copyover
+		mob.Character.Aggro = nil
 
 		// Save any custom data (for scripted mobs)
 		if mob.HasCustomData() {
@@ -135,12 +130,9 @@ func restoreMobState(data interface{}) error {
 			mob.Character.Charmed.UserId = mobState.CharmedUserId
 		}
 
-		// Restore aggro
-		if len(mobState.Aggro) > 0 {
-			for userId, damage := range mobState.Aggro {
-				mob.Character.TrackPlayerDamage(userId, damage)
-			}
-		}
+		// Combat is reset during copyover
+		mob.Character.Aggro = nil
+		mob.Character.PlayerDamage = make(map[int]int)
 
 		// Restore custom data
 		if len(mobState.CustomData) > 0 {

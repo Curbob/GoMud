@@ -48,11 +48,14 @@ func LookForTrouble(rest string, mob *mobs.Mob, room *rooms.Room) (bool, error) 
 
 			// Once a player is downed mobs stop considering them a target
 			// They don't see players that are sneaking...
+			// They also won't attack players with grace
 			ignoreUser := false
 
 			if user.Character.Health < 1 {
 				ignoreUser = true
 			} else if user.Character.HasBuffFlag(buffs.Hidden) {
+				ignoreUser = true
+			} else if user.Character.HasBuffFlag(buffs.Grace) {
 				ignoreUser = true
 			}
 

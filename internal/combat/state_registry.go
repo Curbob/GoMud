@@ -68,6 +68,11 @@ func (r *CombatStateRegistry) RegisterCombat(attackerId int, attackerType string
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
+	// Ensure map is initialized
+	if r.ActiveCombats == nil {
+		r.ActiveCombats = make(map[string]*ActiveCombatState)
+	}
+
 	key := makeCombatStateKey(attackerId, attackerType, defenderId, defenderType)
 
 	if existing, exists := r.ActiveCombats[key]; exists {
@@ -205,8 +210,19 @@ func (r *CombatStateRegistry) RestoreState(data []byte) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	r.ActiveCombats = state.ActiveCombats
-	r.SpellCasts = state.SpellCasts
+	// Ensure maps are never nil
+	if state.ActiveCombats != nil {
+		r.ActiveCombats = state.ActiveCombats
+	} else {
+		r.ActiveCombats = make(map[string]*ActiveCombatState)
+	}
+
+	if state.SpellCasts != nil {
+		r.SpellCasts = state.SpellCasts
+	} else {
+		r.SpellCasts = make(map[int]*SpellCastInfo)
+	}
+
 	r.RoundNumber = state.RoundNumber
 
 	// Clean up any stale entries immediately

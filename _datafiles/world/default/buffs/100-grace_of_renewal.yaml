@@ -1,0 +1,8 @@
+buffid: 100
+name: Grace of Renewal
+description: You are protected by the divine grace of renewal. Aggressive creatures will not attack you.
+secret: false
+triggerrate: 1 second
+triggercount: 8
+flags:
+- grace

@@ -6,7 +6,6 @@ import (
 
 	"github.com/GoMudEngine/GoMud/internal/connections"
 	"github.com/GoMudEngine/GoMud/internal/copyover"
-	"github.com/GoMudEngine/GoMud/internal/mobs"
 	"github.com/GoMudEngine/GoMud/internal/mudlog"
 	"github.com/GoMudEngine/GoMud/internal/util"
 )
@@ -42,8 +41,11 @@ func gatherUserState() (interface{}, error) {
 			continue
 		}
 
-		// Prepare combat state for copyover
-		user.Character.PrepareCombatForCopyover()
+		// Clear combat state - combat does not persist through copyover
+		if user.Character.Aggro != nil {
+			user.Character.Aggro = nil
+			user.SendText("<ansi fg=\"yellow\">*** Combat interrupted by copyover ***</ansi>")
+		}
 
 		// Save the user data to disk
 		if err := SaveUser(*user); err != nil {
@@ -110,22 +112,9 @@ func restoreUserState(data interface{}) error {
 				continue
 			}
 
-			// Restore combat state after copyover
-			if err := user.Character.RestoreCombatAfterCopyover(); err != nil {
-				mudlog.Error("Copyover", "subsystem", "users", "error", "Failed to restore combat state", "username", username, "err", err)
-				// Continue anyway - combat state is not critical for reconnection
-			}
-
-			// Validate aggro targets still exist
-			user.Character.ValidateAggroTargets(
-				func(userId int) bool {
-					return GetByUserId(userId) != nil
-				},
-				func(mobId int) bool {
-					// Import is available here
-					return mobs.GetInstance(mobId) != nil
-				},
-			)
+			// Clear combat state - combat does not persist through copyover
+			user.Character.Aggro = nil
+			user.Character.PlayerDamage = make(map[int]int)
 
 			// Reconnect the user to their connection
 			user.connectionId = connId
@@ -144,9 +133,13 @@ func restoreUserState(data interface{}) error {
 			// Notify user of successful copyover
 			user.SendText("\n<ansi fg=\"green-bold\">*** COPYOVER COMPLETE - Welcome back! ***</ansi>\n")
 			user.SendText("<ansi fg=\"cyan\">The server has been successfully restarted.</ansi>\n")
+			user.SendText("<ansi fg=\"yellow\">Note: Any active combat was reset during the copyover.</ansi>\n")
 
-			// Trigger a room look to reorient the player
+			// Add user back to their room's player list
 			if user.Character.RoomId > 0 {
+				// This is a simplified version - normally MoveUserToRoom handles this
+				// but we can't import rooms package here due to circular dependency
+				// The fix needs to be done after all users are restored
 				user.SendText("")
 				user.SendText("<ansi fg=\"yellow\">Type 'look' to see your surroundings.</ansi>\n")
 			}

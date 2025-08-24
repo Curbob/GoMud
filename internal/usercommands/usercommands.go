@@ -58,6 +58,7 @@ var (
 		`break`:       {Break, false, false},
 		`build`:       {Build, false, true}, // Admin only
 		`buff`:        {Buff, false, true},  // Admin only
+		`grace`:       {Grace, false, true}, // Admin only
 		`bump`:        {Bump, false, false},
 		`buy`:         {Buy, false, false},
 		`cast`:        {Cast, false, false},

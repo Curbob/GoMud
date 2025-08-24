@@ -3,9 +3,11 @@ package gmcp
 import (
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/GoMudEngine/GoMud/internal/connections"
 	"github.com/GoMudEngine/GoMud/internal/copyover"
+	"github.com/GoMudEngine/GoMud/internal/events"
 	"github.com/GoMudEngine/GoMud/internal/mobs"
 	"github.com/GoMudEngine/GoMud/internal/mudlog"
 	"github.com/GoMudEngine/GoMud/internal/rooms"
@@ -168,13 +170,17 @@ func restoreGMCPState(data interface{}) error {
 
 	// Restore connection settings to cache
 	if gmcpModule.cache != nil {
+		mudlog.Info("Copyover", "gmcp", "Restoring GMCP cache", "connections", len(state.ConnectionSettings))
 		for connId, settings := range state.ConnectionSettings {
 			gmcpModule.cache.Add(connId, settings)
 			mudlog.Info("Copyover", "subsystem", "gmcp",
 				"restored", "connection settings",
 				"connId", connId,
-				"client", settings.Client.Name)
+				"client", settings.Client.Name,
+				"gmcpAccepted", settings.GMCPAccepted)
 		}
+	} else {
+		mudlog.Error("Copyover", "gmcp", "GMCP cache is nil, cannot restore settings")
 	}
 
 	// Restore combat users
@@ -207,39 +213,42 @@ func restoreGMCPState(data interface{}) error {
 		restoreTargetState(userId, target)
 	}
 
-	// Re-send initial GMCP data to reconnected users
-	for _, user := range users.GetAllActiveUsers() {
-		if user == nil {
-			continue
-		}
+	// Note: We cannot send GMCP updates here because the event workers haven't started yet.
+	// The event queue gets cleared during copyover, so any events added here would be lost.
+	// Instead, we'll send the updates after the workers start via a delayed function.
 
-		if !isGMCPEnabled(user.ConnectionId()) {
-			continue
-		}
+	// Schedule GMCP updates to be sent after event workers are running
+	go func() {
+		// Wait for event workers to start processing
+		// This delay ensures the MainWorker and InputWorker are running
+		time.Sleep(500 * time.Millisecond)
 
-		// Send Core.Hello
-		sendGMCPOut(user.UserId, "Core.Hello", GMCPHello{
-			Client:  "GoMud",
-			Version: "1.0",
-		})
+		mudlog.Info("Copyover", "gmcp", "Sending delayed GMCP updates after workers started")
 
-		// Send character data
-		sendCharacterUpdate(user.UserId)
-
-		// Send room data if user is in a room
-		if user.Character.RoomId > 0 {
-			if room := rooms.LoadRoom(user.Character.RoomId); room != nil {
-				sendRoomUpdate(user.UserId, room)
+		// Re-send initial GMCP data to reconnected users
+		for _, user := range users.GetAllActiveUsers() {
+			if user == nil {
+				continue
 			}
-		}
 
-		// Send combat status if in combat
-		if _, inCombat := state.CombatUsers[user.UserId]; inCombat {
-			if status, exists := state.StatusStates[user.UserId]; exists {
-				sendGMCPOut(user.UserId, "Char.Combat.Status", status)
+			connId := user.ConnectionId()
+
+			if !isGMCPEnabled(connId) {
+				mudlog.Warn("Copyover", "gmcp", "GMCP not enabled for reconnected user",
+					"userId", user.UserId,
+					"username", user.Username,
+					"connId", connId)
+				continue
 			}
+
+			// Send full GMCP update for reconnected user
+			SendFullGMCPUpdate(user.UserId)
+			mudlog.Info("Copyover", "gmcp", "Sent full GMCP update",
+				"userId", user.UserId,
+				"username", user.Username,
+				"connId", connId)
 		}
-	}
+	}()
 
 	mudlog.Info("Copyover", "subsystem", "gmcp",
 		"restored", len(state.ConnectionSettings), "connections",
@@ -338,16 +347,26 @@ func restoreTargetState(userId int, state TargetState) {
 
 // Helper functions for sending GMCP updates
 func sendGMCPOut(userId int, module string, data interface{}) {
-	// This would use the actual GMCP sending mechanism
-	// Simplified for copyover
+	// Use the actual GMCP event system
+	events.AddToQueue(GMCPOut{
+		UserId:  userId,
+		Module:  module,
+		Payload: data,
+	})
 }
 
 func sendCharacterUpdate(userId int) {
-	// Send character info, stats, vitals, etc.
-	// This would call the actual character update functions
+	// Send all character-related GMCP updates
+	events.AddToQueue(GMCPCharUpdate{
+		UserId:     userId,
+		Identifier: "Char",
+	})
 }
 
 func sendRoomUpdate(userId int, room *rooms.Room) {
-	// Send room info
-	// This would call the actual room update functions
+	// Send room GMCP update
+	events.AddToQueue(GMCPRoomUpdate{
+		UserId:     userId,
+		Identifier: "Room",
+	})
 }

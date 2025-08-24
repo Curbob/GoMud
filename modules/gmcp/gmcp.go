@@ -91,6 +91,7 @@ func isGMCPEnabled(connectionId uint64) bool {
 		return gmcpData.GMCPAccepted
 	}
 
+	mudlog.Debug("GMCP", "isGMCPEnabled", "Connection not in cache", "connId", connectionId)
 	return false
 }
 
