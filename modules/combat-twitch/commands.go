@@ -161,6 +161,12 @@ func (tc *TwitchCombat) attackCommand(rest string, user *users.UserRecord, room 
 	if targetMob.Character.Health <= 0 {
 		targetMob.Character.EndAggro()
 		user.Character.Aggro = nil
+		
+		// Fire CombatEnded event for GMCP
+		events.AddToQueue(events.CombatEnded{
+			EntityId:   user.UserId,
+			EntityType: "player",
+		})
 	} else if targetMob.Character.Aggro == nil {
 		// Mob retaliates
 		targetMob.PreventIdle = true
@@ -251,6 +257,12 @@ func (tc *TwitchCombat) mobAttackCommand(rest string, mob *mobs.Mob, room *rooms
 	// Check if player died
 	if targetUser.Character.Health <= 0 {
 		mob.Character.EndAggro()
+		
+		// Fire CombatEnded event for GMCP
+		events.AddToQueue(events.CombatEnded{
+			EntityId:   targetUser.UserId,
+			EntityType: "player",
+		})
 	} else if mob.Character.Aggro != nil {
 		// Set callback for next attack if mob is still in combat
 		tc.timer.SetActorCallback(mob.InstanceId, combat.Mob, cooldown, func() {
@@ -816,6 +828,12 @@ func (tc *TwitchCombat) fleeCommand(rest string, user *users.UserRecord, room *r
 		user.Character.EndAggro()
 		tc.ClearUserTarget(user.UserId)
 		tc.timer.ClearActorCooldown(user.UserId, combat.User)
+		
+		// Fire CombatEnded event for GMCP
+		events.AddToQueue(events.CombatEnded{
+			EntityId:   user.UserId,
+			EntityType: "player",
+		})
 
 		// Notify all mobs that were fighting this player
 		for _, mobId := range room.GetMobs() {

@@ -2,6 +2,7 @@ package combatrounds
 
 import (
 	"github.com/GoMudEngine/GoMud/internal/combat"
+	"github.com/GoMudEngine/GoMud/internal/events"
 	"github.com/GoMudEngine/GoMud/internal/mudlog"
 	"github.com/GoMudEngine/GoMud/internal/plugins"
 	"github.com/GoMudEngine/GoMud/internal/util"
@@ -9,10 +10,11 @@ import (
 
 // RoundBasedCombat implements the traditional round-based combat system
 type RoundBasedCombat struct {
-	plug       *plugins.Plugin
-	calculator combat.ICombatCalculator
-	timer      *RoundBasedTimer
-	active     bool
+	plug              *plugins.Plugin
+	calculator        combat.ICombatCalculator
+	timer             *RoundBasedTimer
+	active            bool
+	newRoundListenerId events.ListenerId
 }
 
 // NewRoundBasedCombat creates a new round-based combat system
@@ -42,6 +44,10 @@ func (rbc *RoundBasedCombat) Initialize() error {
 		return err
 	}
 
+	// Register for NewRound events to trigger combat processing
+	rbc.newRoundListenerId = events.RegisterListener(events.NewRound{}, rbc.handleNewRound)
+	mudlog.Info("Combat System", "module", "combat-rounds", "action", "registered NewRound listener")
+
 	rbc.active = true
 	if true {
 		mudlog.Info("Combat System", "module", "combat-rounds", "status", "initialized")
@@ -52,6 +58,12 @@ func (rbc *RoundBasedCombat) Initialize() error {
 // Shutdown cleanly shuts down the combat system
 func (rbc *RoundBasedCombat) Shutdown() error {
 	mudlog.Info("Combat System", "module", "combat-rounds", "action", "shutdown starting")
+
+	// Unregister NewRound listener
+	if rbc.newRoundListenerId != 0 {
+		events.UnregisterListener(events.NewRound{}, rbc.newRoundListenerId)
+		mudlog.Info("Combat System", "module", "combat-rounds", "action", "unregistered NewRound listener")
+	}
 
 	// Stop the timer
 	mudlog.Info("Combat System", "module", "combat-rounds", "action", "stopping timer")
@@ -92,4 +104,16 @@ func (rbc *RoundBasedCombat) GetCalculator() combat.ICombatCalculator {
 // GetTimer returns the combat timer
 func (rbc *RoundBasedCombat) GetTimer() combat.ICombatTimer {
 	return rbc.timer
+}
+
+// handleNewRound processes combat when a new round occurs
+func (rbc *RoundBasedCombat) handleNewRound(e events.Event) events.ListenerReturn {
+	if !rbc.active {
+		return events.Continue
+	}
+
+	// Process combat for this round
+	rbc.ProcessCombatRound()
+	
+	return events.Continue
 }

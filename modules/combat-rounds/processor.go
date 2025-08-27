@@ -140,6 +140,12 @@ func (rbc *RoundBasedCombat) handlePlayerFlee(user *users.UserRecord, room *room
 		// Clear combat state
 		user.Character.EndAggro()
 		rbc.timer.RemovePlayer(user.UserId)
+		
+		// Fire CombatEnded event for GMCP
+		events.AddToQueue(events.CombatEnded{
+			EntityId:   user.UserId,
+			EntityType: "player",
+		})
 	}
 }
 
@@ -357,6 +363,16 @@ func (rbc *RoundBasedCombat) handlePlayerVsPlayer(user *users.UserRecord, room *
 		user.Character.EndAggro()
 		rbc.timer.RemovePlayer(user.UserId)
 		rbc.timer.RemovePlayer(defUser.UserId)
+		
+		// Fire CombatEnded events for GMCP
+		events.AddToQueue(events.CombatEnded{
+			EntityId:   user.UserId,
+			EntityType: "player",
+		})
+		events.AddToQueue(events.CombatEnded{
+			EntityId:   defUser.UserId,
+			EntityType: "player",
+		})
 	} else {
 		user.Character.SetAggro(defUser.UserId, 0, characters.DefaultAttack)
 	}
@@ -497,6 +513,12 @@ func (rbc *RoundBasedCombat) handlePlayerVsMob(user *users.UserRecord, room *roo
 		user.Character.EndAggro()
 		defMob.Character.EndAggro()
 		rbc.timer.RemovePlayer(user.UserId)
+		
+		// Fire CombatEnded event for player GMCP
+		events.AddToQueue(events.CombatEnded{
+			EntityId:   user.UserId,
+			EntityType: "player",
+		})
 	} else {
 		user.Character.SetAggro(0, defMob.InstanceId, characters.DefaultAttack)
 	}
@@ -825,6 +847,12 @@ func (rbc *RoundBasedCombat) handleMobVsPlayer(mob *mobs.Mob, mobRoom *rooms.Roo
 		mob.Character.EndAggro()
 		defUser.Character.EndAggro()
 		rbc.timer.RemovePlayer(defUser.UserId)
+		
+		// Fire CombatEnded event for player GMCP
+		events.AddToQueue(events.CombatEnded{
+			EntityId:   defUser.UserId,
+			EntityType: "player",
+		})
 	} else {
 		mob.Character.SetAggro(defUser.UserId, 0, characters.DefaultAttack)
 	}

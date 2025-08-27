@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/GoMudEngine/GoMud/internal/characters"
+	"github.com/GoMudEngine/GoMud/internal/events"
 	"github.com/GoMudEngine/GoMud/internal/items"
 	"github.com/GoMudEngine/GoMud/internal/mobs"
 	"github.com/GoMudEngine/GoMud/internal/mudlog"
@@ -35,7 +36,13 @@ func AttackPlayerVsMob(user *users.UserRecord, mob *mobs.Mob) AttackResult {
 	}
 
 	// Use the combat system's calculator
+	attackerId := user.UserId
+	attackerName := user.Character.Name
+	defenderId := mob.InstanceId
+	defenderName := util.StripANSI(mob.Character.Name)
+	
 	return performAttack(user.Character, &mob.Character, User, Mob, system.GetCalculator(),
+		attackerId, attackerName, defenderId, defenderName,
 		func(result *AttackResult) {
 			if result.DamageToSource != 0 {
 				user.Character.ApplyHealthChange(result.DamageToSource * -1)
@@ -74,7 +81,13 @@ func AttackPlayerVsPlayer(userAtk *users.UserRecord, userDef *users.UserRecord) 
 	}
 
 	// Use the combat system's calculator
+	attackerId := userAtk.UserId
+	attackerName := userAtk.Character.Name
+	defenderId := userDef.UserId
+	defenderName := userDef.Character.Name
+	
 	return performAttack(userAtk.Character, userDef.Character, User, User, system.GetCalculator(),
+		attackerId, attackerName, defenderId, defenderName,
 		func(result *AttackResult) {
 			if result.DamageToSource != 0 {
 				userAtk.Character.ApplyHealthChange(result.DamageToSource * -1)
@@ -114,7 +127,13 @@ func AttackMobVsPlayer(mob *mobs.Mob, user *users.UserRecord) AttackResult {
 	}
 
 	// Use the combat system's calculator
+	attackerId := mob.InstanceId
+	attackerName := util.StripANSI(mob.Character.Name)
+	defenderId := user.UserId
+	defenderName := user.Character.Name
+	
 	return performAttack(&mob.Character, user.Character, Mob, User, system.GetCalculator(),
+		attackerId, attackerName, defenderId, defenderName,
 		func(result *AttackResult) {
 			mob.Character.ApplyHealthChange(result.DamageToSource * -1)
 
@@ -147,7 +166,13 @@ func AttackMobVsMob(mobAtk *mobs.Mob, mobDef *mobs.Mob) AttackResult {
 	}
 
 	// Use the combat system's calculator
+	attackerId := mobAtk.InstanceId
+	attackerName := util.StripANSI(mobAtk.Character.Name)
+	defenderId := mobDef.InstanceId
+	defenderName := util.StripANSI(mobDef.Character.Name)
+	
 	return performAttack(&mobAtk.Character, &mobDef.Character, Mob, Mob, system.GetCalculator(),
+		attackerId, attackerName, defenderId, defenderName,
 		func(result *AttackResult) {
 			mobAtk.Character.ApplyHealthChange(result.DamageToSource * -1)
 			mobDef.Character.ApplyHealthChange(result.DamageToTarget * -1)
@@ -162,7 +187,8 @@ func AttackMobVsMob(mobAtk *mobs.Mob, mobDef *mobs.Mob) AttackResult {
 
 // performAttack handles a single attack using the combat calculator
 func performAttack(attacker, defender *characters.Character, attackerType, defenderType SourceTarget,
-	calculator ICombatCalculator, postAttack func(*AttackResult)) AttackResult {
+	calculator ICombatCalculator, attackerId int, attackerName string, defenderId int, defenderName string,
+	postAttack func(*AttackResult)) AttackResult {
 
 	result := AttackResult{}
 
@@ -191,6 +217,26 @@ func performAttack(attacker, defender *characters.Character, attackerType, defen
 			result.Hit = false
 			// Generate miss messages
 			generateMissMessages(&result, attacker, defender, attackerType, defenderType)
+			
+			// Fire AttackAvoided event for GMCP
+			attackerTypeStr := "mob"
+			if attackerType == User {
+				attackerTypeStr = "player"
+			}
+			defenderTypeStr := "mob"
+			if defenderType == User {
+				defenderTypeStr = "player"
+			}
+			
+			events.AddToQueue(events.AttackAvoided{
+				AttackerId:   attackerId,
+				AttackerType: attackerTypeStr,
+				AttackerName: attackerName,
+				DefenderId:   defenderId,
+				DefenderType: defenderTypeStr,
+				DefenderName: defenderName,
+			})
+			
 			continue
 		}
 
@@ -212,6 +258,29 @@ func performAttack(attacker, defender *characters.Character, attackerType, defen
 
 		// Generate hit messages
 		generateHitMessages(&result, attacker, defender, attackerType, defenderType, damage, result.Crit)
+		
+		// Fire DamageDealt event for GMCP
+		if damage > 0 {
+			attackerTypeStr := "mob"
+			if attackerType == User {
+				attackerTypeStr = "player"
+			}
+			defenderTypeStr := "mob"
+			if defenderType == User {
+				defenderTypeStr = "player"
+			}
+			
+			events.AddToQueue(events.DamageDealt{
+				SourceId:     attackerId,
+				SourceType:   attackerTypeStr,
+				SourceName:   attackerName,
+				TargetId:     defenderId,
+				TargetType:   defenderTypeStr,
+				TargetName:   defenderName,
+				Amount:       damage,
+				DamageType:   "physical",
+			})
+		}
 
 		// Check for buffs to apply
 		checkCombatBuffs(&result, attacker, defender)
