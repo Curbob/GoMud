@@ -1,0 +1,144 @@
+# User Commands Package Context
+
+## Overview
+The `internal/usercommands` package implements the complete command system for player interactions in GoMud. It defines all player-executable commands, from basic movement and communication to complex skills, combat actions, and administrative functions.
+
+## Key Components
+
+### Command Architecture (`usercommands.go`)
+- **UserCommand function signature**: Standardized interface for all commands
+  ```go
+  type UserCommand func(rest string, user *users.UserRecord, room *rooms.Room, flags events.EventFlag) (bool, error)
+  ```
+- **CommandAccess structure**: Defines command permissions and restrictions
+- **Command registry**: Central mapping of command names to implementations
+- **Permission system**: Admin-only commands and downed-state restrictions
+
+### Command Categories
+
+#### **Basic Interaction Commands**
+- **Movement**: `go`, `flee` - Navigation and escape mechanics
+- **Communication**: `say`, `shout`, `whisper`, `emote`, `broadcast` - Player communication
+- **Observation**: `look`, `inspect`, `consider`, `who`, `online` - Information gathering
+- **Inventory**: `inventory`, `get`, `drop`, `give`, `put` - Item management
+
+#### **Combat Commands**
+- **Direct combat**: `attack`, `shoot`, `throw` - Offensive actions
+- **Combat skills**: `disarm`, `tackle`, `backstab`, `recover` - Specialized combat techniques
+- **Defensive**: `flee`, `aid` - Escape and assistance mechanics
+
+#### **Skill-Based Commands**
+- **Magic system**: `cast`, `enchant`, `unenchant`, `prepare` - Spellcasting mechanics
+- **Stealth**: `sneak`, `picklock`, `pickpocket`, `peep` - Stealth and thievery
+- **Utility skills**: `map`, `track`, `search`, `portal` - Exploration and navigation
+- **Crafting**: Various skill-based creation and modification commands
+
+#### **Economic Commands**
+- **Trading**: `buy`, `sell`, `list`, `offer`, `appraise` - Commerce mechanics
+- **Banking**: `bank` - Financial management
+- **Services**: `train` - Character development
+
+#### **Social and Party Commands**
+- **Party system**: `party` - Group management and coordination
+- **Pets**: `pet`, `tame` - Animal companion system
+- **Character management**: `character`, `set`, `alias` - Character customization
+
+#### **Administrative Commands** (Admin-only)
+- **World building**: `room`, `build`, `zone` - Environment creation and modification
+- **Entity management**: `mob`, `item`, `spawn` - Game object manipulation
+- **Server management**: `server`, `reload`, `teleport` - System administration
+- **Player management**: `grant`, `modify`, `mute`, `deafen` - Player administration
+
+### Command Processing Features
+
+#### **Input Parsing and Validation**
+- **Argument parsing**: Sophisticated parsing with quote respect for complex arguments
+- **Target resolution**: Finding players, mobs, and objects by name or partial match
+- **State validation**: Checking combat status, buffs, and other restrictions
+
+#### **Permission and Security**
+- **Role-based access**: Admin commands restricted by user permissions
+- **State restrictions**: Commands blocked when downed, in combat, or affected by buffs
+- **Cooldown management**: Time-based restrictions on command usage
+
+#### **Event Integration**
+- **Event flags**: Commands can be executed secretly or with special modifiers
+- **Event emission**: Commands trigger events for logging and system integration
+- **Combat integration**: Commands interact with combat state and aggro systems
+
+### Skill Integration
+
+#### **Skill-Based Commands** (`skill.*.go` files)
+- **Cast system**: Magic spell casting with proficiency scaling
+- **Brawling skills**: Physical combat techniques (disarm, tackle, throw)
+- **Utility skills**: Map creation, portal magic, inspection abilities
+- **Protection skills**: Aid and defensive capabilities
+
+#### **Skill Validation**
+- **Level requirements**: Commands check character skill levels
+- **Proficiency effects**: Higher skill levels improve command effectiveness
+- **Training integration**: Skills can be improved through use and training
+
+### Administrative System
+
+#### **World Management**
+- **Room editing**: Comprehensive room modification capabilities
+- **Zone management**: Creating and managing game world zones
+- **Spawn control**: Managing mob and item spawning
+
+#### **Player Administration**
+- **Character modification**: Changing player stats, levels, and properties
+- **Punishment system**: Muting, deafening, and other disciplinary actions
+- **Server monitoring**: System status and performance monitoring
+
+### Special Features
+
+#### **Command Suggestions**
+- **Fuzzy matching**: Suggesting similar commands for typos
+- **Context-aware help**: Relevant command suggestions based on situation
+- **Admin filtering**: Different suggestions for admin vs regular users
+
+#### **Scripting Integration**
+- **JavaScript exposure**: Commands can be called from game scripts
+- **Function export**: Command functions available to scripting system
+- **Event-driven execution**: Commands can be triggered by game events
+
+#### **Alias System**
+- **Custom shortcuts**: Players can create command aliases
+- **Macro support**: Complex command sequences through aliases
+- **Personal customization**: Per-character alias storage
+
+## Dependencies
+- `internal/users`: User management and character data
+- `internal/rooms`: Room system for location-based commands
+- `internal/events`: Event system for command effects and logging
+- `internal/mobs`: NPC interaction and combat
+- `internal/items`: Item manipulation and inventory management
+- `internal/skills`: Skill system integration
+- `internal/spells`: Magic system integration
+- `internal/buffs`: Status effect checking and application
+- `internal/scripting`: JavaScript runtime integration
+
+## Usage Patterns
+- Commands follow consistent signature and return conventions
+- State validation occurs before command execution
+- Events are emitted for logging and system integration
+- Permission checks prevent unauthorized access
+- Error handling provides user feedback and system logging
+
+## Testing
+The package includes comprehensive testing for:
+- Command parsing and argument handling
+- Permission and access control
+- State validation and restrictions
+- Integration with other game systems
+- Administrative functionality
+
+## Architecture Benefits
+- **Modular design**: Each command is self-contained and focused
+- **Consistent interface**: All commands follow the same signature pattern
+- **Extensible system**: New commands can be easily added to the registry
+- **Permission control**: Granular access control for different user types
+- **Event integration**: Commands seamlessly integrate with the game's event system
+
+This package serves as the primary interface between players and the game world, providing a rich and comprehensive command system that supports all aspects of gameplay from basic interaction to advanced administrative functions.

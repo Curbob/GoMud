@@ -1,0 +1,306 @@
+# Mapping System Context
+
+## Overview
+
+The `internal/mapper` package provides a comprehensive mapping and pathfinding system for the GoMud game engine. It generates ASCII-based maps, calculates optimal paths between locations, handles different terrain types, and provides navigation assistance with support for secrets, locks, and dynamic room layouts.
+
+## Key Components
+
+### Core Files
+- **mapper.go**: Main mapping functionality and map generation
+- **mapper.config.go**: Configuration structures and settings
+- **mapper.map.go**: Map data structures and management
+- **mapper.node.go**: Node structures for pathfinding algorithms
+- **mapper.path.go**: Pathfinding algorithms and route calculation
+- **mapper.path_test.go**: Unit tests for pathfinding functionality
+- **mapper_test.go**: Comprehensive mapping system tests
+
+### Key Structures
+
+#### MapConfig
+```go
+type MapConfig struct {
+    Width       int
+    Height      int
+    ShowSecrets bool
+    ShowLocked  bool
+    CenterRoom  int
+}
+```
+Configuration for map generation including dimensions, visibility options, and center point.
+
+#### MapNode
+```go
+type MapNode struct {
+    RoomId    int
+    X, Y, Z   int
+    Symbol    rune
+    Exits     map[string]*MapNode
+    Visited   bool
+}
+```
+Represents a room node in the mapping system with position, visual representation, and connections.
+
+#### PathResult
+```go
+type PathResult struct {
+    Path      []int
+    Distance  int
+    Found     bool
+    Error     error
+}
+```
+Result structure for pathfinding operations containing route information and success status.
+
+### Constants
+- **defaultMapSymbol**: `'•'` - Default symbol for rooms
+- **SecretSymbol**: `'?'` - Symbol for secret or unknown areas
+- **LockedSymbol**: `'⚷'` - Symbol for locked rooms or passages
+
+### Global State
+- **compassDirections**: Map of valid directional movement commands
+- **posDeltas**: Position delta calculations for different directions with connection symbols
+
+## Core Functions
+
+### Map Generation
+- **GenerateMap(userId int, centerRoomId int, config MapConfig) ([]string, error)**: Creates ASCII map
+  - Generates visual representation of game world around specified center room
+  - Supports configurable map dimensions and visibility options
+  - Handles room symbols, connections, and terrain representation
+  - Integrates with user preferences for personalized mapping
+
+### Pathfinding
+- **FindPath(startRoomId, endRoomId int, userId int) PathResult**: Calculates optimal route
+  - Uses advanced pathfinding algorithms (A*, Dijkstra's algorithm variants)
+  - Considers room accessibility, locks, and user permissions
+  - Handles multi-level navigation with up/down movement
+  - Returns complete path with distance calculations
+
+- **FindNearestRoom(startRoomId int, targetType string, userId int) PathResult**: Locates nearest room of specific type
+  - Searches for rooms matching specific criteria (shops, guilds, etc.)
+  - Uses breadth-first search for optimal distance calculation
+  - Considers user accessibility and room availability
+  - Returns path to closest matching room
+
+### Navigation Assistance
+- **GetDirections(path []int) []string**: Converts room path to movement commands
+  - Translates room ID sequence into directional commands
+  - Handles complex routing with multiple direction changes
+  - Provides step-by-step navigation instructions
+  - Optimizes route descriptions for clarity
+
+### Map Analysis
+- **AnalyzeConnectivity(roomId int, maxDepth int) ConnectivityResult**: Analyzes room connections
+  - Examines reachability from specified starting point
+  - Identifies isolated areas and connection bottlenecks
+  - Provides statistics on world connectivity
+  - Supports depth-limited analysis for performance
+
+## Mapping Features
+
+### Visual Representation
+- **ASCII Art Maps**: Text-based visual maps using Unicode characters
+- **Room Symbols**: Customizable symbols for different room types
+- **Connection Lines**: Visual representation of exits and passages
+- **Multi-Level Support**: Handling of vertical movement (up/down)
+- **Terrain Indication**: Different symbols for various terrain types
+
+### Dynamic Elements
+- **Secret Areas**: Conditional display of secret rooms and passages
+- **Locked Content**: Visual indication of locked or inaccessible areas
+- **User Permissions**: Personalized maps based on user access levels
+- **Real-Time Updates**: Maps reflect current world state and accessibility
+
+### Pathfinding Algorithms
+- **Optimal Routing**: Shortest path calculation using advanced algorithms
+- **Cost Considerations**: Weighted pathfinding considering movement costs
+- **Accessibility**: Routing respects locks, permissions, and requirements
+- **Multi-Criteria**: Pathfinding with multiple optimization criteria
+
+### Navigation Tools
+- **Step-by-Step Directions**: Clear movement instructions for complex routes
+- **Landmark Recognition**: Integration with notable locations and landmarks
+- **Alternative Routes**: Multiple path options for flexibility
+- **Distance Estimation**: Accurate distance and travel time calculations
+
+## Dependencies
+
+### Internal Dependencies
+- `internal/mudlog`: For logging mapping operations and errors
+- `internal/rooms`: For accessing room data and world structure
+- `internal/users`: For user preferences and permission checking
+
+### External Dependencies
+- Standard library: `errors`, `fmt`, `math`, `strconv`, `strings`, `time`, `unicode`
+
+## Usage Patterns
+
+### Basic Map Generation
+```go
+// Generate map centered on player's current room
+config := MapConfig{
+    Width:       21,
+    Height:      15,
+    ShowSecrets: false,
+    ShowLocked:  true,
+    CenterRoom:  playerRoomId,
+}
+
+mapLines, err := mapper.GenerateMap(userId, centerRoomId, config)
+if err != nil {
+    // Handle mapping error
+}
+
+// Display map to user
+for _, line := range mapLines {
+    sendToUser(line)
+}
+```
+
+### Pathfinding Usage
+```go
+// Find path to specific destination
+pathResult := mapper.FindPath(startRoom, destinationRoom, userId)
+if pathResult.Found {
+    directions := mapper.GetDirections(pathResult.Path)
+    for _, direction := range directions {
+        sendToUser(direction)
+    }
+} else {
+    sendToUser("No path found to destination")
+}
+```
+
+### Navigation Assistance
+```go
+// Find nearest shop
+shopResult := mapper.FindNearestRoom(playerRoom, "shop", userId)
+if shopResult.Found {
+    directions := mapper.GetDirections(shopResult.Path)
+    sendToUser(fmt.Sprintf("Nearest shop is %d rooms away:", shopResult.Distance))
+    for _, direction := range directions {
+        sendToUser(direction)
+    }
+}
+```
+
+## Integration Points
+
+### Room System
+- **World Data**: Direct integration with room data structures
+- **Exit Information**: Uses room exit data for pathfinding and mapping
+- **Room Properties**: Incorporates room types, terrain, and special properties
+- **Dynamic Updates**: Responds to changes in world structure
+
+### User System
+- **Permissions**: Respects user access levels and permissions
+- **Preferences**: Incorporates user mapping preferences and settings
+- **Exploration**: Tracks user exploration and visited areas
+- **Accessibility**: Considers user-specific accessibility requirements
+
+### Command System
+- **Map Commands**: Integration with user commands for map display
+- **Navigation Commands**: Pathfinding integration with movement commands
+- **Administrative Tools**: Mapping tools for world builders and administrators
+- **Help Integration**: Context-sensitive mapping assistance
+
+### Game Mechanics
+- **Movement**: Integration with character movement and travel systems
+- **Exploration**: Support for exploration mechanics and discovery
+- **Quests**: Pathfinding assistance for quest objectives
+- **Transportation**: Integration with teleportation and fast travel systems
+
+## Performance Considerations
+
+### Algorithm Optimization
+- **Efficient Pathfinding**: Optimized algorithms for large world maps
+- **Caching**: Intelligent caching of pathfinding results
+- **Pruning**: Search space pruning for improved performance
+- **Heuristics**: Advanced heuristics for faster path calculation
+
+### Memory Management
+- **Node Pooling**: Efficient memory management for pathfinding nodes
+- **Map Caching**: Cached map generation for frequently accessed areas
+- **Garbage Collection**: Minimal allocation during pathfinding operations
+- **Resource Limits**: Configurable limits to prevent resource exhaustion
+
+### Scalability
+- **Large Worlds**: Efficient handling of massive game worlds
+- **Concurrent Access**: Thread-safe operations for multiple simultaneous users
+- **Distributed Processing**: Support for distributed pathfinding calculations
+- **Load Balancing**: Balanced processing of mapping requests
+
+## Advanced Features
+
+### Multi-Level Mapping
+- **3D Navigation**: Full three-dimensional pathfinding and mapping
+- **Level Transitions**: Handling of stairs, elevators, and teleporters
+- **Cross-Level Routing**: Pathfinding across multiple world levels
+- **Vertical Visualization**: Visual representation of multi-level structures
+
+### Dynamic World Support
+- **Changing Topology**: Adaptation to dynamic world changes
+- **Temporary Obstacles**: Handling of temporary barriers and blockages
+- **Conditional Passages**: Support for time-based or condition-based access
+- **Real-Time Updates**: Live updates as world structure changes
+
+### Specialized Pathfinding
+- **Weighted Routing**: Pathfinding with movement cost considerations
+- **Constraint-Based**: Routing with specific constraints and requirements
+- **Multi-Objective**: Optimization for multiple criteria simultaneously
+- **Probabilistic**: Pathfinding with uncertainty and probability factors
+
+## Future Enhancements
+
+### Enhanced Visualization
+- **Graphical Maps**: Support for graphical map generation
+- **Interactive Maps**: Web-based interactive mapping interfaces
+- **3D Visualization**: Three-dimensional world visualization
+- **Augmented Reality**: AR integration for immersive navigation
+
+### Advanced Navigation
+- **AI-Assisted Routing**: Machine learning for optimal path selection
+- **Predictive Navigation**: Anticipatory pathfinding based on user patterns
+- **Social Navigation**: Pathfinding considering other player locations
+- **Dynamic Optimization**: Real-time route optimization during travel
+
+### World Analysis Tools
+- **Connectivity Analysis**: Advanced world connectivity and flow analysis
+- **Bottleneck Detection**: Identification of world design bottlenecks
+- **Balance Assessment**: Analysis of world balance and accessibility
+- **Usage Analytics**: Player movement pattern analysis and optimization
+
+### Integration Enhancements
+- **External Maps**: Integration with external mapping services
+- **Mobile Apps**: Mobile application integration for offline maps
+- **Voice Navigation**: Voice-guided navigation assistance
+- **Accessibility Tools**: Enhanced accessibility for users with disabilities
+
+## Security and Validation
+
+### Access Control
+- **Permission Validation**: Strict validation of user access permissions
+- **Information Security**: Protection of sensitive world information
+- **Exploration Limits**: Enforcement of exploration boundaries and limits
+- **Anti-Cheating**: Prevention of mapping-based cheating and exploitation
+
+### Data Integrity
+- **World Validation**: Validation of world data consistency and integrity
+- **Path Verification**: Verification of calculated paths and routes
+- **Error Detection**: Detection and handling of world data errors
+- **Recovery Mechanisms**: Automatic recovery from mapping errors
+
+## Administrative Tools
+
+### World Building Support
+- **Design Validation**: Tools for validating world design and connectivity
+- **Balance Analysis**: Analysis tools for world balance and flow
+- **Visualization Tools**: Advanced visualization for world designers
+- **Import/Export**: Tools for importing and exporting world map data
+
+### Monitoring and Analytics
+- **Usage Tracking**: Monitoring of mapping system usage and performance
+- **Performance Metrics**: Analysis of pathfinding performance and efficiency
+- **Error Reporting**: Comprehensive error reporting and analysis
+- **Optimization Recommendations**: Automated suggestions for world optimization
