@@ -122,6 +122,7 @@ func init() {
 	mod.plug.AddUserCommand(`reel`, mod.ReelCommand, true, false)
 	mod.plug.AddUserCommand(`catches`, mod.CatchesCommand, true, false)
 	mod.plug.AddUserCommand(`eat`, mod.EatCommand, true, false)
+	mod.plug.AddUserCommand(`sellfish`, mod.SellFishCommand, true, false)
 
 	// Register callbacks
 	mod.plug.Callbacks.SetOnLoad(mod.load)
@@ -507,7 +508,112 @@ func (mod *FishingModule) CatchesCommand(rest string, user *users.UserRecord, ro
 	}
 
 	user.SendText(``)
-	user.SendText(`<ansi fg="8">Use <ansi fg="command">eat [fish name]</ansi> to consume.</ansi>`)
+	user.SendText(`<ansi fg="8">Use <ansi fg="command">eat [fish name]</ansi> to consume, or <ansi fg="command">sellfish</ansi> to sell.</ansi>`)
+
+	return true, nil
+}
+
+// SellFishCommand sells fish from inventory
+// - No args: sells all non-buff fish (safe default)
+// - "all": sells everything including buff fish
+// - [name]: sells specific fish by name (even buff fish)
+func (mod *FishingModule) SellFishCommand(rest string, user *users.UserRecord, room *rooms.Room, flags events.EventFlag) (bool, error) {
+
+	rest = strings.TrimSpace(rest)
+	sellAll := strings.EqualFold(rest, "all")
+	sellSpecific := rest != "" && !sellAll
+
+	totalGold := 0
+	soldCount := 0
+	skippedBuff := 0
+
+	if sellSpecific {
+		// Sell a specific fish by name
+		searchName := strings.ToLower(rest)
+		found := false
+
+		for id, fish := range mod.fishData.Fish {
+			if strings.EqualFold(fish.Name, rest) || strings.Contains(strings.ToLower(fish.Name), searchName) {
+				key := "fish_" + id
+				count := 0
+				if val := user.GetTempData(key); val != nil {
+					count = val.(int)
+				}
+
+				if count > 0 {
+					found = true
+					// Sell one of this fish
+					user.SetTempData(key, count-1)
+					gold := fish.Value
+					if gold <= 0 {
+						gold = 1 // Minimum 1g for any fish
+					}
+					totalGold += gold
+					soldCount++
+					user.SendText(fmt.Sprintf(`Sold <ansi fg="white-bold">%s</ansi> for <ansi fg="gold">%d gold</ansi>.`, fish.Name, gold))
+				}
+				break
+			}
+		}
+
+		if !found {
+			user.SendText(`You don't have that fish to sell.`)
+			return true, nil
+		}
+	} else {
+		// Sell multiple fish
+		for id, fish := range mod.fishData.Fish {
+			key := "fish_" + id
+			count := 0
+			if val := user.GetTempData(key); val != nil {
+				count = val.(int)
+			}
+
+			if count <= 0 {
+				continue
+			}
+
+			// Check if this is a buff fish
+			hasBuff := fish.HealAmount > 0 || fish.BuffId > 0
+
+			if hasBuff && !sellAll {
+				// Skip buff fish unless "all" was specified
+				skippedBuff += count
+				continue
+			}
+
+			// Sell all of this fish type
+			gold := fish.Value
+			if gold <= 0 {
+				gold = 1
+			}
+			totalGold += gold * count
+			soldCount += count
+			user.SetTempData(key, 0)
+		}
+
+		if soldCount == 0 && skippedBuff == 0 {
+			user.SendText(`You don't have any fish to sell.`)
+			return true, nil
+		}
+
+		if soldCount == 0 && skippedBuff > 0 {
+			user.SendText(fmt.Sprintf(`You have <ansi fg="cyan">%d</ansi> fish with buffs/HP. Use <ansi fg="command">sellfish all</ansi> to sell them too, or <ansi fg="command">sellfish [name]</ansi> to sell specific ones.`, skippedBuff))
+			return true, nil
+		}
+
+		user.SendText(``)
+		user.SendText(fmt.Sprintf(`Sold <ansi fg="white-bold">%d fish</ansi> for <ansi fg="gold">%d gold</ansi>!`, soldCount, totalGold))
+
+		if skippedBuff > 0 {
+			user.SendText(fmt.Sprintf(`<ansi fg="8">Kept %d fish with buffs/HP. Use <ansi fg="command">sellfish all</ansi> to sell those too.</ansi>`, skippedBuff))
+		}
+	}
+
+	if totalGold > 0 {
+		user.Character.Gold += totalGold
+		events.AddToQueue(events.EquipmentChange{UserId: user.UserId, GoldChange: totalGold})
+	}
 
 	return true, nil
 }
