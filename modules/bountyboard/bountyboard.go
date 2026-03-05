@@ -30,15 +30,15 @@ type BountyModule struct {
 
 // Bounty represents a bounty contract
 type Bounty struct {
-	MobId       int    `json:"mobid"`       // The mob type to hunt
-	MobName     string `json:"mobname"`     // Display name
-	Zone        string `json:"zone"`        // Zone where mob is found
-	Required    int    `json:"required"`    // Number to kill
-	GoldReward  int    `json:"goldreward"`  // Gold reward
-	ExpReward   int    `json:"expreward"`   // Experience reward
-	MinLevel    int    `json:"minlevel"`    // Minimum player level
-	MaxLevel    int    `json:"maxlevel"`    // Maximum player level (0 = no max)
-	Description string `json:"description"` // Flavor text
+	MobId       int    `yaml:"mobid" json:"mobid"`             // The mob type to hunt
+	MobName     string `yaml:"mobname" json:"mobname"`         // Display name
+	Zone        string `yaml:"zone" json:"zone"`               // Zone where mob is found
+	Required    int    `yaml:"required" json:"required"`       // Number to kill
+	GoldReward  int    `yaml:"goldreward" json:"goldreward"`   // Gold reward
+	ExpReward   int    `yaml:"expreward" json:"expreward"`     // Experience reward
+	MinLevel    int    `yaml:"minlevel" json:"minlevel"`       // Minimum player level
+	MaxLevel    int    `yaml:"maxlevel" json:"maxlevel"`       // Maximum player level (0 = no max)
+	Description string `yaml:"description" json:"description"` // Flavor text
 }
 
 // PlayerBounty tracks a player's active bounty
@@ -53,12 +53,13 @@ type SaveData struct {
 	ActiveBounties map[int]*PlayerBounty `json:"activebounties"`
 }
 
-// Available bounties (could be loaded from datafile in future)
-var availableBounties = []Bounty{
-	{MobId: 1, MobName: "Rat", Zone: "startland", Required: 5, GoldReward: 25, ExpReward: 50, MinLevel: 1, MaxLevel: 5, Description: "Clear out the rat infestation!"},
-	{MobId: 2, MobName: "Guard", Zone: "startland", Required: 3, GoldReward: 100, ExpReward: 150, MinLevel: 3, MaxLevel: 10, Description: "Take down some corrupt guards."},
-	{MobId: 13, MobName: "Loot Goblin", Zone: "endless_trashheap", Required: 2, GoldReward: 200, ExpReward: 300, MinLevel: 5, MaxLevel: 0, Description: "Hunt the elusive loot goblins!"},
+// BountyConfig is the structure of the bounties.yaml file
+type BountyConfig struct {
+	Bounties []Bounty `yaml:"bounties"`
 }
+
+// Available bounties - loaded from datafile
+var availableBounties = []Bounty{}
 
 func init() {
 	mod := &BountyModule{
@@ -83,12 +84,23 @@ func init() {
 }
 
 func (mod *BountyModule) load() {
+	// Load player progress
 	var data SaveData
 	mod.plug.ReadIntoStruct(`bountydata`, &data)
 	if data.ActiveBounties != nil {
 		mod.bountyLock.Lock()
 		mod.activeBounties = data.ActiveBounties
 		mod.bountyLock.Unlock()
+	}
+
+	// Load bounty definitions from config
+	var config BountyConfig
+	if err := mod.plug.ReadIntoStruct(`bounties`, &config); err == nil && len(config.Bounties) > 0 {
+		availableBounties = config.Bounties
+		// Sort by level
+		sort.Slice(availableBounties, func(i, j int) bool {
+			return availableBounties[i].MinLevel < availableBounties[j].MinLevel
+		})
 	}
 }
 
@@ -369,9 +381,4 @@ func stripAnsi(s string) string {
 	return result
 }
 
-// Ensure bounties are sorted by level
-func init() {
-	sort.Slice(availableBounties, func(i, j int) bool {
-		return availableBounties[i].MinLevel < availableBounties[j].MinLevel
-	})
-}
+// Bounties are sorted by level during load()
