@@ -1,0 +1,10 @@
+itemid: 30101
+name: mudfish
+namesimple: fish
+description: A common bottom-feeder. Not tasty, but edible.
+type: food
+subtype: edible
+uses: 1
+value: 2
+buffids:
+- 51

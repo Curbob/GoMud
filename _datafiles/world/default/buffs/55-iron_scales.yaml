@@ -1,0 +1,7 @@
+buffid: 55
+name: Iron Scales
+description: Your skin feels tougher, like fish scales made of iron.
+triggerrate: 1 round
+triggercount: 60
+statmods:
+  vitality: 3

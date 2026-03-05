@@ -1,0 +1,6 @@
+buffid: 52
+name: Well Nourished
+description: A hearty meal restores health.
+triggernow: true
+triggerrate: 1 round
+triggercount: 1

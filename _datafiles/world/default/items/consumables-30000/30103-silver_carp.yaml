@@ -1,0 +1,10 @@
+itemid: 30103
+name: silver carp
+namesimple: carp
+description: Shimmering scales make this fish easy to spot.
+type: food
+subtype: edible
+uses: 1
+value: 8
+buffids:
+- 53

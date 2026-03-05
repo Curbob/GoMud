@@ -1,0 +1,11 @@
+itemid: 30110
+name: glowfin
+namesimple: fish
+description: A luminescent fish. Eating it grants enhanced vision.
+type: food
+subtype: edible
+uses: 1
+value: 15
+buffids:
+- 52
+- 29

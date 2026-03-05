@@ -1,0 +1,10 @@
+itemid: 30111
+name: swiftscale
+namesimple: fish
+description: An incredibly fast fish. Its energy is contagious.
+type: food
+subtype: edible
+uses: 1
+value: 20
+buffids:
+- 52

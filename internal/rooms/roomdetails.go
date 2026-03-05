@@ -101,7 +101,7 @@ func GetDetails(r *Room, user *users.UserRecord, tinymap ...[]string) RoomTempla
 	}
 
 	if r.IsFishable {
-		details.RoomAlerts = append(details.RoomAlerts, `        <ansi fg="yellow-bold">You can fish here!</ansi> Type <ansi fg="command">fish</ansi> to cast your line.`)
+		details.RoomAlerts = append(details.RoomAlerts, `          <ansi fg="cyan-bold">You can fish here!</ansi> Type <ansi fg="command">fish</ansi> to cast a line.`)
 	}
 
 	if r.IsCharacterRoom {

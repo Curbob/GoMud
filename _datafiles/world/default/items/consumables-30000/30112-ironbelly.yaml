@@ -1,0 +1,11 @@
+itemid: 30112
+name: ironbelly
+namesimple: fish
+description: A heavily armored fish. Tough to chew, tougher to digest.
+type: food
+subtype: edible
+uses: 1
+value: 25
+buffids:
+- 53
+- 55

@@ -1,0 +1,11 @@
+itemid: 30113
+name: healfin
+namesimple: fish
+description: A rare fish with regenerative properties.
+type: food
+subtype: edible
+uses: 1
+value: 30
+buffids:
+- 54
+- 30

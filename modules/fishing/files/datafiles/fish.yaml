@@ -1,74 +1,57 @@
 # Fish Definitions
-# 
-# Types:
-#   common - Basic fish, sell for gold, restore HP when eaten
-#   buff - Restore HP + grant temporary buff
-#   junk - Worthless/flavor items
-#   treasure - Valuable rare catches
-#   quest - Used for bounties/quests
+# Types: common, buff, junk, treasure
+# HP/buffs are now handled by item definitions
 
 fish:
-  # === COMMON FISH (HP restore + sell) ===
+  # === COMMON FISH ===
+  pool_minnow:
+    name: "Pool Minnow"
+    description: "A tiny fish. How did it even get on the hook?"
+    value: 1
+    type: common
+
   mudfish:
     name: "Mudfish"
     description: "A common bottom-feeder. Not tasty, but edible."
     value: 2
     type: common
-    healamount: 5
 
   frost_trout:
     name: "Frost Trout"
     description: "A cold-water fish prized for its flavor."
     value: 5
     type: common
-    healamount: 10
 
   silver_carp:
     name: "Silver Carp"
     description: "Shimmering scales make this fish easy to spot."
     value: 8
     type: common
-    healamount: 15
 
-  pool_minnow:
-    name: "Pool Minnow"
-    description: "A tiny fish. How did it even get in here?"
-    value: 1
-    type: common
-    healamount: 3
-
-  # === BUFF FISH (HP + buff) ===
+  # === BUFF FISH ===
   glowfin:
     name: "Glowfin"
     description: "A luminescent fish. Eating it grants enhanced vision."
     value: 15
     type: buff
-    healamount: 10
-    buffid: 29  # night_vision buff (duration defined in buff file)
 
   swiftscale:
     name: "Swiftscale"
     description: "An incredibly fast fish. Its energy is contagious."
     value: 20
     type: buff
-    healamount: 10
-    buffid: 0  # TODO: create speed buff
 
   ironbelly:
     name: "Ironbelly"
     description: "A heavily armored fish. Tough to chew, tougher to digest."
     value: 25
     type: buff
-    healamount: 15
-    buffid: 0  # TODO: create defense buff
 
   healfin:
     name: "Healfin"
     description: "A rare fish with regenerative properties."
     value: 30
     type: buff
-    healamount: 20
-    buffid: 30  # regeneration buff (duration defined in buff file)
 
   # === JUNK ===
   old_boot:
@@ -94,45 +77,3 @@ fish:
     description: "The pages are ruined, but the cover looks interesting."
     value: 3
     type: junk
-
-  # === CON POOL SPECIALS ===
-  lost_badge:
-    name: "Lost Conference Badge"
-    description: "Someone's going to have trouble getting back in."
-    value: 5
-    type: junk
-
-  wet_business_card:
-    name: "Wet Business Card"
-    description: "The ink has run. You can barely make out '...security consultant...'"
-    value: 1
-    type: junk
-
-  forgotten_usb:
-    name: "Forgotten USB Drive"
-    description: "Found in the pool. Who knows what's on this thing?"
-    value: 10
-    type: junk
-
-  # === TREASURE ===
-  coin_pouch:
-    name: "Small Coin Pouch"
-    description: "A waterlogged pouch with coins inside!"
-    value: 0  # Value determined randomly on catch (25-50)
-    type: treasure
-    mingold: 25
-    maxgold: 50
-
-  golden_fish:
-    name: "Golden Fish"
-    description: "A legendary catch! Its scales shimmer like pure gold."
-    value: 100
-    type: treasure
-
-  # === QUEST FISH ===
-  frost_sturgeon:
-    name: "Frost Lake Sturgeon"
-    description: "A prized catch. The old fisherman pays well for these."
-    value: 25
-    type: quest
-    questflag: "sturgeon_catch"
