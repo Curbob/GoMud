@@ -1,0 +1,33 @@
+<ansi fg="yellow">╔══════════════════════════════════════════════════════════════════╗</ansi>
+<ansi fg="yellow">║</ansi>                   <ansi fg="white-bold">🎯 BOUNTY BOARD 🎯</ansi>                          <ansi fg="yellow">║</ansi>
+<ansi fg="yellow">╚══════════════════════════════════════════════════════════════════╝</ansi>
+
+The Bounty Board offers contracts to hunt specific creatures for
+gold and experience rewards. Only one bounty can be active at a time.
+
+<ansi fg="yellow-bold">Commands:</ansi>
+
+  <ansi fg="command">bounty</ansi> or <ansi fg="command">bounties</ansi>
+    View the bounty board with available contracts.
+
+  <ansi fg="command">bounty [number]</ansi> or <ansi fg="command">bounty accept [number]</ansi>
+    Accept a bounty contract from the board.
+
+  <ansi fg="command">bounty status</ansi>
+    Check your current bounty progress.
+
+  <ansi fg="command">bounty abandon</ansi>
+    Give up your current bounty (no penalty).
+
+<ansi fg="yellow-bold">How It Works:</ansi>
+  1. Check the bounty board for available contracts
+  2. Accept one that matches your level
+  3. Hunt the required creatures anywhere in the world
+  4. Rewards are given automatically when complete
+
+<ansi fg="yellow-bold">Tips:</ansi>
+  • Bounties are level-restricted to keep them challenging
+  • Progress is saved - you can log out and continue later
+  • Abandoning a bounty loses your progress
+
+<ansi fg="yellow-bold">See Also:</ansi> <ansi fg="command">killstats</ansi>, <ansi fg="command">attack</ansi>

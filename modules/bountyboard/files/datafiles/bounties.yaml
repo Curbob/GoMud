@@ -1,0 +1,104 @@
+# Bounty Board Configuration
+# 
+# Balance notes:
+# - Mobs already drop gold on death, bounty rewards are BONUS gold
+# - Low level mobs typically drop 0-3 gold
+# - Mid level mobs drop 5-10 gold  
+# - Bosses drop 50-100 gold
+# - Bounty rewards should be modest incentives, not game-breaking
+# - Cooldowns prevent farming the same bounty repeatedly
+#
+# Fields:
+#   mobid: The mob type ID to hunt
+#   mobname: Display name for the bounty board
+#   zone: Zone hint for players (optional, informational only)
+#   required: Number of kills needed
+#   goldreward: Bonus gold on completion
+#   expreward: Bonus XP on completion
+#   minlevel: Minimum player level to see/accept
+#   maxlevel: Maximum player level (0 = no max)
+#   cooldownhours: Hours before bounty can be repeated (0 = no cooldown)
+#   description: Flavor text
+
+bounties:
+  # Starter bounties (Level 1-5)
+  - mobid: 1
+    mobname: "Rat"
+    zone: "Startland"
+    required: 5
+    goldreward: 10
+    expreward: 25
+    minlevel: 1
+    maxlevel: 5
+    cooldownhours: 2
+    description: "The town has a rat problem. Help clear them out!"
+
+  # Early game (Level 3-8)
+  - mobid: 15
+    mobname: "Skeleton"
+    zone: "Catacombs"
+    required: 4
+    goldreward: 15
+    expreward: 40
+    minlevel: 3
+    maxlevel: 8
+    cooldownhours: 3
+    description: "Skeletons are stirring in the catacombs."
+
+  # Mid game (Level 5-12)
+  - mobid: 17
+    mobname: "Dark Acolyte"
+    zone: "Catacombs"
+    required: 3
+    goldreward: 25
+    expreward: 60
+    minlevel: 5
+    maxlevel: 12
+    cooldownhours: 4
+    description: "Dark magic users threaten the realm."
+
+  # Higher level (Level 8+)
+  - mobid: 13
+    mobname: "Loot Goblin"
+    zone: "Endless Trashheap"
+    required: 2
+    goldreward: 40
+    expreward: 100
+    minlevel: 8
+    maxlevel: 0
+    cooldownhours: 6
+    description: "Hunt the elusive loot goblins!"
+
+  # CackalackyCon bounties
+  - mobid: 200
+    mobname: "Script Kiddie"
+    zone: "CackalackyCon"
+    required: 5
+    goldreward: 15
+    expreward: 30
+    minlevel: 1
+    maxlevel: 6
+    cooldownhours: 2
+    description: "Clear out the script kiddies from the con floor."
+
+  - mobid: 205
+    mobname: "Rogue IoT Device"
+    zone: "CackalackyCon"
+    required: 3
+    goldreward: 25
+    expreward: 50
+    minlevel: 4
+    maxlevel: 10
+    cooldownhours: 3
+    description: "Compromised IoT devices are causing chaos!"
+
+  - mobid: 206
+    mobname: "Social Engineer"
+    zone: "CackalackyCon"
+    required: 2
+    goldreward: 40
+    expreward: 80
+    minlevel: 6
+    maxlevel: 0
+    cooldownhours: 4
+    description: "Stop the social engineers before they breach security."
