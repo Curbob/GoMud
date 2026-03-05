@@ -23,22 +23,24 @@ var (
 
 // BountyModule manages the bounty board system
 type BountyModule struct {
-	plug       *plugins.Plugin
-	activeBounties map[int]*PlayerBounty // keyed by UserId
-	bountyLock     sync.RWMutex
+	plug             *plugins.Plugin
+	activeBounties   map[int]*PlayerBounty      // keyed by UserId
+	bountyCooldowns  map[int]map[int]time.Time  // UserId -> MobId -> CompletedAt
+	bountyLock       sync.RWMutex
 }
 
 // Bounty represents a bounty contract
 type Bounty struct {
-	MobId       int    `yaml:"mobid" json:"mobid"`             // The mob type to hunt
-	MobName     string `yaml:"mobname" json:"mobname"`         // Display name
-	Zone        string `yaml:"zone" json:"zone"`               // Zone where mob is found
-	Required    int    `yaml:"required" json:"required"`       // Number to kill
-	GoldReward  int    `yaml:"goldreward" json:"goldreward"`   // Gold reward
-	ExpReward   int    `yaml:"expreward" json:"expreward"`     // Experience reward
-	MinLevel    int    `yaml:"minlevel" json:"minlevel"`       // Minimum player level
-	MaxLevel    int    `yaml:"maxlevel" json:"maxlevel"`       // Maximum player level (0 = no max)
-	Description string `yaml:"description" json:"description"` // Flavor text
+	MobId         int    `yaml:"mobid" json:"mobid"`                 // The mob type to hunt
+	MobName       string `yaml:"mobname" json:"mobname"`             // Display name
+	Zone          string `yaml:"zone" json:"zone"`                   // Zone where mob is found
+	Required      int    `yaml:"required" json:"required"`           // Number to kill
+	GoldReward    int    `yaml:"goldreward" json:"goldreward"`       // Gold reward
+	ExpReward     int    `yaml:"expreward" json:"expreward"`         // Experience reward
+	MinLevel      int    `yaml:"minlevel" json:"minlevel"`           // Minimum player level
+	MaxLevel      int    `yaml:"maxlevel" json:"maxlevel"`           // Maximum player level (0 = no max)
+	CooldownHours int    `yaml:"cooldownhours" json:"cooldownhours"` // Hours before can repeat (0 = no cooldown)
+	Description   string `yaml:"description" json:"description"`     // Flavor text
 }
 
 // PlayerBounty tracks a player's active bounty
@@ -50,7 +52,8 @@ type PlayerBounty struct {
 
 // SaveData for persistence
 type SaveData struct {
-	ActiveBounties map[int]*PlayerBounty `json:"activebounties"`
+	ActiveBounties   map[int]*PlayerBounty        `json:"activebounties"`
+	BountyCooldowns  map[int]map[int]time.Time    `json:"bountycooldowns"` // UserId -> MobId -> CompletedAt
 }
 
 // BountyConfig is the structure of the bounties.yaml file
@@ -63,8 +66,9 @@ var availableBounties = []Bounty{}
 
 func init() {
 	mod := &BountyModule{
-		plug:           plugins.New(`bountyboard`, `1.0`),
-		activeBounties: make(map[int]*PlayerBounty),
+		plug:            plugins.New(`bountyboard`, `1.0`),
+		activeBounties:  make(map[int]*PlayerBounty),
+		bountyCooldowns: make(map[int]map[int]time.Time),
 	}
 
 	if err := mod.plug.AttachFileSystem(files); err != nil {
@@ -87,11 +91,14 @@ func (mod *BountyModule) load() {
 	// Load player progress
 	var data SaveData
 	mod.plug.ReadIntoStruct(`bountydata`, &data)
+	mod.bountyLock.Lock()
 	if data.ActiveBounties != nil {
-		mod.bountyLock.Lock()
 		mod.activeBounties = data.ActiveBounties
-		mod.bountyLock.Unlock()
 	}
+	if data.BountyCooldowns != nil {
+		mod.bountyCooldowns = data.BountyCooldowns
+	}
+	mod.bountyLock.Unlock()
 
 	// Load bounty definitions from config
 	var config BountyConfig
@@ -106,7 +113,10 @@ func (mod *BountyModule) load() {
 
 func (mod *BountyModule) save() {
 	mod.bountyLock.RLock()
-	data := SaveData{ActiveBounties: mod.activeBounties}
+	data := SaveData{
+		ActiveBounties:  mod.activeBounties,
+		BountyCooldowns: mod.bountyCooldowns,
+	}
 	mod.bountyLock.RUnlock()
 	mod.plug.WriteStruct(`bountydata`, data)
 }
@@ -153,12 +163,23 @@ func (mod *BountyModule) onMobDeath(e events.Event) events.ListenerReturn {
 				user.SendText(`<ansi fg="green-bold">═══════════════════════════════════════</ansi>`)
 				user.SendText(fmt.Sprintf(`You completed: <ansi fg="yellow">%s</ansi>`, playerBounty.Bounty.Description))
 				user.SendText(fmt.Sprintf(`Reward: <ansi fg="gold">%d gold</ansi> + <ansi fg="cyan">%d experience</ansi>`, playerBounty.Bounty.GoldReward, playerBounty.Bounty.ExpReward))
+				if playerBounty.Bounty.CooldownHours > 0 {
+					user.SendText(fmt.Sprintf(`<ansi fg="8">This bounty will be available again in %d hours.</ansi>`, playerBounty.Bounty.CooldownHours))
+				}
 				user.SendText(``)
 
 				events.AddToQueue(events.EquipmentChange{
 					UserId:     userId,
 					GoldChange: playerBounty.Bounty.GoldReward,
 				})
+
+				// Record cooldown if applicable
+				if playerBounty.Bounty.CooldownHours > 0 {
+					if mod.bountyCooldowns[userId] == nil {
+						mod.bountyCooldowns[userId] = make(map[int]time.Time)
+					}
+					mod.bountyCooldowns[userId][playerBounty.Bounty.MobId] = time.Now()
+				}
 
 				// Remove completed bounty
 				delete(mod.activeBounties, userId)
@@ -236,12 +257,27 @@ func (mod *BountyModule) showBountyBoard(user *users.UserRecord, room *rooms.Roo
 				levelRange = fmt.Sprintf("Lvl %d+", b.MinLevel)
 			}
 			
-			line1 := fmt.Sprintf(`<ansi fg="yellow">║</ansi>  <ansi fg="cyan-bold">[%d]</ansi> <ansi fg="white-bold">%-15s</ansi> x%d   <ansi fg="gold">%4dg</ansi> <ansi fg="cyan">%4dxp</ansi>  %s`, 
-				i+1, b.MobName, b.Required, b.GoldReward, b.ExpReward, levelRange)
+			// Check cooldown
+			cooldownRemaining := mod.getCooldownRemaining(user.UserId, b)
+			
+			var line1 string
+			if cooldownRemaining > 0 {
+				// On cooldown - show grayed out
+				line1 = fmt.Sprintf(`<ansi fg="yellow">║</ansi>  <ansi fg="8">[%d] %-15s x%d   %4dg %4dxp  %s</ansi>`, 
+					i+1, b.MobName, b.Required, b.GoldReward, b.ExpReward, levelRange)
+			} else {
+				line1 = fmt.Sprintf(`<ansi fg="yellow">║</ansi>  <ansi fg="cyan-bold">[%d]</ansi> <ansi fg="white-bold">%-15s</ansi> x%d   <ansi fg="gold">%4dg</ansi> <ansi fg="cyan">%4dxp</ansi>  %s`, 
+					i+1, b.MobName, b.Required, b.GoldReward, b.ExpReward, levelRange)
+			}
 			// Pad to fit box
 			user.SendText(line1 + strings.Repeat(" ", 67-len(stripAnsi(line1))) + `<ansi fg="yellow">║</ansi>`)
 			
-			line2 := fmt.Sprintf(`<ansi fg="yellow">║</ansi>      <ansi fg="8">%s</ansi>`, b.Description)
+			var line2 string
+			if cooldownRemaining > 0 {
+				line2 = fmt.Sprintf(`<ansi fg="yellow">║</ansi>      <ansi fg="red">⏱ Cooldown: %s remaining</ansi>`, formatDuration(cooldownRemaining))
+			} else {
+				line2 = fmt.Sprintf(`<ansi fg="yellow">║</ansi>      <ansi fg="8">%s</ansi>`, b.Description)
+			}
 			user.SendText(line2 + strings.Repeat(" ", 67-len(stripAnsi(line2))) + `<ansi fg="yellow">║</ansi>`)
 		}
 	}
@@ -290,6 +326,13 @@ func (mod *BountyModule) acceptBounty(numStr string, user *users.UserRecord) (bo
 	}
 
 	bounty := available[num-1]
+
+	// Check cooldown
+	cooldownRemaining := mod.getCooldownRemaining(user.UserId, bounty)
+	if cooldownRemaining > 0 {
+		user.SendText(fmt.Sprintf(`<ansi fg="red">That bounty is on cooldown!</ansi> Available again in %s.`, formatDuration(cooldownRemaining)))
+		return true, nil
+	}
 
 	mod.bountyLock.Lock()
 	mod.activeBounties[user.UserId] = &PlayerBounty{
@@ -355,6 +398,44 @@ func (mod *BountyModule) abandonBounty(user *users.UserRecord) (bool, error) {
 
 	user.SendText(`<ansi fg="red">You abandon your bounty.</ansi> Check the board for new contracts.`)
 	return true, nil
+}
+
+// getCooldownRemaining returns remaining cooldown time, or 0 if not on cooldown
+func (mod *BountyModule) getCooldownRemaining(userId int, bounty Bounty) time.Duration {
+	if bounty.CooldownHours <= 0 {
+		return 0
+	}
+
+	mod.bountyLock.RLock()
+	defer mod.bountyLock.RUnlock()
+
+	userCooldowns, exists := mod.bountyCooldowns[userId]
+	if !exists {
+		return 0
+	}
+
+	completedAt, exists := userCooldowns[bounty.MobId]
+	if !exists {
+		return 0
+	}
+
+	cooldownEnd := completedAt.Add(time.Duration(bounty.CooldownHours) * time.Hour)
+	remaining := time.Until(cooldownEnd)
+
+	if remaining <= 0 {
+		return 0
+	}
+	return remaining
+}
+
+// formatDuration formats a duration as "Xh Ym" or "Ym"
+func formatDuration(d time.Duration) string {
+	hours := int(d.Hours())
+	minutes := int(d.Minutes()) % 60
+	if hours > 0 {
+		return fmt.Sprintf("%dh %dm", hours, minutes)
+	}
+	return fmt.Sprintf("%dm", minutes)
 }
 
 // Helper to strip ANSI codes for length calculation
