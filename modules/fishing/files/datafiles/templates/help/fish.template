@@ -1,0 +1,35 @@
+<ansi fg="cyan">╔══════════════════════════════════════════════════════════════════╗</ansi>
+<ansi fg="cyan">║</ansi>                     <ansi fg="white-bold">🐟 FISHING 🐟</ansi>                             <ansi fg="cyan">║</ansi>
+<ansi fg="cyan">╚══════════════════════════════════════════════════════════════════╝</ansi>
+
+Cast your line in lakes, rivers, and pools to catch fish, treasure,
+and the occasional piece of junk.
+
+<ansi fg="yellow-bold">Commands:</ansi>
+
+  <ansi fg="command">fish</ansi> or <ansi fg="command">cast</ansi>
+    Cast your line and start fishing. Wait for a bite!
+
+  <ansi fg="command">reel</ansi>
+    Reel in your line early (cancels fishing).
+
+  <ansi fg="command">eat [fish name]</ansi>
+    Eat a fish to restore HP and gain buffs.
+
+  <ansi fg="command">catches</ansi>
+    View the fish in your inventory.
+
+<ansi fg="yellow-bold">What You Can Catch:</ansi>
+
+  <ansi fg="white">Common Fish</ansi> - Sell for gold, eat to restore HP
+  <ansi fg="green">Buff Fish</ansi> - Restore HP + temporary buffs (night vision, etc.)
+  <ansi fg="8">Junk</ansi> - Old boots, seaweed... worth a little gold
+  <ansi fg="yellow">Treasure</ansi> - Rare catches worth lots of gold!
+
+<ansi fg="yellow-bold">Tips:</ansi>
+  • Different areas have different fish
+  • Rare catches are worth the wait
+  • Buff fish can give you an edge in combat
+  • Moving while fishing will snap your line!
+
+<ansi fg="yellow-bold">See Also:</ansi> <ansi fg="command">eat</ansi>, <ansi fg="command">catches</ansi>

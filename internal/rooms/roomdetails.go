@@ -100,6 +100,10 @@ func GetDetails(r *Room, user *users.UserRecord, tinymap ...[]string) RoomTempla
 		details.RoomAlerts = append(details.RoomAlerts, `           <ansi fg="yellow-bold">This is a bar/tavern!</ansi> Type <ansi fg="command">gamble</ansi> to play games.`)
 	}
 
+	if r.IsFishable {
+		details.RoomAlerts = append(details.RoomAlerts, `        <ansi fg="yellow-bold">You can fish here!</ansi> Type <ansi fg="command">fish</ansi> to cast your line.`)
+	}
+
 	if r.IsCharacterRoom {
 		details.RoomAlerts = append(details.RoomAlerts, `      <ansi fg="yellow-bold">This is a character room!</ansi> Type <ansi fg="command">character</ansi> to interact.`)
 	}

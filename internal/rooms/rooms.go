@@ -70,6 +70,7 @@ type Room struct {
 	IsBank            bool                              `yaml:"isbank,omitempty"`                    // Is this a bank room? If so, players can deposit/withdraw gold here.
 	IsStorage         bool                              `yaml:"isstorage,omitempty"`                 // Is this a storage room? If so, players can add/remove objects here.
 	IsBar             bool                              `yaml:"isbar,omitempty"`                     // Is this a bar/tavern? If so, players can gamble here.
+	IsFishable        bool                              `yaml:"isfishable,omitempty"`                // Can players fish here?
 	IsCharacterRoom   bool                              `yaml:"ischaracterroom,omitempty"`           // Is this a room where characters can create new characters to swap between them?
 	Title             string                            `yaml:"title"`                               // Title shown to the user
 	Description       string                            `yaml:"description"`                         // Description shown to the user

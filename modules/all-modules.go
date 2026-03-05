@@ -9,6 +9,7 @@ import (
 	_ "github.com/GoMudEngine/GoMud/modules/auctions"
 	_ "github.com/GoMudEngine/GoMud/modules/bountyboard"
 	_ "github.com/GoMudEngine/GoMud/modules/cleanup"
+	_ "github.com/GoMudEngine/GoMud/modules/fishing"
 	_ "github.com/GoMudEngine/GoMud/modules/follow"
 	_ "github.com/GoMudEngine/GoMud/modules/gambling"
 	_ "github.com/GoMudEngine/GoMud/modules/gmcp"
