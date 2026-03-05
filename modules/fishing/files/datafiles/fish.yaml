@@ -44,8 +44,7 @@ fish:
     value: 15
     type: buff
     healamount: 10
-    buffid: 29  # night_vision buff
-    buffrounds: 120  # ~10 minutes
+    buffid: 29  # night_vision buff (duration defined in buff file)
 
   swiftscale:
     name: "Swiftscale"
@@ -54,7 +53,6 @@ fish:
     type: buff
     healamount: 10
     buffid: 0  # TODO: create speed buff
-    buffrounds: 60  # ~5 minutes
 
   ironbelly:
     name: "Ironbelly"
@@ -63,7 +61,6 @@ fish:
     type: buff
     healamount: 15
     buffid: 0  # TODO: create defense buff
-    buffrounds: 60
 
   healfin:
     name: "Healfin"
@@ -71,8 +68,7 @@ fish:
     value: 30
     type: buff
     healamount: 20
-    buffid: 30  # regeneration buff
-    buffrounds: 36  # ~3 minutes
+    buffid: 30  # regeneration buff (duration defined in buff file)
 
   # === JUNK ===
   old_boot:
