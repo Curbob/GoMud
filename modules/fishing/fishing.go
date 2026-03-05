@@ -49,9 +49,8 @@ type Fish struct {
 	Value       int    `yaml:"value"`
 	Type        string `yaml:"type"` // common, buff, junk, treasure, quest
 	HealAmount  int    `yaml:"healamount"`
-	BuffId      int    `yaml:"buffid"`
-	BuffRounds  int    `yaml:"buffrounds"`
-	MinGold     int    `yaml:"mingold"` // For treasure type
+	BuffId      int    `yaml:"buffid"`    // Buff to apply (duration defined in buff file)
+	MinGold     int    `yaml:"mingold"`   // For treasure type
 	MaxGold     int    `yaml:"maxgold"`
 	QuestFlag   string `yaml:"questflag"`
 }
