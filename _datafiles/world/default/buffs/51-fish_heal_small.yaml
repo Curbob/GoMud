@@ -1,0 +1,6 @@
+buffid: 51
+name: Nourished
+description: A small meal restores some health.
+triggernow: true
+triggerrate: 1 round
+triggercount: 1

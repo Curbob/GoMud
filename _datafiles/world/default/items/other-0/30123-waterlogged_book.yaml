@@ -1,0 +1,7 @@
+itemid: 30123
+name: waterlogged book
+namesimple: book
+description: The pages are ruined, but the cover looks interesting.
+type: junk
+subtype: mundane
+value: 3

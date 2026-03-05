@@ -7,8 +7,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GoMudEngine/GoMud/internal/buffs"
 	"github.com/GoMudEngine/GoMud/internal/events"
+	"github.com/GoMudEngine/GoMud/internal/items"
 	"github.com/GoMudEngine/GoMud/internal/plugins"
 	"github.com/GoMudEngine/GoMud/internal/rooms"
 	"github.com/GoMudEngine/GoMud/internal/users"
@@ -20,13 +20,32 @@ var (
 	files embed.FS
 )
 
+// Map fish YAML IDs to real item IDs
+var fishItemIds = map[string]int{
+	// Common fish
+	"pool_minnow": 30100,
+	"mudfish":     30101,
+	"frost_trout": 30102,
+	"silver_carp": 30103,
+	// Buff fish
+	"glowfin":   30110,
+	"swiftscale": 30111,
+	"ironbelly": 30112,
+	"healfin":   30113,
+	// Junk
+	"old_boot":         30120,
+	"seaweed":          30121,
+	"rusty_hook":       30122,
+	"waterlogged_book": 30123,
+}
+
 // FishingModule manages the fishing system
 type FishingModule struct {
-	plug         *plugins.Plugin
+	plug          *plugins.Plugin
 	activeFishers map[int]*FishingSession // UserId -> session
-	fisherLock   sync.RWMutex
-	fishData     FishConfig
-	spotData     SpotConfig
+	fisherLock    sync.RWMutex
+	fishData      FishConfig
+	spotData      SpotConfig
 }
 
 // FishingSession tracks an active fishing attempt
@@ -37,7 +56,7 @@ type FishingSession struct {
 	Zone      string
 }
 
-// FishConfig holds fish definitions
+// FishConfig holds fish definitions (for names/rarity config)
 type FishConfig struct {
 	Fish map[string]Fish `yaml:"fish"`
 }
@@ -47,12 +66,9 @@ type Fish struct {
 	Name        string `yaml:"name"`
 	Description string `yaml:"description"`
 	Value       int    `yaml:"value"`
-	Type        string `yaml:"type"` // common, buff, junk, treasure, quest
-	HealAmount  int    `yaml:"healamount"`
-	BuffId      int    `yaml:"buffid"`    // Buff to apply (duration defined in buff file)
-	MinGold     int    `yaml:"mingold"`   // For treasure type
+	Type        string `yaml:"type"` // common, buff, junk, treasure
+	MinGold     int    `yaml:"mingold"`
 	MaxGold     int    `yaml:"maxgold"`
-	QuestFlag   string `yaml:"questflag"`
 }
 
 // SpotConfig holds fishing spot definitions
@@ -71,12 +87,12 @@ type FishingSpot struct {
 }
 
 type SpotCatches struct {
-	Common    []string `yaml:"common"`
-	Uncommon  []string `yaml:"uncommon"`
-	Rare      []string `yaml:"rare"`
-	Legendary []string `yaml:"legendary"`
-	Junk      []string `yaml:"junk"`
-	JunkChance int     `yaml:"junkchance"`
+	Common     []string `yaml:"common"`
+	Uncommon   []string `yaml:"uncommon"`
+	Rare       []string `yaml:"rare"`
+	Legendary  []string `yaml:"legendary"`
+	Junk       []string `yaml:"junk"`
+	JunkChance int      `yaml:"junkchance"`
 }
 
 type RarityWeights struct {
@@ -92,18 +108,6 @@ type TimingConfig struct {
 	NothingChance int `yaml:"nothing_chance"`
 }
 
-// PlayerCatches tracks fishing stats
-type PlayerCatches struct {
-	TotalCatches int            `json:"totalcatches"`
-	FishCaught   map[string]int `json:"fishcaught"` // fishId -> count
-	BiggestValue int            `json:"biggestvalue"`
-}
-
-// SaveData for persistence
-type SaveData struct {
-	PlayerStats map[int]*PlayerCatches `json:"playerstats"`
-}
-
 var mod *FishingModule
 
 func init() {
@@ -116,17 +120,13 @@ func init() {
 		panic(err)
 	}
 
-	// Register commands
+	// Register commands - only fishing commands, eat/sell use built-in systems
 	mod.plug.AddUserCommand(`fish`, mod.FishCommand, true, false)
 	mod.plug.AddUserCommand(`cast`, mod.FishCommand, true, false)
 	mod.plug.AddUserCommand(`reel`, mod.ReelCommand, true, false)
-	mod.plug.AddUserCommand(`catches`, mod.CatchesCommand, true, false)
-	mod.plug.AddUserCommand(`eat`, mod.EatCommand, true, false)
-	mod.plug.AddUserCommand(`sellfish`, mod.SellFishCommand, true, false)
 
 	// Register callbacks
 	mod.plug.Callbacks.SetOnLoad(mod.load)
-	mod.plug.Callbacks.SetOnSave(mod.save)
 
 	// Listen for round events to process fishing
 	events.RegisterListener(events.NewRound{}, mod.onNewRound)
@@ -136,7 +136,7 @@ func (mod *FishingModule) load() {
 	// Load fish definitions
 	mod.plug.ReadIntoStruct(`fish`, &mod.fishData)
 	mod.plug.ReadIntoStruct(`fishspots`, &mod.spotData)
-	
+
 	// Set defaults if not loaded
 	if mod.spotData.Timing.MinWait == 0 {
 		mod.spotData.Timing.MinWait = 5
@@ -148,10 +148,6 @@ func (mod *FishingModule) load() {
 			Common: 60, Uncommon: 25, Rare: 12, Legendary: 3,
 		}
 	}
-}
-
-func (mod *FishingModule) save() {
-	// Could save player stats here if we track them
 }
 
 // onNewRound checks for fish catches
@@ -202,9 +198,9 @@ func (mod *FishingModule) FishCommand(rest string, user *users.UserRecord, room 
 	}
 
 	// Calculate catch time
-	waitTime := mod.spotData.Timing.MinWait + 
+	waitTime := mod.spotData.Timing.MinWait +
 		util.RollDice(1, mod.spotData.Timing.MaxWait-mod.spotData.Timing.MinWait+1) - 1
-	
+
 	catchTime := time.Now().Add(time.Duration(waitTime) * time.Second)
 
 	mod.activeFishers[user.UserId] = &FishingSession{
@@ -218,7 +214,7 @@ func (mod *FishingModule) FishCommand(rest string, user *users.UserRecord, room 
 	user.SendText(``)
 	user.SendText(`<ansi fg="cyan">You cast your line into the water...</ansi>`)
 	user.SendText(`<ansi fg="8">Wait for a bite, or type <ansi fg="command">reel</ansi> to stop.</ansi>`)
-	
+
 	room.SendText(fmt.Sprintf(`<ansi fg="username">%s</ansi> casts a fishing line into the water.`, user.Character.Name), user.UserId)
 
 	return true, nil
@@ -245,10 +241,10 @@ func (mod *FishingModule) ReelCommand(rest string, user *users.UserRecord, room 
 
 // processCatch determines what the player caught
 func (mod *FishingModule) processCatch(user *users.UserRecord, room *rooms.Room, zone string) {
-	
+
 	// Get the spot config for this zone
 	spot := mod.getSpotForZone(zone)
-	
+
 	// Check for nothing
 	if util.RollDice(1, 100) <= mod.spotData.Timing.NothingChance {
 		user.SendText(`<ansi fg="8">The fish got away! Your line comes up empty.</ansi>`)
@@ -270,11 +266,11 @@ func (mod *FishingModule) getSpotForZone(zone string) SpotCatches {
 		for _, z := range spot.Zones {
 			if strings.EqualFold(z, zone) {
 				return SpotCatches{
-					Common:    spot.Catches.Common,
-					Uncommon:  spot.Catches.Uncommon,
-					Rare:      spot.Catches.Rare,
-					Legendary: spot.Catches.Legendary,
-					Junk:      spot.Junk,
+					Common:     spot.Catches.Common,
+					Uncommon:   spot.Catches.Uncommon,
+					Rare:       spot.Catches.Rare,
+					Legendary:  spot.Catches.Legendary,
+					Junk:       spot.Junk,
 					JunkChance: spot.JunkChance,
 				}
 			}
@@ -296,16 +292,31 @@ func (mod *FishingModule) catchJunk(user *users.UserRecord, room *rooms.Room, sp
 		return
 	}
 
+	// Get the item ID for this junk
+	itemId, hasItem := fishItemIds[junkId]
+	if !hasItem {
+		user.SendText(`<ansi fg="8">You caught some debris and threw it back.</ansi>`)
+		return
+	}
+
 	user.SendText(``)
-	user.SendText(fmt.Sprintf(`<ansi fg="yellow">*splash*</ansi>`))
+	user.SendText(`<ansi fg="yellow">*splash*</ansi>`)
 	user.SendText(fmt.Sprintf(`You caught... <ansi fg="8">%s</ansi>`, fish.Name))
 	if fish.Description != "" {
 		user.SendText(fmt.Sprintf(`<ansi fg="8">%s</ansi>`, fish.Description))
 	}
-	if fish.Value > 0 {
-		user.SendText(fmt.Sprintf(`Worth <ansi fg="gold">%d gold</ansi> if you can find a buyer.`, fish.Value))
-		user.Character.Gold += fish.Value
-		events.AddToQueue(events.EquipmentChange{UserId: user.UserId, GoldChange: fish.Value})
+
+	// Give the item to the player
+	item := items.New(itemId)
+	if user.Character.StoreItem(item) {
+		user.SendText(`<ansi fg="8">Added to your inventory.</ansi>`)
+		events.AddToQueue(events.ItemOwnership{
+			UserId: user.UserId,
+			Item:   item,
+			Gained: true,
+		})
+	} else {
+		user.SendText(`<ansi fg="red">Your inventory is full! The junk slips back into the water.</ansi>`)
 	}
 }
 
@@ -347,9 +358,16 @@ func (mod *FishingModule) catchFish(user *users.UserRecord, room *rooms.Room, sp
 		return
 	}
 
+	// Get the item ID for this fish
+	itemId, hasItem := fishItemIds[fishId]
+	if !hasItem {
+		user.SendText(`<ansi fg="8">Something slipped off the hook!</ansi>`)
+		return
+	}
+
 	// Display catch based on rarity
 	user.SendText(``)
-	
+
 	switch rarity {
 	case "legendary":
 		user.SendText(`<ansi fg="yellow-bold">✨ LEGENDARY CATCH! ✨</ansi>`)
@@ -362,281 +380,28 @@ func (mod *FishingModule) catchFish(user *users.UserRecord, room *rooms.Room, sp
 	}
 
 	user.SendText(fmt.Sprintf(`You caught a <ansi fg="white-bold">%s</ansi>!`, fish.Name))
-	
-	// Handle based on fish type:
-	// - Fish with HP/buff → inventory only (eat or sell manually)
-	// - Treasure → auto-sell gold
-	// - Common fish with no HP/buff → auto-sell
 
-	if fish.HealAmount > 0 || fish.BuffId > 0 {
-		// Usable fish goes to inventory - no auto-gold
-		mod.addFishToInventory(user, fishId)
-		if fish.Value > 0 {
-			user.SendText(fmt.Sprintf(`Worth <ansi fg="gold">%d gold</ansi> at a vendor.`, fish.Value))
-		}
-		user.SendText(`<ansi fg="8">Added to inventory. Type <ansi fg="command">eat ` + strings.ToLower(fish.Name) + `</ansi> to consume it.</ansi>`)
-	} else if fish.Type == "treasure" && fish.MinGold > 0 {
-		// Treasure auto-sells
+	// Handle treasure specially - gives gold directly
+	if fish.Type == "treasure" && fish.MinGold > 0 {
 		goldAmount := fish.MinGold + util.RollDice(1, fish.MaxGold-fish.MinGold+1) - 1
 		user.SendText(fmt.Sprintf(`Inside you find <ansi fg="gold">%d gold</ansi>!`, goldAmount))
 		user.Character.Gold += goldAmount
 		events.AddToQueue(events.EquipmentChange{UserId: user.UserId, GoldChange: goldAmount})
-	} else if fish.Value > 0 {
-		// Common fish with no HP/buff - auto-sell
-		user.SendText(fmt.Sprintf(`Sold for <ansi fg="gold">%d gold</ansi>.`, fish.Value))
-		user.Character.Gold += fish.Value
-		events.AddToQueue(events.EquipmentChange{UserId: user.UserId, GoldChange: fish.Value})
-	}
-}
-
-func (mod *FishingModule) addFishToInventory(user *users.UserRecord, fishId string) {
-	// Store in user temp data as a simple count
-	key := "fish_" + fishId
-	current := 0
-	if val := user.GetTempData(key); val != nil {
-		current = val.(int)
-	}
-	user.SetTempData(key, current+1)
-}
-
-// EatCommand consumes a fish for HP/buff
-func (mod *FishingModule) EatCommand(rest string, user *users.UserRecord, room *rooms.Room, flags events.EventFlag) (bool, error) {
-	
-	if rest == "" {
-		user.SendText(`Eat what? Try <ansi fg="command">eat [fish name]</ansi>`)
-		return true, nil
+		return
 	}
 
-	// Find the fish by name
-	fishId := ""
-	var fish Fish
-	searchName := strings.ToLower(rest)
-	
-	for id, f := range mod.fishData.Fish {
-		if strings.EqualFold(f.Name, rest) || strings.Contains(strings.ToLower(f.Name), searchName) {
-			fishId = id
-			fish = f
-			break
-		}
-	}
-
-	if fishId == "" {
-		user.SendText(`You don't have that to eat.`)
-		return true, nil
-	}
-
-	// Check if player has this fish
-	key := "fish_" + fishId
-	count := 0
-	if val := user.GetTempData(key); val != nil {
-		count = val.(int)
-	}
-
-	if count <= 0 {
-		user.SendText(fmt.Sprintf(`You don't have any %s to eat.`, fish.Name))
-		return true, nil
-	}
-
-	// Consume the fish
-	user.SetTempData(key, count-1)
-
-	user.SendText(``)
-	user.SendText(fmt.Sprintf(`You eat the <ansi fg="white-bold">%s</ansi>...`, fish.Name))
-
-	// Heal HP
-	if fish.HealAmount > 0 {
-		healed := fish.HealAmount
-		maxHp := user.Character.HealthMax.Value
-		currentHp := user.Character.Health
-		
-		if currentHp+healed > maxHp {
-			healed = maxHp - currentHp
-		}
-		
-		if healed > 0 {
-			user.Character.Health += healed
-			user.SendText(fmt.Sprintf(`You recover <ansi fg="green">%d HP</ansi>.`, healed))
-		} else {
-			user.SendText(`<ansi fg="8">You're already at full health.</ansi>`)
-		}
-	}
-
-	// Apply buff
-	if fish.BuffId > 0 {
-		buffInfo := buffs.GetBuffSpec(fish.BuffId)
-		if buffInfo != nil {
-			user.Character.AddBuff(fish.BuffId, false)
-			user.SendText(fmt.Sprintf(`You gain <ansi fg="cyan">%s</ansi>!`, buffInfo.Name))
-		}
-	}
-
-	return true, nil
-}
-
-// CatchesCommand shows fishing stats
-func (mod *FishingModule) CatchesCommand(rest string, user *users.UserRecord, room *rooms.Room, flags events.EventFlag) (bool, error) {
-
-	user.SendText(``)
-	user.SendText(`<ansi fg="cyan">═══════════════════════════════════════</ansi>`)
-	user.SendText(`<ansi fg="cyan">        🐟 YOUR FISH INVENTORY 🐟</ansi>`)
-	user.SendText(`<ansi fg="cyan">═══════════════════════════════════════</ansi>`)
-
-	hasAny := false
-	for id, fish := range mod.fishData.Fish {
-		if fish.HealAmount > 0 || fish.BuffId > 0 {
-			key := "fish_" + id
-			if val := user.GetTempData(key); val != nil {
-				count := val.(int)
-				if count > 0 {
-					hasAny = true
-					// Build info string
-					typeColor := "8"
-					if fish.Type == "buff" {
-						typeColor = "cyan"
-					}
-					typeText := fmt.Sprintf(`<ansi fg="%s">[%s]</ansi>`, typeColor, fish.Type)
-					
-					buffText := ""
-					if fish.BuffId > 0 {
-						buffInfo := buffs.GetBuffSpec(fish.BuffId)
-						if buffInfo != nil {
-							buffText = fmt.Sprintf(` + %s`, buffInfo.Name)
-						}
-					}
-					user.SendText(fmt.Sprintf(`  %s <ansi fg="white-bold">%s</ansi> x%d <ansi fg="8">(+%d HP%s)</ansi>`, 
-						typeText, fish.Name, count, fish.HealAmount, buffText))
-				}
-			}
-		}
-	}
-
-	if !hasAny {
-		user.SendText(`  <ansi fg="8">No fish in inventory. Go fishing!</ansi>`)
-	}
-
-	user.SendText(``)
-	user.SendText(`<ansi fg="8">Use <ansi fg="command">eat [fish name]</ansi> to consume, or <ansi fg="command">sellfish</ansi> to sell.</ansi>`)
-
-	return true, nil
-}
-
-// SellFishCommand sells fish from inventory
-// - No args: sells all common fish (protects buff fish)
-// - "all": sells everything including buff fish
-// - "common": sells all common type fish
-// - "buff": sells all buff type fish (explicit)
-// - [name]: sells specific fish by name
-func (mod *FishingModule) SellFishCommand(rest string, user *users.UserRecord, room *rooms.Room, flags events.EventFlag) (bool, error) {
-
-	rest = strings.TrimSpace(rest)
-	arg := strings.ToLower(rest)
-	
-	sellAll := arg == "all"
-	sellCommon := arg == "common" || arg == ""  // default behavior
-	sellBuffOnly := arg == "buff"
-	sellSpecific := rest != "" && !sellAll && !sellCommon && arg != "buff"
-
-	totalGold := 0
-	soldCount := 0
-	skippedBuff := 0
-
-	if sellSpecific {
-		// Sell a specific fish by name
-		searchName := strings.ToLower(rest)
-		found := false
-
-		for id, fish := range mod.fishData.Fish {
-			if strings.EqualFold(fish.Name, rest) || strings.Contains(strings.ToLower(fish.Name), searchName) {
-				key := "fish_" + id
-				count := 0
-				if val := user.GetTempData(key); val != nil {
-					count = val.(int)
-				}
-
-				if count > 0 {
-					found = true
-					// Sell one of this fish
-					user.SetTempData(key, count-1)
-					gold := fish.Value
-					if gold <= 0 {
-						gold = 1 // Minimum 1g for any fish
-					}
-					totalGold += gold
-					soldCount++
-					user.SendText(fmt.Sprintf(`Sold <ansi fg="white-bold">%s</ansi> for <ansi fg="gold">%d gold</ansi>.`, fish.Name, gold))
-				}
-				break
-			}
-		}
-
-		if !found {
-			user.SendText(`You don't have that fish to sell.`)
-			return true, nil
-		}
+	// Give the fish item to the player
+	item := items.New(itemId)
+	if user.Character.StoreItem(item) {
+		itemSpec := item.GetSpec()
+		user.SendText(fmt.Sprintf(`Worth <ansi fg="gold">%d gold</ansi> at a merchant.`, itemSpec.Value))
+		user.SendText(`<ansi fg="8">Added to your inventory. Use <ansi fg="command">eat %s</ansi> to consume or sell to a merchant.</ansi>`)
+		events.AddToQueue(events.ItemOwnership{
+			UserId: user.UserId,
+			Item:   item,
+			Gained: true,
+		})
 	} else {
-		// Sell multiple fish by type
-		for id, fish := range mod.fishData.Fish {
-			key := "fish_" + id
-			count := 0
-			if val := user.GetTempData(key); val != nil {
-				count = val.(int)
-			}
-
-			if count <= 0 {
-				continue
-			}
-
-			isBuff := fish.Type == "buff"
-
-			// Determine if we should sell this fish
-			shouldSell := false
-			if sellAll {
-				shouldSell = true
-			} else if sellBuffOnly && isBuff {
-				shouldSell = true
-			} else if sellCommon && !isBuff {
-				shouldSell = true
-			}
-
-			if !shouldSell {
-				if isBuff {
-					skippedBuff += count
-				}
-				continue
-			}
-
-			// Sell all of this fish type
-			gold := fish.Value
-			if gold <= 0 {
-				gold = 1
-			}
-			totalGold += gold * count
-			soldCount += count
-			user.SetTempData(key, 0)
-		}
-
-		if soldCount == 0 && skippedBuff == 0 {
-			user.SendText(`You don't have any fish to sell.`)
-			return true, nil
-		}
-
-		if soldCount == 0 && skippedBuff > 0 {
-			user.SendText(fmt.Sprintf(`You have <ansi fg="cyan">%d buff fish</ansi>. Use <ansi fg="command">sellfish buff</ansi> or <ansi fg="command">sellfish all</ansi> to sell them.`, skippedBuff))
-			return true, nil
-		}
-
-		user.SendText(``)
-		user.SendText(fmt.Sprintf(`Sold <ansi fg="white-bold">%d fish</ansi> for <ansi fg="gold">%d gold</ansi>!`, soldCount, totalGold))
-
-		if skippedBuff > 0 {
-			user.SendText(fmt.Sprintf(`<ansi fg="8">Kept %d buff fish. Use <ansi fg="command">sellfish buff</ansi> to sell those.</ansi>`, skippedBuff))
-		}
+		user.SendText(`<ansi fg="red">Your inventory is full! The fish slips back into the water.</ansi>`)
 	}
-
-	if totalGold > 0 {
-		user.Character.Gold += totalGold
-		events.AddToQueue(events.EquipmentChange{UserId: user.UserId, GoldChange: totalGold})
-	}
-
-	return true, nil
 }

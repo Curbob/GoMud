@@ -1,0 +1,10 @@
+itemid: 30102
+name: frost trout
+namesimple: trout
+description: A cold-water fish prized for its flavor.
+type: food
+subtype: edible
+uses: 1
+value: 5
+buffids:
+- 52

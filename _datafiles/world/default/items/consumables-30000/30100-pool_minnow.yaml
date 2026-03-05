@@ -1,0 +1,10 @@
+itemid: 30100
+name: pool minnow
+namesimple: minnow
+description: A tiny fish. How did it even get on the hook?
+type: food
+subtype: edible
+uses: 1
+value: 1
+buffids:
+- 50
