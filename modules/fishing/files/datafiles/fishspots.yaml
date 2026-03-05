@@ -1,0 +1,54 @@
+# Fishing Spots Configuration
+#
+# Each spot defines what can be caught in that area.
+# Rooms must have isfishable: true to allow fishing.
+#
+# Rarity weights (higher = more common):
+#   common: 60%
+#   uncommon: 25%  
+#   rare: 12%
+#   legendary: 3%
+
+default:
+  # Default catch table for any fishable room not specifically configured
+  catches:
+    common: [mudfish]
+    uncommon: [glowfin]
+    rare: [coin_pouch]
+    legendary: [golden_fish]
+  junk: [old_boot, seaweed, rusty_hook]
+  junkchance: 20  # 20% chance of junk instead of fish
+
+spots:
+  frost_lake:
+    zones: [frost_lake]  # Applies to all fishable rooms in this zone
+    catches:
+      common: [mudfish, frost_trout, silver_carp]
+      uncommon: [glowfin, swiftscale]
+      rare: [ironbelly, frost_sturgeon, coin_pouch]
+      legendary: [golden_fish, healfin]
+    junk: [old_boot, seaweed, rusty_hook, waterlogged_book]
+    junkchance: 15
+
+  con_pool:
+    zones: [cackalackycon]
+    catches:
+      common: [pool_minnow]
+      uncommon: [swiftscale]
+      rare: [forgotten_usb]
+      legendary: [golden_fish]
+    junk: [lost_badge, wet_business_card, waterlogged_book]
+    junkchance: 35  # More junk in the pool!
+
+# Rarity weights (out of 100, excluding junk)
+rarity_weights:
+  common: 60
+  uncommon: 25
+  rare: 12
+  legendary: 3
+
+# Fishing timing (in seconds)
+timing:
+  min_wait: 5
+  max_wait: 15
+  nothing_chance: 10  # % chance of catching nothing
