@@ -1,0 +1,10 @@
+itemid: 5003
+name: corrupted badge fragment
+namesimple: fragment
+description: >-
+  A piece of a corrupted badge, still sparking with residual purple energy. 
+  The circuit traces are blackened and the chip is cracked. Nutcrunch might 
+  pay for these - research purposes, probably.
+type: junk
+subtype: sellable
+value: 15

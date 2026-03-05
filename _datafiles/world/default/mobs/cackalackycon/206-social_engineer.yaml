@@ -1,0 +1,36 @@
+mobid: 206
+zone: CackalackyCon
+itemdropchance: 35
+hostile: false
+maxwander: 5
+groups:
+  - hostiles
+activitylevel: 20
+idlecommands:
+  - 'say Hey, you look like someone who wants to fight.'
+  - 'emote glances at your badge a little too long.'
+  - 'say I bet you won''t attack me. Prove me wrong?'
+  - 'say IT sent me. They said you needed a beating.'
+  - 'emote mirrors your fighting stance perfectly.'
+  - 'say We fought last year, remember? Rematch?'
+  - 'say Quick question - want to throw down?'
+  - ''
+character:
+  name: social engineer
+  description: >-
+    A SOCIAL ENGINEER slips through a subtle magenta shimmer - you almost 
+    didn't notice them arrive. They have the kind of face that's hard to 
+    remember, wearing clothes that could belong to any department. Their 
+    smile is warm, their handshake is firm, and every word out of their 
+    mouth is carefully calibrated to make you trust them. They already 
+    know your name.
+  raceid: 1
+  level: 6
+  gold: 20
+  stats:
+    perception:
+      training: 3
+    mysticism:
+      training: 2
+  items:
+    - itemid: 5004

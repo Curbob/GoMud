@@ -1,0 +1,37 @@
+mobid: 205
+zone: CackalackyCon
+itemdropchance: 25
+hostile: false
+maxwander: 8
+groups:
+  - hostiles
+  - infected
+  - iot
+activitylevel: 35
+idlecommands:
+  - 'emote beeps aggressively at you.'
+  - 'say COMBAT PROTOCOL AVAILABLE. ENGAGE?'
+  - 'say FIRMWARE UPDATE REQUIRED. FIGHT TO INSTALL.'
+  - 'emote spins its cooling fan menacingly.'
+  - 'say DEFAULT PASSWORD IS admin. ATTACK TO EXPLOIT.'
+  - 'emote skitters toward you challengingly.'
+  - ''
+character:
+  name: rogue IoT device
+  description: >-
+    A ROGUE IOT DEVICE skitters out of a purple portal on spindly legs 
+    made of USB cables. It might have once been a smart toaster, or a 
+    WiFi-enabled fish tank thermometer, or possibly a baby monitor. 
+    Now it's something else entirely - a chaos of blinking LEDs, exposed 
+    circuits, and very poor security decisions. Its default password 
+    is still "admin".
+  raceid: 1
+  level: 4
+  gold: 8
+  stats:
+    speed:
+      training: 3
+    vitality:
+      training: -1
+  items:
+    - itemid: 5007

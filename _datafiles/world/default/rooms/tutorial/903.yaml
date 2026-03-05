@@ -1,6 +1,12 @@
 roomid: 903
 zone: Tutorial
-title: Training Complete
-description: Welcome to the graduation room! You've completed the basic training and
-  are ready to embark into the wide world.
-exits: {}
+title: Orientation Complete
+description: >-
+  Congratulations! You've completed the CackalackyCon orientation and are ready 
+  to explore the con. The Lime of Learning gives you an approving glow.
+  
+  A portal shimmers before you, leading to the main entrance of the con.
+  Type <ansi fg="command">enter</ansi> to begin your adventure!
+exits:
+  enter:
+    roomid: 2000

@@ -1,0 +1,27 @@
+roomid: 2050
+zone: CackalackyCon
+title: Service Hallway
+description: >-
+  A dimly lit corridor behind the con floor. Staff-only signs are cheerfully 
+  ignored. Exposed pipes run along the ceiling and the carpet gives way to 
+  concrete. Something hums from further down the hall. A door to the east 
+  looks like it has not been opened in years. Con floor is west.
+mapsymbol: .
+maplegend: Service
+biome: indoor
+exits:
+  west:
+    roomid: 2003
+  east:
+    roomid: 2051
+    secret: true
+idlemessages:
+- Pipes groan overhead.
+- The fluorescent lights flicker.
+- You hear humming from somewhere deeper.
+- A door creaks in the distance.
+- Is that... dial-up modem sounds?
+nouns:
+  pipes: "Exposed pipes run along the ceiling, wrapped in ancient insulation. Some are labeled. Most are not."
+  signs: "STAFF ONLY signs are plastered everywhere. Someone has added EXCEPT HACKERS in sharpie."
+  door: "A heavy door to the east, covered in dust. The handle is warm to the touch."

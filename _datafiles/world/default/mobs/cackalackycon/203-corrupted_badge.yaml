@@ -1,0 +1,35 @@
+mobid: 203
+zone: CackalackyCon
+itemdropchance: 40
+hostile: true
+maxwander: 2
+groups:
+  - hostiles
+  - infected
+activitylevel: 15
+idlecommands:
+  - 'emote sparks with purple electricity.'
+  - 'emote hovers menacingly, LEDs flickering in corrupted patterns.'
+  - 'emote emits a burst of static that sounds almost like screaming.'
+  - 'emote pulses with viral code.'
+  - ''
+  - ''
+character:
+  name: corrupted badge
+  description: >-
+    A badge on the ground sparks violently, purple electricity arcing across 
+    its surface. It rises, infected, hostile. What was once a friendly 
+    CackalackyCon badge is now a floating nightmare of corrupted firmware 
+    and malicious code. Its LEDs pulse in sickly purple patterns, and 
+    the screen displays only static and fragments of error messages.
+  raceid: 1
+  level: 5
+  gold: 5
+  stats:
+    mysticism:
+      training: 2
+    vitality:
+      training: 1
+  items:
+    - itemid: 5003
+    - itemid: 5003

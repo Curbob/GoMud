@@ -1,0 +1,10 @@
+itemid: 5005
+name: corporate lanyard
+namesimple: lanyard
+description: >-
+  A lanyard from some tech company you've never heard of. The logo is 
+  already outdated - they probably pivoted to AI six months ago. Still, 
+  it's a free lanyard.
+type: junk
+subtype: sellable
+value: 3

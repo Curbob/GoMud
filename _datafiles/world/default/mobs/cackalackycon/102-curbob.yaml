@@ -1,0 +1,20 @@
+mobid: 102
+zone: CackalackyCon
+itemdropchance: 0
+hostile: false
+maxwander: 0
+groups:
+  - cackalackycon-staff
+activitylevel: 20
+idlecommands:
+  - 'emote adjusts his laptop.'
+  - 'emote nods thoughtfully at the speaker.'
+  - 'say That was a good point.'
+  - 'emote takes a sip of coffee.'
+  - ''
+  - ''
+character:
+  name: Curbob
+  description: A con regular who never misses a talk. He's always here, laptop open, absorbing knowledge. Ask him about the schedule and he'll know exactly what's on next. Some say he's been to every CackalackyCon. All of them.
+  raceid: 1
+  level: 20

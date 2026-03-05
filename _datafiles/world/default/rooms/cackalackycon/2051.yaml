@@ -1,0 +1,32 @@
+roomid: 2051
+zone: CackalackyCon
+title: The Server Room
+description: >-
+  An ancient server room that time forgot. Racks of equipment from decades past 
+  line the walls, their fans spinning at different speeds. In the center sits 
+  THE OLD MACHINE - a beige tower from 1994, its CRT monitor casting an eerie 
+  green glow. It is still running. It has been running this whole time. The screen 
+  flickers with text - WELCOME TO FROSTFANG MUD - CONNECTING... 
+  The service hallway is west.
+mapsymbol: S
+maplegend: Server
+biome: indoor
+exits:
+  west:
+    roomid: 2050
+idlemessages:
+- The old machines hard drive clicks rhythmically.
+- The CRT monitor flickers with ancient text.
+- Fans spin at different frequencies, creating harmonics.
+- You smell ozone and dust and something older.
+- The screen reads WAITING FOR CONNECTION...
+- A lime sits on top of the beige tower. Why?
+nouns:
+  machine: "THE OLD MACHINE. A beige tower from 1994, still humming. The case is yellowed, the badge says 486 DX2/66. Someone has written DO NOT TURN OFF in faded marker. Type connect to use it."
+  tower: ":machine"
+  computer: ":machine"
+  monitor: "A 14-inch CRT monitor, curved glass reflecting your face in green phosphor. Text scrolls - Welcome to Frostfang MUD. Press any key to connect..."
+  crt: ":monitor"
+  screen: ":monitor"
+  racks: "Server racks from multiple eras. A Sun Microsystems box. A DEC Alpha. Something that might be a PDP-11. All still running. All still connected."
+  lime: "A fresh lime sits on top of the old machine. It was not there a moment ago. Was it?"

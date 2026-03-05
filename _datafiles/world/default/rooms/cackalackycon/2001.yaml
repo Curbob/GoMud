@@ -1,0 +1,31 @@
+roomid: 2001
+zone: CackalackyCon
+title: Hotel Lobby
+description: >-
+  The hotel lobby has been completely overtaken by CackalackyCon attendees. 
+  Every outlet has a power strip daisy-chained to dangerous levels. Hackers 
+  sprawl on couches with laptops, the hotel's complimentary WiFi groaning 
+  under the load. Registration is north, the entrance south.
+mapsymbol: L
+maplegend: Lobby
+biome: indoor
+exits:
+  south:
+    roomid: 2000
+  north:
+    roomid: 2002
+spawninfo:
+- mobid: 200
+  message: A glitching purple portal spits out a script kiddie!
+  respawnrate: 5 real minutes
+idlemessages:
+- A hacker mutters "one more packet..."
+- Someone trips over a power cable. Nothing explodes. This time.
+- The hotel staff look confused but impressed.
+- A heated debate about Linux distros erupts.
+- Is that a lime on the front desk? It is.
+- The lobby WiFi drops. Groans echo.
+nouns:
+  couches: Hotel couches sag under the weight of hackers and their gear. Stickers cover every surface. One cushion has a suspicious burn mark.
+  outlets: Power strips daisy-chained to power strips. This is definitely a fire hazard. Nobody cares.
+  desk: The hotel front desk has a lime sitting on it. The staff have stopped questioning things.

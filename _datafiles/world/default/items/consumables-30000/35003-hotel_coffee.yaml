@@ -1,0 +1,13 @@
+itemid: 35003
+name: hotel coffee
+namesimple: cup
+description: >-
+  Lukewarm coffee from the hotel lobby. It's been sitting there since 6am 
+  and it shows. Still technically caffeine. Barely restores anything but 
+  it's free, right?
+type: drink
+subtype: drinkable
+value: 1
+uses: 1
+buffids:
+- 5

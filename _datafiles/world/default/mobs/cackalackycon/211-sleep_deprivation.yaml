@@ -1,0 +1,36 @@
+mobid: 211
+zone: CackalackyCon
+itemdropchance: 50
+hostile: true
+maxwander: 3
+groups:
+  - hostiles
+  - bosses
+  - abstract
+activitylevel: 10
+idlecommands:
+  - 'emote whispers in a voice like white noise.'
+  - 'say You could just... rest your eyes. Just for a minute.'
+  - 'emote makes the lights seem dimmer somehow.'
+  - 'say What time is it? Does it matter?'
+  - 'say When did you last sleep? Really sleep?'
+  - 'emote wraps around you like a heavy blanket.'
+  - ''
+character:
+  name: Sleep Deprivation
+  description: >-
+    SLEEP DEPRIVATION doesn't arrive through a portal. It seeps in through 
+    the cracks at 3am, a formless shadow that makes your eyelids heavy and 
+    your thoughts slow. It has no face, just the suggestion of one in the 
+    static at the edge of your vision. It smells like cold coffee and 
+    regret. The longer you look at it, the harder it is to remember why 
+    you're still awake.
+  raceid: 1
+  level: 8
+  stats:
+    mysticism:
+      training: 4
+    perception:
+      training: 3
+    speed:
+      training: -2

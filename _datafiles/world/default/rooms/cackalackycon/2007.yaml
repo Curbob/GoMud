@@ -1,0 +1,16 @@
+roomid: 2007
+zone: CackalackyCon
+title: Pool and Courtyard
+description: An outdoor oasis. Hackers lounge by the pool or huddle at patio tables. Fresh air and sunshine between sessions. LobbyCon north.
+mapsymbol: ~
+maplegend: Pool
+biome: outdoor
+exits:
+  north:
+    roomid: 2006
+idlemessages:
+- Someone cannonballs into the pool.
+- Laptops glow in the shade.
+- A heated debate about crypto echoes.
+- Someone applies more sunscreen.
+- A drone hovers briefly, then flies off.

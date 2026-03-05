@@ -1,0 +1,16 @@
+roomid: 2000
+zone: CackalackyCon
+title: Main Entrance
+description: Glass doors open into the hotel. A banner reads WELCOME TO CACKALACKYCON 2026. People stream past clutching laptops. The lobby is north.
+mapsymbol: E
+maplegend: Entrance
+biome: indoor
+exits:
+  north:
+    roomid: 2001
+idlemessages:
+- A group rushes past discussing zero-days.
+- Someone holds the door for a person with too much gear.
+- You hear chatter about this year's badge.
+- A rideshare deposits more hackers.
+- The automatic doors whoosh.

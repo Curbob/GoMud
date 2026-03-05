@@ -1,0 +1,11 @@
+itemid: 5102
+name: social fragment
+namesimple: fragment
+description: >-
+  A fragment of an access key, warm to the touch. It seems to shift slightly 
+  when you're not looking directly at it. One of four pieces needed to access 
+  something ancient.
+type: key
+subtype: fragment
+questtoken: portal-social
+value: 0

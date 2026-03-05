@@ -1,0 +1,41 @@
+mobid: 105
+zone: CackalackyCon
+itemdropchance: 0
+hostile: false
+maxwander: 0
+groups:
+  - cackalackycon-staff
+  - merchants
+activitylevel: 25
+idlecommands:
+  - 'emote squints at a circuit board.'
+  - 'say This firmware is interesting...'
+  - 'emote solders something tiny.'
+  - 'say Badge infected? I can fix that. Maybe.'
+  - 'say Type <ansi fg="command">list</ansi> for badge upgrades. Bring fragments.'
+  - ''
+  - ''
+character:
+  name: Nutcrunch
+  description: >-
+    The badge wizard. Nutcrunch designed the firmware and knows every secret 
+    feature. Surrounded by oscilloscopes and dev boards, they can diagnose 
+    any badge problem. Or make it worse. Intentionally. If you've collected 
+    corrupted badge fragments, Nutcrunch will pay good gold for them — 
+    "research purposes."
+  raceid: 1
+  level: 25
+  gold: 1000
+  shop:
+    - itemid: 25002
+      quantitymax: 5
+      price: 75
+    - itemid: 25003
+      quantitymax: 2
+      price: 200
+    - itemid: 35010
+      quantitymax: 0
+      price: 30
+    - itemid: 35011
+      quantitymax: 0
+      price: 50

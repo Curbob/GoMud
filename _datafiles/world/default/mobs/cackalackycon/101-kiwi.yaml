@@ -1,0 +1,43 @@
+mobid: 101
+zone: CackalackyCon
+itemdropchance: 0
+hostile: false
+maxwander: 0
+groups:
+  - cackalackycon-staff
+  - merchants
+activitylevel: 30
+idlecommands:
+  - 'say What can I get you? Type <ansi fg="command">list</ansi> to see the menu.'
+  - 'emote polishes a glass.'
+  - 'say The lime jello shots are the house special.'
+  - 'emote slides a drink to a thirsty hacker.'
+  - 'say You hear what happened at the CTF?'
+  - 'say If you''ve got junk to sell, I''ll take it off your hands.'
+  - ''
+  - ''
+character:
+  name: Kiwi
+  description: >-
+    The bartender and unofficial therapist of CackalackyCon. Kiwi has been 
+    slinging drinks at hacker cons for years and has heard every war story 
+    twice. Nothing surprises them anymore. They seem to know everyone and 
+    everything — if you need info, Kiwi probably has it, for the price of 
+    a good story or a generous tip. A lime wedge is perpetually balanced 
+    on the rim of whatever glass they're cleaning.
+  raceid: 1
+  level: 15
+  gold: 500
+  shop:
+    - itemid: 35001
+      quantitymax: 0
+      price: 10
+    - itemid: 35002
+      quantitymax: 0
+      price: 20
+    - itemid: 35003
+      quantitymax: 0
+      price: 3
+    - itemid: 35004
+      quantitymax: 0
+      price: 15

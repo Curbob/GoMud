@@ -1,0 +1,10 @@
+itemid: 5001
+name: business card
+namesimple: card
+description: >-
+  A crumpled business card from an overzealous recruiter. It promises 
+  "competitive salary" and "unlimited PTO" in a font that screams startup. 
+  The QR code probably leads to a LinkedIn page.
+type: junk
+subtype: sellable
+value: 2

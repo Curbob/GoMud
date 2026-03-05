@@ -1,0 +1,18 @@
+roomid: 2033
+zone: CackalackyCon
+title: Wireless Shootout
+description: RF hacking competition. SDRs, antennas, and mysterious signals fill the air. SAV north, Chaos west.
+mapsymbol: W
+maplegend: Wireless
+biome: indoor
+exits:
+  north:
+    roomid: 2028
+  west:
+    roomid: 2034
+idlemessages:
+- An SDR captures a strange signal.
+- Antennas point in every direction.
+- Someone decodes a pager.
+- RF interference causes havoc.
+- A keyfob gets cloned.

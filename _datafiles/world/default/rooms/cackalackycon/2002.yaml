@@ -1,0 +1,39 @@
+roomid: 2002
+zone: CackalackyCon
+title: Registration
+description: >-
+  Volunteers hand out electronic badges from tables stacked with laptops, 
+  lanyards, and of course, limes. The smell of fresh-printed badges fills 
+  the air. Ask about your <ansi fg="command">badge</ansi> to get registered! 
+  Con floor north, lobby south.
+mapsymbol: R
+maplegend: Registration
+biome: indoor
+exits:
+  south:
+    roomid: 2001
+  north:
+    roomid: 2003
+spawninfo:
+- mobid: 100
+  message: Base16 looks up from the list.
+  respawnrate: 1 real minutes
+  idlecommands:
+  - say Welcome to CackalackyCon! Ask me about your <ansi fg="command">badge</ansi>.
+  - emote checks the registration list.
+  - say Head north to the con floor when you're ready.
+  - emote hands a badge to a newcomer.
+  - say Looking for someone? I know where everyone is.
+  - ""
+idlemessages:
+- A badge printer whirs to life.
+- Someone fumbles with their lanyard.
+- The line moves fast. Hackers are efficient.
+- A bowl of limes sits on the table. Why? Nobody questions it.
+- A badge chirps as it receives its first virus.
+nouns:
+  badges: Stacks of electronic badges await their new owners. Each one blinks with a lime-green LED, ready to connect to the swarm.
+  lanyards: Lanyards in every color imaginable. The lime green ones are the most popular.
+  limes: A bowl of fresh limes sits on the registration table. It's tradition. Don't ask.
+  bowl: :limes
+  list: The registration list scrolls on a laptop. Handles and real names. Mostly handles.

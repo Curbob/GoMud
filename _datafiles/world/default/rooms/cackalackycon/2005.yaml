@@ -1,0 +1,39 @@
+roomid: 2005
+zone: CackalackyCon
+title: Main Talk Track
+description: >-
+  Rows of chairs face a stage with a massive projector screen. A speaker 
+  walks through slides about something you probably should understand better. 
+  The audience takes notes, nods knowingly, and occasionally naps. Everyone 
+  here seems to know what they're doing. Do you? Con floor east.
+mapsymbol: T
+maplegend: Talks
+biome: indoor
+exits:
+  east:
+    roomid: 2003
+spawninfo:
+- mobid: 102
+  message: Curbob is in his usual seat.
+  respawnrate: 1 real minutes
+  idlecommands:
+  - emote adjusts his laptop screen.
+  - emote nods at the speaker knowingly.
+  - say Good talk.
+  - emote takes a note.
+  - say Ask me about the schedule.
+  - ""
+- mobid: 212
+  message: Imposter Syndrome doesn't arrive through a portal. It was already here.
+  respawnrate: 12 real minutes
+idlemessages:
+- The speaker advances to the next slide.
+- Someone asks a brilliant question from the back.
+- Laptop keyboards clatter as people take notes.
+- A phone buzzes and someone scrambles to silence it.
+- The crowd laughs at a joke you didn't understand.
+- You notice everyone else nodding. You nod too.
+nouns:
+  stage: A raised stage with a podium and massive screen. The current slide shows code you definitely understand. Definitely.
+  projector: A high-end projector casts impossibly sharp text. The speaker's notes are visible if you squint.
+  chairs: Rows of uncomfortable hotel chairs. Some have power outlets built in. Those are taken.

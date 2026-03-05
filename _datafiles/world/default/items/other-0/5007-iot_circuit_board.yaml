@@ -1,0 +1,10 @@
+itemid: 5007
+name: iot circuit board
+namesimple: board
+description: >-
+  A small circuit board from a rogue IoT device. It's got an ESP32, some 
+  sketchy Chinese capacitors, and absolutely no security whatsoever. 
+  The default password was definitely "admin".
+type: junk
+subtype: sellable
+value: 10

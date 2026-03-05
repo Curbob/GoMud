@@ -1,0 +1,36 @@
+roomid: 2023
+zone: CackalackyCon
+title: Career Corner
+description: Resume reviews, job tips, and industry advice. A quieter corner for professional development. Village hall south.
+mapsymbol: J
+maplegend: Career
+biome: indoor
+exits:
+  south:
+    roomid: 2024
+spawninfo:
+- mobid: 107
+  message: Emwav reviews a resume.
+  respawnrate: 1 real minutes
+  idlecommands:
+  - emote marks up a resume.
+  - say Your GitHub needs more commits.
+  - emote gives interview advice.
+  - say The world's okayest hacker, that's me.
+  - ""
+  - ""
+- mobid: 201
+  message: An overzealous recruiter phases in through a magenta tear!
+  respawnrate: 6 real minutes
+- mobid: 204
+  message: A corporate drone steps through a purple rift, smile frozen in place.
+  respawnrate: 8 real minutes
+idlemessages:
+- Someone gets resume feedback.
+- A recruiter pitches their company aggressively.
+- Career advice is dispensed freely.
+- Someone updates their LinkedIn nervously.
+- Business cards scatter across a table.
+nouns:
+  resumes: Stacks of resumes cover the tables, marked up with red ink. Some have gold stars. Most have question marks.
+  whiteboard: A whiteboard lists "Hot Skills 2026" - AI, Rust, "Vibes", and someone wrote "COBOL" with three exclamation marks.

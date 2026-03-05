@@ -1,0 +1,39 @@
+roomid: 2021
+zone: CackalackyCon
+title: Badge Hacking Village
+description: Soldering stations and oscilloscopes everywhere. This year's badges blink and beep as hackers probe their secrets. Hallway west, hardware south.
+mapsymbol: G
+maplegend: Badge
+biome: indoor
+exits:
+  west:
+    roomid: 2004
+  south:
+    roomid: 2022
+spawninfo:
+- mobid: 105
+  message: Nutcrunch mutters about firmware.
+  respawnrate: 1 real minutes
+  idlecommands:
+  - emote examines a badge PCB.
+  - say The virus feature is wild this year.
+  - emote flashes some firmware.
+  - say Bring me fragments. I pay well.
+  - say Type <ansi fg="command">list</ansi> for badge upgrades.
+  - ""
+- mobid: 203
+  message: A badge sparks violently, rising with purple electricity!
+  respawnrate: 5 real minutes
+- mobid: 203
+  message: Another badge crackles to life, infected and hostile!
+  respawnrate: 7 real minutes
+idlemessages:
+- A small explosion. Someone waves away smoke.
+- Solder fumes fill the air.
+- A badge plays a distorted chiptune.
+- Someone curses at a bricked badge.
+- Purple sparks arc between two badges on a table.
+nouns:
+  oscilloscope: A vintage Tektronix oscilloscope displays waveforms from a badge's communication bus. Someone has labeled the probes with tape.
+  soldering: Soldering stations line the tables, each with a brass sponge and helping hands. The tips glow orange.
+  badges: Badges in various states of disassembly cover every surface. Some blink. Some smoke. One is definitely possessed.

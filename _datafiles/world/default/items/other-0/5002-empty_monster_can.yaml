@@ -1,0 +1,9 @@
+itemid: 5002
+name: empty monster can
+namesimple: can
+description: >-
+  An empty Monster Energy can, still sticky with residue. A script kiddie's 
+  final possession. Could probably be recycled for 5 cents in some states.
+type: junk
+subtype: sellable
+value: 1

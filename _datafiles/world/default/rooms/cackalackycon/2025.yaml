@@ -1,0 +1,26 @@
+roomid: 2025
+zone: CackalackyCon
+title: AI Lab
+description: Screens show model outputs and prompt experiments. The future of hacking is being explored here. Village hall east.
+mapsymbol: A
+maplegend: AI
+biome: indoor
+exits:
+  east:
+    roomid: 2024
+spawninfo:
+- mobid: 108
+  message: Threlfall stares at a terminal.
+  respawnrate: 1 real minutes
+  idlecommands:
+  - emote adjusts temperature settings.
+  - say Have you tried prompt injection?
+  - emote argues with a chatbot.
+  - say Are you an AI? I could ask you the same.
+  - ""
+  - ""
+idlemessages:
+- A model generates something unexpected.
+- Someone jailbreaks a chatbot.
+- Token costs are discussed.
+- An AI refuses a request politely.

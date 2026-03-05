@@ -1,0 +1,14 @@
+itemid: 25001
+name: cackalackycon badge
+namesimple: badge
+description: >-
+  A shiny electronic badge on a lime green lanyard. The screen displays your 
+  handle in pixelated letters, and tiny LEDs pulse in a hypnotic pattern. 
+  It's basic firmware, but it gets you in the door. The badge feels warm 
+  against your chest, almost like it's alive.
+type: neck
+subtype: wearable
+value: 0
+damagereduction: 1
+statmods:
+  perception: 1

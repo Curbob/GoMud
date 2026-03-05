@@ -1,0 +1,32 @@
+mobid: 202
+zone: CackalackyCon
+itemdropchance: 15
+hostile: false
+maxwander: 6
+groups:
+  - hostiles
+  - bots
+activitylevel: 40
+idlecommands:
+  - 'say CONGRATULATIONS! You have been selected!'
+  - 'say Hot singles in your area want to FIGHT YOU!'
+  - 'say Your computer has virus. ATTACK ME to fix!'
+  - 'emote buzzes and glitches erratically.'
+  - 'say CLICK HERE TO BATTLE!!! Free prizes!!!'
+  - 'say Fight me for chance to win $1,000,000!'
+  - 'emote emits a burst of purple static menacingly.'
+  - ''
+character:
+  name: spam bot
+  description: >-
+    A swarm of purple pixels coalesces into a SPAM BOT - a humanoid figure 
+    made of flickering pop-up ads and malicious links. Its face cycles 
+    through stock photos of attractive people and fake antivirus warnings. 
+    Every few seconds it glitches, revealing the void beneath its digital skin.
+  raceid: 1
+  level: 1
+  stats:
+    vitality:
+      training: -2
+    speed:
+      training: 2

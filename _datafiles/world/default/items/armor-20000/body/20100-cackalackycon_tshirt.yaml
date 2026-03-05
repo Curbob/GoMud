@@ -1,0 +1,11 @@
+itemid: 20100
+name: cackalackycon tshirt
+namesimple: shirt
+description: >-
+  A black t-shirt with the CackalackyCon logo in lime green. The back reads 
+  "I hacked the planet and all I got was this lousy t-shirt." Surprisingly 
+  comfortable for combat.
+type: body
+subtype: wearable
+value: 5
+damagereduction: 1

@@ -1,0 +1,20 @@
+roomid: 2030
+zone: CackalackyCon
+title: Karaoke Lounge
+description: A small stage with a screen and microphones. Hackers belt out classics and theme songs. LobbyCon west, Swan south, Trivia east.
+mapsymbol: K
+maplegend: Karaoke
+biome: indoor
+exits:
+  west:
+    roomid: 2006
+  south:
+    roomid: 2031
+  east:
+    roomid: 2032
+idlemessages:
+- Someone attempts Bohemian Rhapsody.
+- The crowd cheers encouragingly.
+- A hacker duo performs.
+- Someone queues up another song.
+- Off-key but enthusiastic singing.

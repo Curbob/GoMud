@@ -1,0 +1,51 @@
+roomid: 2003
+zone: CackalackyCon
+title: Con Floor
+description: >-
+  The heart of CackalackyCon pulses with chaotic energy. Massive banners hang from 
+  the ceiling, the CackalackyCon logo glowing in lime green. A schedule board 
+  dominates one wall, constantly updating. Vendor booths line the edges, hawking 
+  everything from lockpicks to LED badges. Villages north, registration south, 
+  talks west, social east, bar southwest.
+mapsymbol: C
+maplegend: Con Floor
+biome: indoor
+exits:
+  south:
+    roomid: 2002
+  north:
+    roomid: 2004
+  west:
+    roomid: 2005
+  east:
+    roomid: 2006
+  southwest:
+    roomid: 2010
+  service:
+    roomid: 2050
+    secret: true
+spawninfo:
+- mobid: 202
+  message: A swarm of purple pixels coalesces into a spam bot!
+  respawnrate: 8 real minutes
+- mobid: 213
+  message: The Conference WiFi flickers into hostile existence!
+  respawnrate: 10 real minutes
+idlemessages:
+- sq33k rushes past solving problems.
+- The schedule board updates with a soft click.
+- 'Someone shouts "I''m in!" Cheers follow.'
+- A drone buzzes overhead, camera blinking.
+- You smell soldering flux and energy drinks.
+- '"The WiFi password is hunter2" someone jokes.'
+- A badge chirps as it exchanges data with another.
+- 'You notice a staff member slip through a door marked "SERVICE".'
+- Someone whispers about an old server room hidden somewhere.
+nouns:
+  schedule: "The schedule board is a massive display showing talk times, village events, and CTF standings. Names scroll by too fast to read. Someone has drawn a lime in the corner."
+  board: ":schedule"
+  banners: "Massive lime green banners hang from the ceiling, emblazoned with the CackalackyCon logo. They flutter slightly in the aggressive air conditioning."
+  booths: "Vendor booths line the edges, selling lockpicks, USB rubber duckies, soldering kits, and merch. One booth is just a guy with a cardboard sign that says FREE ADVICE."
+  vendors: ":booths"
+  door: "A plain door marked SERVICE - STAFF ONLY is barely visible behind a banner. It looks like it might lead somewhere interesting. Try searching the area."
+  service: ":door"

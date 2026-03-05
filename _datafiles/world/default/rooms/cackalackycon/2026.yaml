@@ -1,0 +1,18 @@
+roomid: 2026
+zone: CackalackyCon
+title: Phreak Me
+description: Rotary phones, blue boxes, and telecom history. The old school art of phone phreaking lives on here. Village hall north, SAV east.
+mapsymbol: P
+maplegend: Phreak
+biome: indoor
+exits:
+  north:
+    roomid: 2024
+  east:
+    roomid: 2028
+idlemessages:
+- A 2600 Hz tone warbles.
+- Someone explains Captain Crunch.
+- An old payphone rings.
+- Rotary dial clicking sounds.
+- Someone demonstrates DTMF tones.

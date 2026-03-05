@@ -1,9 +1,9 @@
 
 const allowed_commands = ["help", "broadcast", "look", "status", "inventory", "experience", "conditions"];
-const teach_commands = ["equip stick", "attack dummy", "west"];
+const teach_commands = ["equip schedule", "attack dummy", "west"];
 const teacherMobId = 57;
 const dummyMobId = 58;
-const teacherName = "Orb of Violence";
+const teacherName = "Lime of Learning";
 const firstItemId = 10001;
 
 var commandNow = 0; // Which command they are on
@@ -33,12 +33,12 @@ function onCommand(cmd, rest, user, room) {
         
         teacherMob.Command("say Good job!", 1.0);
 
-        if ( cmd == "equip stick" ) {
-            teacherMob.Command('say Check it out! If you type <ansi fg="command">status</ansi> you\'ll see the stick is equipped!', 1.0);
+        if ( cmd == "equip schedule" ) {
+            teacherMob.Command('say Check it out! If you type <ansi fg="command">status</ansi> you\'ll see the schedule is equipped!', 1.0);
         }
 
         if ( cmd == "inventory" ) {
-            teacherMob.Command('say Hmm, it doesn\'t look like you\'re carrying much other than that sharp stick.', 1.0);
+            teacherMob.Command('say Hmm, it doesn\'t look like you\'re carrying much other than that rolled-up schedule.', 1.0);
             teacherMob.Command('say Remember, you can <ansi fg="command">look</ansi> at stuff you\'re carrying any time you want.', 1.0);
         }
 
@@ -65,7 +65,7 @@ function onCommand(cmd, rest, user, room) {
                 user.GiveItem(itm);
             }
             
-            teacherMob.Command('say Go ahead and equip that sharp stick you\'ve got. Type <ansi fg="command">equip stick</ansi>.', 1.0);
+            teacherMob.Command('say Go ahead and equip that rolled-up schedule you\'ve got. Type <ansi fg="command">equip schedule</ansi>.', 1.0);
             break;
         case 1:
 
@@ -105,7 +105,7 @@ function onEnter(user, room) {
         user.GiveItem(itm);
     }
 
-    teacherMob.Command('say Go ahead and equip that sharp stick you\'ve got. Type <ansi fg="command">equip stick</ansi>.', 1.0);
+    teacherMob.Command('say Go ahead and equip that rolled-up schedule you\'ve got. Type <ansi fg="command">equip schedule</ansi>.', 1.0);
 
     return true;
 }

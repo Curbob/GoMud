@@ -1,0 +1,20 @@
+mobid: 107
+zone: CackalackyCon
+itemdropchance: 0
+hostile: false
+maxwander: 0
+groups:
+  - cackalackycon-staff
+activitylevel: 20
+idlecommands:
+  - 'emote looks over a resume.'
+  - 'say Tailor it to the job description.'
+  - 'emote gives a practice interview question.'
+  - 'say I became the world''s okayest hacker.'
+  - ''
+  - ''
+character:
+  name: Emwav
+  description: Runs the Career Village. Emwav got into hacking through Shadowrun and the movie Hackers, then became the world's okayest hacker. Now they help newbies navigate the job market with battle-tested advice.
+  raceid: 1
+  level: 20

@@ -1,0 +1,33 @@
+roomid: 2004
+zone: CackalackyCon
+title: North Hallway
+description: >-
+  A wide corridor lined with hand-painted village signs pointing in every 
+  direction. Lockpicking west, Badge Hacking east, Village Hall north. 
+  The con floor lies south. You feel like you're being watched.
+mapsymbol: H
+maplegend: Hallway
+biome: indoor
+exits:
+  south:
+    roomid: 2003
+  west:
+    roomid: 2020
+  east:
+    roomid: 2021
+  north:
+    roomid: 2024
+spawninfo:
+- mobid: 210
+  message: No portal. No warning. The Fed is just... there.
+  respawnrate: 15 real minutes
+  maxwander: 5
+idlemessages:
+- Someone hurries past with a soldering iron.
+- Clicking echoes from the lockpick village.
+- A badge chirps as someone walks by.
+- Excited chatter echoes from multiple directions.
+- You swear someone in a suit just walked past.
+nouns:
+  signs: Hand-painted signs point to various villages. Someone has added googly eyes to all of them.
+  carpet: Hotel carpet with a suspicious stain. Nobody asks about the stain.

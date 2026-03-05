@@ -1,0 +1,14 @@
+itemid: 35002
+name: club mate
+namesimple: bottle
+description: >-
+  A glass bottle of Club Mate, imported from Germany. The official drink of 
+  European hackerspaces. Tastes like lawn clippings and enlightenment. 
+  Significantly more restorative than Monster.
+type: drink
+subtype: drinkable
+value: 15
+uses: 1
+buffids:
+- 5
+- 19

@@ -1,0 +1,20 @@
+mobid: 108
+zone: CackalackyCon
+itemdropchance: 0
+hostile: false
+maxwander: 0
+groups:
+  - cackalackycon-staff
+activitylevel: 20
+idlecommands:
+  - 'emote mutters about context windows.'
+  - 'say Have you considered fine-tuning?'
+  - 'emote prompts a model aggressively.'
+  - 'say I may or may not be an AI myself.'
+  - ''
+  - ''
+character:
+  name: Threlfall
+  description: The AI whisperer. Threlfall talks in prompts and tokens. They may or may not pass the Turing test themselves. Known for getting models to do things they shouldn't.
+  raceid: 1
+  level: 20

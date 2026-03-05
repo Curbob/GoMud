@@ -1,0 +1,20 @@
+roomid: 2006
+zone: CackalackyCon
+title: LobbyCon
+description: The unofficial hallway track. Hackers network, debate, and scheme. Pool south, Karaoke east. Con floor west.
+mapsymbol: O
+maplegend: LobbyCon
+biome: indoor
+exits:
+  west:
+    roomid: 2003
+  south:
+    roomid: 2007
+  east:
+    roomid: 2030
+idlemessages:
+- Two people exchange business cards.
+- A heated debate about encryption.
+- Someone draws a diagram on a napkin.
+- Laughter erupts from a group.
+- A recruiter lurks hopefully nearby.

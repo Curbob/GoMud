@@ -1,0 +1,15 @@
+itemid: 25002
+name: upgraded badge
+namesimple: badge
+description: >-
+  Your CackalackyCon badge, now running custom firmware. The LEDs pulse in 
+  more complex patterns, and the screen can display animations. Someone 
+  at Badge Hacking helped you flash it with better code. It hums with 
+  quiet confidence.
+type: neck
+subtype: wearable
+value: 50
+damagereduction: 2
+statmods:
+  perception: 2
+  mysticism: 1

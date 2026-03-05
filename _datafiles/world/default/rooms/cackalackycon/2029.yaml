@@ -1,0 +1,31 @@
+roomid: 2029
+zone: CackalackyCon
+title: IoT Playground
+description: >-
+  Smart devices begging to be hacked. Cameras, locks, bulbs, and thermostats 
+  await your exploits. A sign reads Default Passwords Hall of Shame with a 
+  disturbingly long list. Something skitters in the corner. Cipher room north.
+mapsymbol: I
+maplegend: IoT
+biome: indoor
+exits:
+  north:
+    roomid: 2027
+spawninfo:
+- mobid: 205
+  message: A rogue IoT device skitters out of a purple portal on USB-cable legs!
+  respawnrate: 4 real minutes
+- mobid: 205
+  message: Another IoT device breaks free from its mount, blinking malevolently!
+  respawnrate: 6 real minutes
+idlemessages:
+- A smart bulb flickers in a sinister pattern.
+- Someone dumps firmware from a camera.
+- 'A smart lock clicks open. Whoops.'
+- admin/admin strikes again.
+- An IoT device phones home to a server in Eastern Europe.
+- Something beeps. It should not be beeping.
+nouns:
+  sign: "Default Passwords Hall of Shame lists admin/admin, root/root, and password/password. The list goes on for pages."
+  cameras: "IP cameras line a shelf, their red LEDs blinking. Most are already compromised. One is taped over for privacy."
+  devices: "A chaotic pile of smart devices - toasters, fish tank monitors, baby monitors. All networked. All vulnerable."

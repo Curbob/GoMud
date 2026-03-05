@@ -1,0 +1,10 @@
+itemid: 5004
+name: usb rubber ducky
+namesimple: usb
+description: >-
+  A USB device disguised as a regular flash drive. It's actually a keystroke 
+  injection tool that can type malicious commands faster than any human. 
+  Dropped by a social engineer who won't need it anymore.
+type: junk
+subtype: sellable
+value: 25

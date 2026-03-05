@@ -1,9 +1,9 @@
 
 
 const allowed_commands = ["help", "broadcast"];
-const teach_commands = ["look", "look orb", "look", "look east", "east"];
+const teach_commands = ["look", "look lime", "look", "look east", "east"];
 const teacherMobId = 57;
-const teacherName = "Orb of Vision";
+const teacherName = "Lime of Learning";
 
 var commandNow = 0; // Which command they are on
 var canGoEast = false;
@@ -34,8 +34,9 @@ function onCommand(cmd, rest, user, room) {
         
         teacherMob.Command("say Good job!", 1.0);
 
-        if ( fullCommand == "look orb" ) {
+        if ( fullCommand == "look lime" ) {
             teacherMob.Command('say As you can see, looking at me shows you a description and some information about what I\'m carrying.', 1.0);
+            teacherMob.Command('say Yes, I\'m a lime. It\'s a CackalackyCon thing.', 1.0);
         }
 
         if ( fullCommand == "look east" ) {
@@ -63,7 +64,7 @@ function onCommand(cmd, rest, user, room) {
             break;
         case 1:
             teacherMob.Command('say You can also look at creatures or people in the room.', 1.0);
-            teacherMob.Command('say type <ansi fg="command">look orb</ansi> to look at me, ' + teacherMob.GetCharacterName(true) + '.', 1.0);
+            teacherMob.Command('say type <ansi fg="command">look lime</ansi> to look at me, ' + teacherMob.GetCharacterName(true) + '.', 1.0);
             break;
         case 2:
             teacherMob.Command('say Try the <ansi fg="command">look</ansi> command again, but this time, pay attention to any <ansi fg="exit">exits</ansi>.', 1.0);
@@ -97,10 +98,10 @@ function onEnter(user, room) {
 
     sendWorkingCommands(user);
 
-    teacherMob.Command('emote appears in a ' + UtilApplyColorPattern("flash of light!", "glowing"));
+    teacherMob.Command('emote appears in a ' + UtilApplyColorPattern("flash of citrus light!", "glowing"));
     
-    teacherMob.Command('say Welcome to the Newbie School!', 1.0);
-    teacherMob.Command('say I\'ll give you some tips to help you get started.', 1.0);
+    teacherMob.Command('say Welcome to CackalackyCon orientation!', 1.0);
+    teacherMob.Command('say I\'m the Lime of Learning. Don\'t ask why I\'m a lime. Nobody knows.', 1.0);
     teacherMob.Command('say In this area you\'ll learn the basics of inspecting your environment with the <ansi fg="command">look</ansi> command.', 1.0);
     teacherMob.Command('say type <ansi fg="command">look</ansi> and hit enter to see a description of the area you are in.', 1.0);
     

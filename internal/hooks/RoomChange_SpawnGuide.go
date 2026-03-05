@@ -86,7 +86,7 @@ func SpawnGuide(e events.Event) events.ListenerReturn {
 	room.SendText(`<ansi fg="mobname">` + guideMob.Character.Name + `</ansi> appears in a shower of sparks!`)
 
 	guideMob.Command(`sayto ` + user.ShorthandId() + ` I'll be here to help protect you while you learn the ropes.`)
-	guideMob.Command(`sayto ` + user.ShorthandId() + ` I can create a portal to take us back to Town Square any time. Just <ansi fg="command">ask</ansi> me about it.`)
+	guideMob.Command(`sayto ` + user.ShorthandId() + ` I can create a portal to take us somewhere safe any time. Just <ansi fg="command">ask</ansi> me about it.`)
 
 	user.SendText(`<ansi fg="alert-3">Your guide will try and stick around until you reach level 5.</ansi>`)
 

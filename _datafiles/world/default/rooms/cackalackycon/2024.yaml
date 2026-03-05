@@ -1,0 +1,23 @@
+roomid: 2024
+zone: CackalackyCon
+title: Village Hall
+description: A hub connecting the various villages. Signs point to Phreak, Cipher, IoT, and more. Career north, AI west, Phreak south, Cipher east.
+mapsymbol: V
+maplegend: Villages
+biome: indoor
+exits:
+  north:
+    roomid: 2023
+  west:
+    roomid: 2025
+  south:
+    roomid: 2026
+  east:
+    roomid: 2027
+  northwest:
+    roomid: 2004
+idlemessages:
+- Attendees navigate between villages.
+- Someone checks the village schedule.
+- Excited chatter from every direction.
+- A volunteer points someone the right way.

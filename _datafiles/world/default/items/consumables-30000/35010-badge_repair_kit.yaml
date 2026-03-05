@@ -1,0 +1,13 @@
+itemid: 35010
+name: badge repair kit
+namesimple: kit
+description: >-
+  A small kit containing a USB cable, tweezers, flux, and a tiny screwdriver. 
+  Everything you need to reflash corrupted firmware or repair physical damage 
+  to your badge. Nutcrunch swears by these.
+type: potion
+subtype: usable
+value: 25
+uses: 1
+buffids:
+- 5

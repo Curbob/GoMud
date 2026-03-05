@@ -1,0 +1,11 @@
+itemid: 5101
+name: hardware fragment
+namesimple: fragment
+description: >-
+  A fragment of an access key, its surface covered in tiny circuit traces. 
+  Smells faintly of solder. One of four pieces needed to access something 
+  ancient.
+type: key
+subtype: fragment
+questtoken: portal-hardware
+value: 0

@@ -2,9 +2,9 @@
 const allowed_commands = ["help", "broadcast", "look", "status", "inventory", "experience", "conditions", "equip"];
 const teach_commands = ["get cap", "equip cap", "portal"];
 const teacherMobId = 57;
-const teacherName = "Orb of Graduation";
+const teacherName = "Lime of Learning";
 const capItemId = 20043;
-const newbieKitItemId = 100;
+const newbieKitItemId = 150; // hacker kit for CackalackyCon
 
 var commandNow = 0; // Which command they are on
 
@@ -55,16 +55,17 @@ function onCommand(cmd, rest, user, room) {
             break;
         case 2:
 
-            teacherMob.Command('say It\'s time to say goodbye', 1.0);
-            teacherMob.Command('say I\'ll summon a portal to send you to the heart of <ansi fg="zone">Frostfang city</ansi>, where your adventure begins.', 1.0);
+            teacherMob.Command('say It\'s time to say goodbye!', 1.0);
+            teacherMob.Command('say I\'ll summon a portal to send you to the <ansi fg="zone">CackalackyCon Main Entrance</ansi>, where your adventure begins.', 1.0);
 
             exits = room.GetExits();
             if ( !exits.portal ) {
-                teacherMob.Command('emote glows intensely, and a ' + UtilApplyColorPattern('swirling portal', 'pink') + ' appears!', 1.0);
-                room.AddTemporaryExit('swirling portal', ':pink', 0, "1 real day"); // RoomId 0 is an alias for start room. Portal can live a long time since the room is ephemeral.
+                teacherMob.Command('emote glows intensely, and a ' + UtilApplyColorPattern('lime-green portal', 'glowing') + ' appears!', 1.0);
+                room.AddTemporaryExit('lime-green portal', ':green', 2000, "1 real day"); // RoomId 2000 is CackalackyCon Main Entrance
             }
 
-            teacherMob.Command('say Enter the portal by typing <ansi fg="command">swirling portal</ansi> (or just <ansi fg="command">portal</ansi>) when you are ready.', 1.0);
+            teacherMob.Command('say Enter the portal by typing <ansi fg="command">lime-green portal</ansi> (or just <ansi fg="command">portal</ansi>) when you are ready.', 1.0);
+            teacherMob.Command('say See you at the con! Remember: when in doubt, look for limes.', 1.0);
             
             break;
         default:
@@ -93,7 +94,7 @@ function onEnter(user, room) {
 
     teacherMob.Command('emote appears in a ' + UtilApplyColorPattern("flash of light!", "glowing"));
 
-    teacherMob.Command('say Congratulation on getting to the end of the training course!', 1.0);
+    teacherMob.Command('say Congratulations on completing the CackalackyCon orientation!', 1.0);
     teacherMob.Command('drop cap', 1.0);
     teacherMob.Command('emote gestures to the <ansi fg="item">graduation cap</ansi> on the ground.', 3.0);
     teacherMob.Command('say type <ansi fg="command">get cap</ansi> to pick up the <ansi fg="item">graduation cap</ansi>.', 1.0);

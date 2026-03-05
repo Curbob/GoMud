@@ -1,22 +1,27 @@
 roomid: -1
 zone: Nowhere
-title: The Void
-description: As your senses attune to the stillness around, you find yourself engulfed
-  in an impenetrable void, a realm where darkness reigns supreme. The abyss seems
-  to stretch infinitely in all directions, and you feel a chilling isolation seeping
-  into your very bones. Despite the oppressive blackness, there's an almost palpable
-  density to the void, as if the shadows themselves are a thick, suffocating shroud.
-  There's an eerie silence that pervades, broken only by the faint, distant echo of
-  your own breath that seems to bounce off the unseen boundaries of this desolate
-  expanse. The ground beneath is neither cold nor warm to the touch, and it's unsettlingly
-  intangible, as though you are suspended in a timeless, spaceless vacuum. Yet amidst
-  the disconcerting calm, you sense an ancient, eerie awareness in the void, a watchful
-  consciousness lurking within the velvety darkness. With each passing moment, the
-  boundary between yourself and the infinite abyss seems to blur, leaving you with
-  a haunting sensation of becoming one with the void.
+title: Hotel Parking Lot
+description: >-
+  You stand in a sprawling parking lot under a warm North Carolina sky. The air 
+  carries the faint smell of asphalt and possibility. Ahead, a hotel rises 
+  against the Durham skyline, its entrance adorned with a bright green banner 
+  reading <ansi fg="green-bold">CACKALACKYCON 2026</ansi>. 
+  
+  People stream toward the doors — some carrying laptops, others hauling pelican 
+  cases of mysterious equipment. A few wear last year's electronic badges like 
+  medals of honor. You can hear excited chatter about CTF challenges, badge hacks, 
+  and which talks not to miss.
+  
+  The main entrance beckons. Your adventure awaits inside.
+  
+  <ansi fg="yellow">(Type</ansi> <ansi fg="command">new</ansi> <ansi fg="yellow">to create a character, or</ansi> <ansi fg="command">login</ansi> <ansi fg="yellow">if returning.)</ansi>
 exits:
-  drift:
+  enter:
     roomid: -1
 idlemessages:
-- Type <ansi fg="command">look</ansi> to look around.
-- Type <ansi fg="command">help</ansi> to see help topics.
+- A rideshare pulls up and deposits another group of hackers.
+- Someone walks past muttering about firmware.
+- You hear laughter from a group comparing badge designs.
+- Type <ansi fg="command">new</ansi> to create a character or <ansi fg="command">login</ansi> to continue.
+- A drone buzzes overhead, filming something.
+- Is that a lime rolling across the parking lot?

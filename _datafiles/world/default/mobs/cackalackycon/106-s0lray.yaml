@@ -1,0 +1,20 @@
+mobid: 106
+zone: CackalackyCon
+itemdropchance: 0
+hostile: false
+maxwander: 0
+groups:
+  - cackalackycon-staff
+activitylevel: 25
+idlecommands:
+  - 'emote adjusts a microscope.'
+  - 'say Surface mount is an art form.'
+  - 'emote tests continuity on a board.'
+  - 'say This iron is perfectly calibrated.'
+  - ''
+  - ''
+character:
+  name: s0lray
+  description: Hardware guru and soldering station master. If Nutcrunch handles firmware, s0lray handles the physical layer. They can rework a BGA in their sleep and have strong opinions about flux types.
+  raceid: 1
+  level: 25

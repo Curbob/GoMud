@@ -1,0 +1,18 @@
+itemid: 25004
+name: legendary lime badge
+namesimple: badge
+description: >-
+  The rarest badge at CackalackyCon. The case is custom-milled aluminum with 
+  a lime green anodized finish. The screen is e-ink, the battery lasts forever, 
+  and the firmware... the firmware does things that shouldn't be possible. 
+  Rumor says only a handful exist. When you wear it, other badges seem to 
+  recognize you. Even corrupted ones hesitate.
+type: neck
+subtype: wearable
+value: 500
+damagereduction: 6
+statmods:
+  perception: 3
+  mysticism: 3
+  vitality: 2
+  strength: 1

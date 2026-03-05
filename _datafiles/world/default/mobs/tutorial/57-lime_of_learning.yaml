@@ -1,0 +1,14 @@
+mobid:  57
+zone: Tutorial
+itemdropchance: 0
+hostile: false
+maxwander: 0
+activitylevel: 10
+character:
+  name: Lime of Learning
+  description: 'A glowing lime floats before you, pulsing with an inner green light. Despite being a citrus fruit, you can sense wisdom and intent. It smells faintly of knowledge... and limes.'
+  raceid: 20
+  level: 1
+  equipment:
+    head:
+      itemid: 20044

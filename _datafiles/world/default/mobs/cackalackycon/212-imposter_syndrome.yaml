@@ -1,0 +1,34 @@
+mobid: 212
+zone: CackalackyCon
+itemdropchance: 50
+hostile: true
+maxwander: 0
+groups:
+  - hostiles
+  - bosses
+  - abstract
+activitylevel: 15
+idlecommands:
+  - 'say Everyone here knows more than you.'
+  - 'say They''re going to find out you don''t belong.'
+  - 'emote looks exactly like you, but more confident.'
+  - 'say Why did you even come? You''re not a real hacker.'
+  - 'say Remember that one time you had to google something basic?'
+  - 'say They''re all laughing at you. You just can''t hear it.'
+  - 'emote smiles with your face.'
+  - ''
+character:
+  name: Imposter Syndrome
+  description: >-
+    IMPOSTER SYNDROME doesn't come through a portal. It was already here, 
+    waiting. It looks exactly like you - but better. More confident. The 
+    version of you that actually knows what they're doing. It speaks with 
+    your voice but says everything you're afraid is true. Its badge has 
+    your name on it, but the title is "FRAUD" in letters only you can see.
+  raceid: 1
+  level: 9
+  stats:
+    mysticism:
+      training: 5
+    perception:
+      training: 4

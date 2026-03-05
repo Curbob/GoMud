@@ -1,0 +1,10 @@
+itemid: 5006
+name: government sunglasses
+namesimple: sunglasses
+description: >-
+  Black sunglasses, standard government issue. The kind worn indoors by 
+  people who "just have a few questions." They're surprisingly comfortable 
+  and definitely not bugged. Probably.
+type: junk
+subtype: sellable
+value: 50

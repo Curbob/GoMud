@@ -1,0 +1,11 @@
+itemid: 5103
+name: ctf fragment
+namesimple: fragment
+description: >-
+  A fragment of an access key, with "flag{" etched into one edge. The other 
+  edge is broken off mid-character. One of four pieces needed to access 
+  something ancient.
+type: key
+subtype: fragment
+questtoken: portal-ctf
+value: 0

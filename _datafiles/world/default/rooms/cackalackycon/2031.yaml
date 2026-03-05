@@ -1,0 +1,16 @@
+roomid: 2031
+zone: CackalackyCon
+title: Hacker Swan Ballroom
+description: The fancy dress party. Hackers in formal wear mingle under dim lights. It's classy, it's nerdy, it's Hacker Swan. Karaoke north.
+mapsymbol: S
+maplegend: Swan
+biome: indoor
+exits:
+  north:
+    roomid: 2030
+idlemessages:
+- Someone adjusts their bow tie.
+- Fancy cocktails circulate on trays.
+- A hacker in a gown discusses exploits.
+- Formal but still talking shop.
+- Someone's cufflinks are blinking LEDs.

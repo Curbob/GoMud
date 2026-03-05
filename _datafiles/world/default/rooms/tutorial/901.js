@@ -3,7 +3,7 @@
 const allowed_commands = ["help", "broadcast", "look"];
 const teach_commands = ["status", "inventory", "experience", "conditions", "south"];
 const teacherMobId = 57;
-const teacherName = "Orb of Reflection";
+const teacherName = "Lime of Learning";
 const firstItemId = 10001;
 
 var commandNow = 0; // Which command they are on
@@ -41,7 +41,7 @@ function onCommand(cmd, rest, user, room) {
         }
 
         if ( cmd == "inventory" ) {
-            teacherMob.Command('say Hmm, it doesn\'t look like you\'re carrying much other than that <ansi fg="item">sharp stick</ansi>.', 1.0);
+            teacherMob.Command('say Hmm, it doesn\'t look like you\'re carrying much other than that <ansi fg="item">rolled-up schedule</ansi>.', 1.0);
             teacherMob.Command('say Remember, you can <ansi fg="command">look</ansi> at stuff you\'re carrying any time you want.', 1.0);
         }
 

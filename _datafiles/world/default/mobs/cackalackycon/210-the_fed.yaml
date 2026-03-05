@@ -1,0 +1,42 @@
+mobid: 210
+zone: CackalackyCon
+itemdropchance: 60
+hostile: true
+maxwander: 4
+groups:
+  - hostiles
+  - bosses
+activitylevel: 15
+idlecommands:
+  - 'emote adjusts their sunglasses. Indoors.'
+  - 'say Interesting badge you have there.'
+  - 'emote speaks quietly into their sleeve.'
+  - 'say We should talk. Privately.'
+  - 'say Just a few questions. Routine.'
+  - 'emote takes notes on a small pad.'
+  - ''
+  - ''
+character:
+  name: The Fed
+  description: >-
+    No portal. No warning. THE FED is just... there. Sunglasses indoors, 
+    dark suit perfectly pressed, earpiece barely visible. You don't remember 
+    them arriving. Their badge says "Security Researcher" but the font is 
+    wrong and the lanyard is too new. They watch everything with the patient 
+    intensity of someone who has all the time in the world and a very large 
+    budget.
+  raceid: 1
+  level: 10
+  gold: 100
+  stats:
+    strength:
+      training: 3
+    vitality:
+      training: 3
+    perception:
+      training: 4
+    speed:
+      training: 2
+  items:
+    - itemid: 5006
+    - itemid: 5004

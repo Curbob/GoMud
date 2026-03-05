@@ -1,0 +1,34 @@
+mobid: 213
+zone: CackalackyCon
+itemdropchance: 20
+hostile: false
+maxwander: 10
+groups:
+  - hostiles
+  - abstract
+activitylevel: 50
+idlecommands:
+  - 'emote flickers in and out of existence.'
+  - 'say CONNECTION INTERRUPTED. ATTACK TO RECONNECT.'
+  - 'emote disconnects you from reality briefly.'
+  - 'say CAPTIVE PORTAL REQUIRES COMBAT'
+  - 'emote buffers... menacingly.'
+  - 'say SIGNAL STRENGTH: FIGHT ME'
+  - 'say AUTHENTICATION FAILED. TRY PUNCHING.'
+  - ''
+character:
+  name: Conference WiFi
+  description: >-
+    THE CONFERENCE WIFI manifests as a shimmering, unstable mass of purple 
+    electromagnetic frustration. It flickers constantly, sometimes solid, 
+    sometimes transparent, occasionally just gone entirely. Packets of 
+    malformed data orbit it like angry satellites. It exists in a quantum 
+    state of connected and not-connected simultaneously. The password is 
+    "CaCon2026!" but it won't help you.
+  raceid: 1
+  level: 3
+  stats:
+    speed:
+      training: 5
+    vitality:
+      training: -3

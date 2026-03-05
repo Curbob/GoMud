@@ -1,0 +1,37 @@
+mobid: 200
+zone: CackalackyCon
+itemdropchance: 25
+hostile: false
+maxwander: 3
+groups:
+  - hostiles
+  - skids
+activitylevel: 20
+idlecommands:
+  - 'say I could totally hack the mainframe if I wanted to.'
+  - 'emote furiously types on a cracked phone screen.'
+  - 'say My dad works at Nintendo.'
+  - 'say Come on, fight me bro. I''ll wreck you.'
+  - 'say I use Kali Linux. I''m basically a hacker.'
+  - 'say You scared? 1v1 me right now.'
+  - 'emote cracks knuckles unconvincingly.'
+  - 'say I bet you can''t even code.'
+  - ''
+character:
+  name: script kiddie
+  description: >-
+    A glitching purple portal spits out a SCRIPT KIDDIE. They're wearing an 
+    "I hack stuff" t-shirt from Amazon, cargo shorts with too many pockets, 
+    and the unmistakable air of someone who just discovered metasploit. 
+    A Monster Energy drink is clutched in one hand, their phone in the other. 
+    They radiate chaotic incompetence.
+  raceid: 1
+  level: 2
+  gold: 3
+  stats:
+    vitality:
+      training: -1
+    mysticism:
+      training: -2
+  items:
+    - itemid: 5002

@@ -1,0 +1,33 @@
+mobid: 204
+zone: CackalackyCon
+itemdropchance: 30
+hostile: false
+maxwander: 2
+groups:
+  - hostiles
+  - corporate
+activitylevel: 10
+idlecommands:
+  - 'say Let''s circle back on that... with our fists.'
+  - 'say We need to leverage our synergies in combat.'
+  - 'emote stares blankly, smile frozen in place.'
+  - 'say Per my last email... I challenged you to fight.'
+  - 'say Let''s take this offline. Right now.'
+  - 'emote cracks their knuckles mechanically.'
+  - 'say Can we get alignment on punching each other?'
+  - ''
+character:
+  name: corporate drone
+  description: >-
+    A CORPORATE DRONE steps through a magenta-tinged rift, straightening 
+    their tie with mechanical precision. Their suit is immaculate, their 
+    smile is practiced, and their eyes are completely dead. A Bluetooth 
+    earpiece blinks in one ear. They move with the unsettling smoothness 
+    of someone who has attended too many mandatory team-building exercises.
+  raceid: 1
+  level: 4
+  stats:
+    vitality:
+      training: 1
+    strength:
+      training: 1

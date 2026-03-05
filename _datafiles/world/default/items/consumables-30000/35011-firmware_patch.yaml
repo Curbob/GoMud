@@ -1,0 +1,13 @@
+itemid: 35011
+name: firmware patch
+namesimple: usb
+description: >-
+  A USB stick containing a firmware patch for CackalackyCon badges. The label 
+  says "TRUST ME" in sharpie, which is either reassuring or deeply suspicious 
+  depending on who gave it to you.
+type: potion
+subtype: usable
+value: 35
+uses: 1
+buffids:
+- 5

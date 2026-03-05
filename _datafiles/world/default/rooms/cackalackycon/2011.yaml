@@ -1,0 +1,34 @@
+roomid: 2011
+zone: CackalackyCon
+title: CTF Arena
+description: Screens display scoreboards and challenge categories. Teams huddle over laptops, racing to capture flags. The bar is east.
+mapsymbol: F
+maplegend: CTF
+biome: indoor
+exits:
+  east:
+    roomid: 2010
+spawninfo:
+- mobid: 104
+  message: Uncue monitors the scoreboard.
+  respawnrate: 1 real minutes
+  idlecommands:
+  - emote watches the scoreboard.
+  - say First blood goes to...
+  - emote checks a flag submission.
+  - say Not bad. Not bad at all.
+  - ""
+  - ""
+- mobid: 200
+  message: A script kiddie stumbles in through a purple portal, looking for easy points!
+  respawnrate: 7 real minutes
+idlemessages:
+- A team high-fives after a solve.
+- Furious typing from every direction.
+- Someone groans at a troll challenge.
+- The scoreboard updates. Rankings shift.
+- 'Someone whispers "flag{...}" and gets shushed.'
+nouns:
+  scoreboard: "A massive display showing team rankings, solve counts, and time remaining. Your team is... not on it."
+  screens: "Multiple screens show different challenge categories - Web, Crypto, Pwn, Rev, Misc. The Misc category looks suspiciously empty."
+  laptops: "Laptops cover every surface, screens filled with hex editors, terminal windows, and one person definitely just playing Tetris."

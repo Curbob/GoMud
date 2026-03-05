@@ -1,0 +1,16 @@
+roomid: 2034
+zone: CackalackyCon
+title: Chaos Workshop
+description: Random making, breaking, and creating. If it's weird, wonderful, or explosive, it happens here. Wireless east.
+mapsymbol: X
+maplegend: Chaos
+biome: indoor
+exits:
+  east:
+    roomid: 2033
+idlemessages:
+- Something sparks unexpectedly.
+- A 3D printer whirs in the corner.
+- Someone builds something inexplicable.
+- Controlled chaos reigns.
+- An experiment succeeds. Mostly.

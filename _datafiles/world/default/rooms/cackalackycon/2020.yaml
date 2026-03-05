@@ -1,0 +1,26 @@
+roomid: 2020
+zone: CackalackyCon
+title: Lockpick Village
+description: Tables covered with practice locks, picks, and tension wrenches. The satisfying click of locks opening fills the air. Hallway east.
+mapsymbol: P
+maplegend: Lockpick
+biome: indoor
+exits:
+  east:
+    roomid: 2004
+spawninfo:
+- mobid: 103
+  message: Unregistered examines a lock.
+  respawnrate: 1 real minutes
+  idlecommands:
+  - emote picks a lock with ease.
+  - say Feel the pins.
+  - emote hands someone a tension wrench.
+  - say Try the clear lock first.
+  - ""
+  - ""
+idlemessages:
+- Click. Someone grins triumphantly.
+- A lock hits the table in frustration.
+- Picks rattle in a leather case.
+- Someone asks about security pins.

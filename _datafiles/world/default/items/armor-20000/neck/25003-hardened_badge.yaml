@@ -1,0 +1,16 @@
+itemid: 25003
+name: hardened badge
+namesimple: badge
+description: >-
+  This badge has been security-hardened by Nutcrunch personally. The firmware 
+  is signed, the bootloader is locked, and it runs a custom antivirus that 
+  makes corrupted badges keep their distance. The case has been reinforced 
+  with a subtle metal frame. Elite status.
+type: neck
+subtype: wearable
+value: 150
+damagereduction: 4
+statmods:
+  perception: 2
+  mysticism: 2
+  vitality: 1

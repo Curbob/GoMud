@@ -1,0 +1,31 @@
+roomid: 2028
+zone: CackalackyCon
+title: SAV Lounge
+description: >-
+  Social Attack Vector training. Learn to hack humans, not just machines. 
+  A whiteboard lists Top 10 Pretexts That Actually Work. Someone is 
+  practicing their I forgot my badge face. Phreak Me west, Wireless south.
+mapsymbol: S
+maplegend: SAV
+biome: indoor
+exits:
+  west:
+    roomid: 2026
+  south:
+    roomid: 2033
+spawninfo:
+- mobid: 206
+  message: A social engineer slips through a subtle magenta shimmer...
+  respawnrate: 6 real minutes
+idlemessages:
+- 'Someone practices a pretext call - Hi, IT here...'
+- Phishing email templates are reviewed and critiqued.
+- A live social engineering demo draws a crowd.
+- Someone successfully tailgates through a fake door.
+- OSINT techniques reveal uncomfortable truths.
+- 'What is your mothers maiden name? Everyone laughs nervously.'
+nouns:
+  whiteboard: "Top 10 Pretexts That Actually Work includes IT support, delivery driver, new employee, and just act confident."
+  props: "A table holds fake badges, reflective vests, clipboards, and a hard hat. A sticky note reads - Today password is open sesame. Try saying open sesame."
+  clipboard: ":props"
+  phone: "A burner phone for pretext calls. The recent call log is suspiciously long."

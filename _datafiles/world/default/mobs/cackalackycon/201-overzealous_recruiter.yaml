@@ -1,0 +1,40 @@
+mobid: 201
+zone: CackalackyCon
+itemdropchance: 20
+hostile: false
+maxwander: 5
+groups:
+  - hostiles
+  - corporate
+activitylevel: 25
+idlecommands:
+  - 'say Have you considered a career in cybersecurity?'
+  - 'emote thrusts a business card toward you aggressively.'
+  - 'say We have ping pong tables. And bean bags.'
+  - 'say You look like you need to be disrupted. Shall we?'
+  - 'say Our culture is like a family. A competitive family.'
+  - 'say I sense you want to challenge me. Come on then.'
+  - 'emote cracks their tablet like a weapon.'
+  - 'say Let me show you our aggressive onboarding process.'
+  - ''
+character:
+  name: overzealous recruiter
+  description: >-
+    The air fills with the smell of corporate desperation. An OVERZEALOUS 
+    RECRUITER phases in through a magenta tear in reality, LinkedIn already 
+    open on their tablet. They wear a polo shirt with a startup logo you 
+    don't recognize, khakis that are somehow both too tight and too long, 
+    and a smile that doesn't reach their eyes. A stack of business cards 
+    threatens to spill from their pocket.
+  raceid: 1
+  level: 3
+  gold: 10
+  stats:
+    speed:
+      training: 1
+    perception:
+      training: 2
+  items:
+    - itemid: 5001
+    - itemid: 5001
+    - itemid: 5005

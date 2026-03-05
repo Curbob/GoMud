@@ -1,0 +1,13 @@
+itemid: 35001
+name: monster energy
+namesimple: can
+description: >-
+  A tall green can of Monster Energy, slightly warm from being in someone's 
+  backpack. The hacker's lifeblood. Restores health and gives you that 
+  jittery edge.
+type: drink
+subtype: drinkable
+value: 5
+uses: 1
+buffids:
+- 5

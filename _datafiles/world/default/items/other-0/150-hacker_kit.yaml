@@ -1,0 +1,8 @@
+itemid: 150
+name: hacker kit
+namesimple: kit
+description: A swag bag from CackalackyCon registration. Contains everything a hacker needs to get started.
+type: object
+subtype: usable
+uses: 1
+value: 1

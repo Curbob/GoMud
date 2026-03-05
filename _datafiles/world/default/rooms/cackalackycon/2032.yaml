@@ -1,0 +1,16 @@
+roomid: 2032
+zone: CackalackyCon
+title: Trivia Stage
+description: Teams compete to prove their hacker knowledge. Questions range from RFCs to movie references. Karaoke west.
+mapsymbol: "?"
+maplegend: Trivia
+biome: indoor
+exits:
+  west:
+    roomid: 2030
+idlemessages:
+- What port is SSH? someone shouts.
+- Teams huddle for a whispered answer.
+- A correct answer earns applause.
+- Someone argues about a ruling.
+- The emcee reads the next question.

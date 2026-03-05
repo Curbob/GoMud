@@ -1,0 +1,13 @@
+itemid: 35004
+name: lime jello shot
+namesimple: shot
+description: >-
+  A wobbly lime green jello shot from the bar. It glows slightly under UV 
+  light, which is either intentional or concerning. Tastes like bad 
+  decisions and conference networking.
+type: drink
+subtype: drinkable
+value: 10
+uses: 1
+buffids:
+- 19

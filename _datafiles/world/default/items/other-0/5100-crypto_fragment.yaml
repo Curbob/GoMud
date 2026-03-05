@@ -1,0 +1,11 @@
+itemid: 5100
+name: crypto fragment
+namesimple: fragment
+description: >-
+  A fragment of an access key, etched with cryptographic symbols. It hums 
+  faintly with encrypted potential. One of four pieces needed to access 
+  something ancient.
+type: key
+subtype: fragment
+questtoken: portal-crypto
+value: 0

@@ -1,0 +1,26 @@
+roomid: 2022
+zone: CackalackyCon
+title: Hardware Hacking Village
+description: Workbenches with hot air stations, microscopes, and bins of components. If it has chips, it gets hacked here. Badge village north.
+mapsymbol: W
+maplegend: Hardware
+biome: indoor
+exits:
+  north:
+    roomid: 2021
+spawninfo:
+- mobid: 106
+  message: s0lray examines a circuit.
+  respawnrate: 1 real minutes
+  idlecommands:
+  - emote peers through a microscope.
+  - say Bring me a JTAG header...
+  - emote heats up a rework station.
+  - say Want to learn to desolder?
+  - ""
+  - ""
+idlemessages:
+- Hot air hisses from a rework station.
+- Someone extracts a chip successfully.
+- Components rattle in plastic bins.
+- The smell of flux is strong here.

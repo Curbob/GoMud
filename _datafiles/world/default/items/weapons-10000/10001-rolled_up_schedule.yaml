@@ -1,0 +1,10 @@
+itemid: 10001
+name: rolled-up schedule
+namesimple: schedule
+description: A tightly rolled conference schedule. Paper cuts are no joke.
+type: weapon
+hands: 1
+subtype: bludgeoning
+uses: 0
+damage:
+  diceroll: 1d2
