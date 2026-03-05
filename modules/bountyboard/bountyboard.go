@@ -213,7 +213,7 @@ func (mod *BountyModule) BountyCommand(rest string, user *users.UserRecord, room
 			user.SendText(`Usage: <ansi fg="command">bounty accept [number]</ansi>`)
 			return true, nil
 		}
-		return mod.acceptBounty(args[1], user)
+		return mod.acceptBounty(args[1], user, room)
 	case "status", "progress":
 		return mod.showProgress(user)
 	case "abandon", "cancel":
@@ -221,7 +221,7 @@ func (mod *BountyModule) BountyCommand(rest string, user *users.UserRecord, room
 	default:
 		// Try to accept by number
 		if _, err := strconv.Atoi(args[0]); err == nil {
-			return mod.acceptBounty(args[0], user)
+			return mod.acceptBounty(args[0], user, room)
 		}
 		user.SendText(`Unknown bounty command. Try <ansi fg="command">bounty</ansi> for the board.`)
 	}
@@ -230,6 +230,11 @@ func (mod *BountyModule) BountyCommand(rest string, user *users.UserRecord, room
 }
 
 func (mod *BountyModule) showBountyBoard(user *users.UserRecord, room *rooms.Room) (bool, error) {
+
+	if !room.IsBar {
+		user.SendText(`You need to be at a tavern or bar to view the bounty board.`)
+		return true, nil
+	}
 
 	playerLevel := user.Character.Level
 
@@ -292,7 +297,12 @@ func (mod *BountyModule) showBountyBoard(user *users.UserRecord, room *rooms.Roo
 	return true, nil
 }
 
-func (mod *BountyModule) acceptBounty(numStr string, user *users.UserRecord) (bool, error) {
+func (mod *BountyModule) acceptBounty(numStr string, user *users.UserRecord, room *rooms.Room) (bool, error) {
+
+	if !room.IsBar {
+		user.SendText(`You need to be at a tavern or bar to accept a bounty.`)
+		return true, nil
+	}
 
 	// Check if already has a bounty
 	mod.bountyLock.RLock()
