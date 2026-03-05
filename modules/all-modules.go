@@ -9,6 +9,7 @@ import (
 	_ "github.com/GoMudEngine/GoMud/modules/auctions"
 	_ "github.com/GoMudEngine/GoMud/modules/cleanup"
 	_ "github.com/GoMudEngine/GoMud/modules/follow"
+	_ "github.com/GoMudEngine/GoMud/modules/gambling"
 	_ "github.com/GoMudEngine/GoMud/modules/gmcp"
 	_ "github.com/GoMudEngine/GoMud/modules/leaderboards"
 	_ "github.com/GoMudEngine/GoMud/modules/time"

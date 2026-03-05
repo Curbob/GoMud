@@ -1,0 +1,36 @@
+<ansi fg="yellow">╔══════════════════════════════════════════════════════════════════╗</ansi>
+<ansi fg="yellow">║</ansi>                    <ansi fg="white-bold">🎲 GAMBLING 🎲</ansi>                           <ansi fg="yellow">║</ansi>
+<ansi fg="yellow">╚══════════════════════════════════════════════════════════════════╝</ansi>
+
+Gambling games are available at bars and taverns throughout the world.
+Visit a bar and try your luck!
+
+<ansi fg="yellow-bold">Available Games:</ansi>
+
+  <ansi fg="command">dice [amount]</ansi>
+    Roll 2d6 against the house. Highest total wins!
+    - Win: Double your bet
+    - Lose: Lose your bet  
+    - Tie: Get your bet back
+    House limit: 1000 gold
+
+  <ansi fg="command">highorlow [amount]</ansi>
+    Guess if the next dice roll will be higher or lower.
+    - <ansi fg="command">highorlow [amount]</ansi> - Start a new game
+    - <ansi fg="command">high</ansi> - Guess higher
+    - <ansi fg="command">low</ansi> - Guess lower
+    - <ansi fg="command">highorlow cash</ansi> - Cash out your winnings
+    
+    Each correct guess increases your multiplier:
+    - 1 streak: 1.5x
+    - 2 streak: 2.0x
+    - 3 streak: 2.5x
+    - etc.
+    House limit: 500 gold
+
+<ansi fg="yellow-bold">Tips:</ansi>
+  • Gambling requires gold on hand (not in the bank)
+  • The house always has limits to prevent abuse
+  • Know when to walk away!
+
+<ansi fg="yellow-bold">See Also:</ansi> <ansi fg="command">bank</ansi>
