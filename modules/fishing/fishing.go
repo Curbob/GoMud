@@ -489,6 +489,13 @@ func (mod *FishingModule) CatchesCommand(rest string, user *users.UserRecord, ro
 				count := val.(int)
 				if count > 0 {
 					hasAny = true
+					// Build info string
+					typeColor := "8"
+					if fish.Type == "buff" {
+						typeColor = "cyan"
+					}
+					typeText := fmt.Sprintf(`<ansi fg="%s">[%s]</ansi>`, typeColor, fish.Type)
+					
 					buffText := ""
 					if fish.BuffId > 0 {
 						buffInfo := buffs.GetBuffSpec(fish.BuffId)
@@ -496,8 +503,8 @@ func (mod *FishingModule) CatchesCommand(rest string, user *users.UserRecord, ro
 							buffText = fmt.Sprintf(` + %s`, buffInfo.Name)
 						}
 					}
-					user.SendText(fmt.Sprintf(`  <ansi fg="white-bold">%s</ansi> x%d <ansi fg="8">(+%d HP%s)</ansi>`, 
-						fish.Name, count, fish.HealAmount, buffText))
+					user.SendText(fmt.Sprintf(`  %s <ansi fg="white-bold">%s</ansi> x%d <ansi fg="8">(+%d HP%s)</ansi>`, 
+						typeText, fish.Name, count, fish.HealAmount, buffText))
 				}
 			}
 		}
@@ -514,14 +521,20 @@ func (mod *FishingModule) CatchesCommand(rest string, user *users.UserRecord, ro
 }
 
 // SellFishCommand sells fish from inventory
-// - No args: sells all non-buff fish (safe default)
+// - No args: sells all common fish (protects buff fish)
 // - "all": sells everything including buff fish
-// - [name]: sells specific fish by name (even buff fish)
+// - "common": sells all common type fish
+// - "buff": sells all buff type fish (explicit)
+// - [name]: sells specific fish by name
 func (mod *FishingModule) SellFishCommand(rest string, user *users.UserRecord, room *rooms.Room, flags events.EventFlag) (bool, error) {
 
 	rest = strings.TrimSpace(rest)
-	sellAll := strings.EqualFold(rest, "all")
-	sellSpecific := rest != "" && !sellAll
+	arg := strings.ToLower(rest)
+	
+	sellAll := arg == "all"
+	sellCommon := arg == "common" || arg == ""  // default behavior
+	sellBuffOnly := arg == "buff"
+	sellSpecific := rest != "" && !sellAll && !sellCommon && arg != "buff"
 
 	totalGold := 0
 	soldCount := 0
@@ -561,7 +574,7 @@ func (mod *FishingModule) SellFishCommand(rest string, user *users.UserRecord, r
 			return true, nil
 		}
 	} else {
-		// Sell multiple fish
+		// Sell multiple fish by type
 		for id, fish := range mod.fishData.Fish {
 			key := "fish_" + id
 			count := 0
@@ -573,12 +586,22 @@ func (mod *FishingModule) SellFishCommand(rest string, user *users.UserRecord, r
 				continue
 			}
 
-			// Check if this is a buff fish
-			hasBuff := fish.HealAmount > 0 || fish.BuffId > 0
+			isBuff := fish.Type == "buff"
 
-			if hasBuff && !sellAll {
-				// Skip buff fish unless "all" was specified
-				skippedBuff += count
+			// Determine if we should sell this fish
+			shouldSell := false
+			if sellAll {
+				shouldSell = true
+			} else if sellBuffOnly && isBuff {
+				shouldSell = true
+			} else if sellCommon && !isBuff {
+				shouldSell = true
+			}
+
+			if !shouldSell {
+				if isBuff {
+					skippedBuff += count
+				}
 				continue
 			}
 
@@ -598,7 +621,7 @@ func (mod *FishingModule) SellFishCommand(rest string, user *users.UserRecord, r
 		}
 
 		if soldCount == 0 && skippedBuff > 0 {
-			user.SendText(fmt.Sprintf(`You have <ansi fg="cyan">%d</ansi> fish with buffs/HP. Use <ansi fg="command">sellfish all</ansi> to sell them too, or <ansi fg="command">sellfish [name]</ansi> to sell specific ones.`, skippedBuff))
+			user.SendText(fmt.Sprintf(`You have <ansi fg="cyan">%d buff fish</ansi>. Use <ansi fg="command">sellfish buff</ansi> or <ansi fg="command">sellfish all</ansi> to sell them.`, skippedBuff))
 			return true, nil
 		}
 
@@ -606,7 +629,7 @@ func (mod *FishingModule) SellFishCommand(rest string, user *users.UserRecord, r
 		user.SendText(fmt.Sprintf(`Sold <ansi fg="white-bold">%d fish</ansi> for <ansi fg="gold">%d gold</ansi>!`, soldCount, totalGold))
 
 		if skippedBuff > 0 {
-			user.SendText(fmt.Sprintf(`<ansi fg="8">Kept %d fish with buffs/HP. Use <ansi fg="command">sellfish all</ansi> to sell those too.</ansi>`, skippedBuff))
+			user.SendText(fmt.Sprintf(`<ansi fg="8">Kept %d buff fish. Use <ansi fg="command">sellfish buff</ansi> to sell those.</ansi>`, skippedBuff))
 		}
 	}
 
