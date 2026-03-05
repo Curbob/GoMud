@@ -1,0 +1,28 @@
+roomid: 2063
+zone: CackalackyCon
+title: The Challenge Booth
+description: >-
+  Darkness. The booth is pitch black except for a single red LED blinking slowly.
+  Somewhere in the dark, a high-security lock waits. You'll have to pick it
+  entirely by feel. The exit is sealed with something serious.
+  A voice whispers from a speaker: "100 gold... if you can escape."
+mapsymbol: "!"
+maplegend: Challenge
+biome: indoor
+darkness: 100
+exits:
+  out:
+    roomid: 2020
+    lock:
+      difficulty: 25
+idlemessages:
+- The red LED blinks slowly in the darkness.
+- You hear your own breathing. Nothing else.
+- Somewhere, a lock waits to be defeated.
+- Total darkness. Total focus required.
+nouns:
+  led: A single red LED pulses slowly. It illuminates nothing.
+  light: :led
+  lock: You can't see it. You'll have to find it by touch.
+  speaker: A small speaker mounted somewhere. It whispered the challenge.
+  darkness: Absolute. Intentional. Part of the test.

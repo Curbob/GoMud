@@ -1,7 +1,11 @@
 roomid: 2030
 zone: CackalackyCon
 title: Karaoke Lounge
-description: A small stage with a screen and microphones. Hackers belt out classics and theme songs. LobbyCon west, Swan south, Trivia east.
+description: >-
+  A small stage with a screen and microphones. <ansi fg="mobname">Phil Young</ansi>, 
+  a surprisingly young Canadian, runs the show - alternating between belting out 
+  classics and evangelizing about mainframes. The crowd seems equally entertained 
+  by both. LobbyCon west, Swan south, Trivia east.
 mapsymbol: K
 maplegend: Karaoke
 biome: indoor
@@ -12,9 +16,22 @@ exits:
     roomid: 2031
   east:
     roomid: 2032
+spawninfo:
+- mobid: 110
+  message: Phil Young takes the stage, microphone in hand.
+  respawnrate: 1 real minutes
 idlemessages:
 - Someone attempts Bohemian Rhapsody.
 - The crowd cheers encouragingly.
-- A hacker duo performs.
-- Someone queues up another song.
-- Off-key but enthusiastic singing.
+- A hacker duo performs a surprisingly good duet.
+- Someone queues up another Journey song.
+- Off-key but enthusiastic singing fills the room.
+- Phil mentions mainframes between verses. Classic Phil.
+- The karaoke machine displays "COBOL FOREVER" briefly. Someone hacked it.
+- A cheer goes up as someone nails the high note.
+nouns:
+  stage: A small raised platform with a screen showing lyrics. The microphone has "MAINFRAMES RULE" written on it in Sharpie.
+  screen: A karaoke screen cycling through song selections. Someone has added "COBOL: The Musical" to the queue.
+  microphone: A well-worn karaoke mic. Phil has personalized it with IBM stickers.
+  mic: :microphone
+  crowd: A mix of hackers, some singing along, others here for Phil's mainframe wisdom. Or the drinks.

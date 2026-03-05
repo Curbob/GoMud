@@ -1,0 +1,18 @@
+mobid: 111
+zone: cackalackycon
+character:
+  name: Hoodoer
+  description: >-
+    A distinguished figure in a magnificent multicolored tuxedo that shifts 
+    between neon pink, electric blue, and lime green depending on the light. 
+    A matching top hat sits at a jaunty angle. They move through the ballroom 
+    with an air of exaggerated elegance, occasionally adjusting their monocle 
+    and greeting everyone with a hearty "Cheerio!"
+  level: 10
+  health: 100
+  mana: 50
+  alignment: 50
+  raceid: 1
+hostile: false
+hatesalignment: 0
+scriptid: 111-hoodoer

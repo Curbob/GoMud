@@ -123,13 +123,79 @@ function triggerPortal(user, room) {
     user.SendText("<ansi fg=\"yellow\">Type: use newbie kit</ansi>", 23);
 }
 
+// FBI Raid settings
+const REG_DESK_ROOM = 2002;
+const RAID_CHANCE_PERCENT = 2;
+const CHECK_INTERVAL_ROUNDS = 15;
+
 function onIdle(room) {
     round = UtilGetRoundNumber();
     
+    // FBI raid check
+    if (round % CHECK_INTERVAL_ROUNDS == 0) {
+        if (doFbiRaidCheck(room)) {
+            return true;
+        }
+    }
+    
+    // Normal idle messages
     if (round % 10 == 0) {
         room.SendText("<ansi fg=\"green\">The old machine's screen blinks: 'AWAITING AUTHENTICATION...'</ansi>");
         return true;
     }
     
     return false;
+}
+
+function doFbiRaidCheck(room) {
+    var players = room.GetPlayers();
+    if (players.length == 0) {
+        return false;
+    }
+    
+    if (UtilDiceRoll(1, 100) > RAID_CHANCE_PERCENT) {
+        return false;
+    }
+    
+    var target = null;
+    for (var i = 0; i < players.length; i++) {
+        var player = players[i];
+        if (player.GetRace().toLowerCase() == "fbi agent") {
+            continue;
+        }
+        target = player;
+        break;
+    }
+    
+    if (target == null) {
+        return false;
+    }
+    
+    SendRoomMessage(room.RoomId(), "");
+    SendRoomMessage(room.RoomId(), "<ansi fg=\"red-bold\">═══════════════════════════════════════════</ansi>");
+    SendRoomMessage(room.RoomId(), "<ansi fg=\"red-bold\">           🚨 FBI RAID! 🚨</ansi>");
+    SendRoomMessage(room.RoomId(), "<ansi fg=\"red-bold\">═══════════════════════════════════════════</ansi>");
+    SendRoomMessage(room.RoomId(), "");
+    SendRoomMessage(room.RoomId(), "<ansi fg=\"yellow\">The door EXPLODES inward!</ansi>");
+    SendRoomMessage(room.RoomId(), "<ansi fg=\"cyan\">Federal agents swarm in, flashlights blazing!</ansi>");
+    SendRoomMessage(room.RoomId(), "");
+    
+    target.SendText("<ansi fg=\"red\">\"FREEZE! FBI! GET ON THE GROUND!\"</ansi>");
+    target.SendText("<ansi fg=\"yellow\">An agent tackles you before you can reach the exit!</ansi>");
+    target.SendText("<ansi fg=\"cyan\">\"We got a live one! Take 'em back to registration!\"</ansi>");
+    target.SendText("");
+    
+    SendRoomMessage(room.RoomId(), "<ansi fg=\"username\">" + target.GetCharacterName(false) + "</ansi> gets tackled by federal agents!");
+    SendRoomMessage(room.RoomId(), "<ansi fg=\"cyan\">The feds drag them away toward registration...</ansi>");
+    SendRoomMessage(room.RoomId(), "");
+    
+    target.MoveRoom(REG_DESK_ROOM);
+    
+    target.SendText("");
+    target.SendText("<ansi fg=\"yellow\">The agents dump you unceremoniously at the registration desk.</ansi>");
+    target.SendText("<ansi fg=\"cyan\">\"Stay out of restricted areas, hacker.\"</ansi>");
+    target.SendText("<ansi fg=\"yellow\">They vanish as quickly as they appeared.</ansi>");
+    target.SendText("");
+    
+    return true;
 }

@@ -1,26 +1,46 @@
 roomid: 2020
 zone: CackalackyCon
 title: Lockpick Village
-description: Tables covered with practice locks, picks, and tension wrenches. The satisfying click of locks opening fills the air. Hallway east.
+description: >-
+  Tables covered with practice locks, picks, and tension wrenches. The satisfying
+  click of locks opening fills the air. Practice booths line the walls - enter one
+  and pick your way out for gold rewards! Hallway east.
+  
+  Booths: <ansi fg="exit">booth1</ansi> (Easy), <ansi fg="exit">booth2</ansi> (Medium), 
+  <ansi fg="exit">booth3</ansi> (Hard), <ansi fg="exit">challenge</ansi> (Expert/Dark)
 mapsymbol: P
 maplegend: Lockpick
 biome: indoor
 exits:
   east:
     roomid: 2004
+  booth1:
+    roomid: 2060
+  booth2:
+    roomid: 2061
+  booth3:
+    roomid: 2062
+  challenge:
+    roomid: 2063
 spawninfo:
 - mobid: 103
   message: Unregistered examines a lock.
   respawnrate: 1 real minutes
   idlecommands:
   - emote picks a lock with ease.
-  - say Feel the pins.
+  - say Feel the pins. That's the secret.
   - emote hands someone a tension wrench.
-  - say Try the clear lock first.
-  - ""
+  - say Try booth1 first. Clear lock, easy pins.
+  - say The challenge booth? Good luck in the dark.
   - ""
 idlemessages:
 - Click. Someone grins triumphantly.
 - A lock hits the table in frustration.
 - Picks rattle in a leather case.
 - Someone asks about security pins.
+- A triumphant picker emerges from a booth, pocketing gold.
+nouns:
+  booths: Four practice booths line the walls. Each has a lock you must pick to escape. Rewards increase with difficulty.
+  tables: Covered with every type of lock imaginable. Practice picks available.
+  picks: Tension wrenches, rakes, hooks, diamonds - every pick style represented.
+  locks: Padlocks, deadbolts, pin tumblers, disc detainers. A picker's paradise.

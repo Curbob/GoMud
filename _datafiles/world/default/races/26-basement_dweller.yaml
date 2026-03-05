@@ -1,0 +1,29 @@
+raceid: 26
+name: basement dweller
+description: A cave-adapted creature who has evolved to thrive in low-light, climate-controlled environments. Sustained entirely by delivery food and energy drinks.
+defaultalignment: 0
+buffids:
+  - 29 # Night Vision
+size: medium
+unarmedname: pale fists
+tnlscale: 1
+selectable: true
+knowsfirstaid: false
+angrycommands: 
+  - emote hisses at the light.
+  - shout You dare disturb my domain?!
+  - say I haven't seen the sun in 47 days and I'm not about to start now.
+  - emote emerges from the shadows, blinking.
+tameable: false
+stats:
+  vitality:
+    base: 2
+  mysticism:
+    base: 1
+  speed:
+    base: -1
+  perception:
+    base: 1
+damage:
+  diceroll: 1d3
+disabledslots: []

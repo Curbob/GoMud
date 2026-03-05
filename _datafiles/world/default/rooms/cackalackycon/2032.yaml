@@ -1,7 +1,11 @@
 roomid: 2032
 zone: CackalackyCon
 title: Trivia Stage
-description: Teams compete to prove their hacker knowledge. Questions range from RFCs to movie references. Karaoke west.
+description: >-
+  A darkened stage where the disembodied voice of <ansi fg="mobname">Vic Vandal</ansi> 
+  echoes from hidden speakers, asking trivia questions about hacker movies, code, 
+  and infosec history. No one has ever seen Vic in person. Just answer when he 
+  asks — <ansi fg="command">say</ansi> your answer out loud! Karaoke west.
 mapsymbol: "?"
 maplegend: Trivia
 biome: indoor
@@ -9,8 +13,16 @@ exits:
   west:
     roomid: 2030
 idlemessages:
-- What port is SSH? someone shouts.
-- Teams huddle for a whispered answer.
-- A correct answer earns applause.
-- Someone argues about a ruling.
-- The emcee reads the next question.
+- The stage lights flicker mysteriously.
+- Speakers crackle with anticipation.
+- Someone claims they once saw Vic's shadow. No one believes them.
+- A correct answer echoes through the room.
+- Teams huddle, whispering theories about who Vic really is.
+- The darkness seems to be watching. Judging.
+nouns:
+  stage: A darkened platform with dramatic lighting. Speakers are mounted everywhere, but no host is visible. Just Vic's voice.
+  speakers: Professional audio equipment. Vic's voice comes from all of them simultaneously, making him impossible to locate.
+  vic: You look around for Vic Vandal, but there's no one there. Just the voice. Always the voice.
+  vandal: :vic
+  darkness: The stage is shrouded in deliberate darkness. Vic prefers it this way.
+  lights: Dramatic spotlights that illuminate contestants but leave the host's area in complete shadow.

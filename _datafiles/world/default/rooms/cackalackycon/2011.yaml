@@ -1,7 +1,10 @@
 roomid: 2011
 zone: CackalackyCon
 title: CTF Arena
-description: Screens display scoreboards and challenge categories. Teams huddle over laptops, racing to capture flags. The bar is east.
+description: >-
+  Screens display scoreboards and challenge categories. Teams huddle over laptops, 
+  racing to capture flags. <ansi fg="mobname">Eversec CTF</ansi> — three hackers who 
+  move as one — run the competition with unnerving efficiency. The bar is east.
 mapsymbol: F
 maplegend: CTF
 biome: indoor
@@ -9,6 +12,9 @@ exits:
   east:
     roomid: 2010
 spawninfo:
+- mobid: 113
+  message: Eversec CTF enters as one - three bodies, one mind.
+  respawnrate: 1 real minutes
 - mobid: 104
   message: Uncue monitors the scoreboard.
   respawnrate: 1 real minutes

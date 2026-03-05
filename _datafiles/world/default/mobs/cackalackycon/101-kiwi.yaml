@@ -14,6 +14,8 @@ idlecommands:
   - 'emote slides a drink to a thirsty hacker.'
   - 'say You hear what happened at the CTF?'
   - 'say If you''ve got junk to sell, I''ll take it off your hands.'
+  - 'say We have Malort. Only one gold. I wonder why.'
+  - 'emote watches someone drink Malort and grins wickedly.'
   - ''
   - ''
 character:
@@ -41,3 +43,6 @@ character:
     - itemid: 35004
       quantitymax: 0
       price: 15
+    - itemid: 35010
+      quantitymax: 0
+      price: 1

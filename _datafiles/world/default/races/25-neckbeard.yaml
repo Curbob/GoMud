@@ -1,0 +1,29 @@
+raceid: 25
+name: neckbeard
+description: A legendary creature sustained by Mountain Dew and mass quantities of Doritos. Possesses forbidden knowledge of ancient systems.
+defaultalignment: 0
+buffids:
+  - 29 # Night Vision (never sees sunlight anyway)
+size: medium
+unarmedname: cheeto-dusted fingers
+tnlscale: 1.1
+selectable: true
+knowsfirstaid: false
+angrycommands: 
+  - say Well, actually...
+  - emote adjusts their fedora.
+  - shout You merely adopted the terminal. I was BORN in it!
+  - say I'd explain it to you, but I don't have the crayons.
+tameable: false
+stats:
+  smarts:
+    base: 3
+  mysticism:
+    base: 1
+  speed:
+    base: -1
+  strength:
+    base: -1
+damage:
+  diceroll: 1d2
+disabledslots: []

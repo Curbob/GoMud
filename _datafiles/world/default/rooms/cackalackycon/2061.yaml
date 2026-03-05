@@ -1,0 +1,25 @@
+roomid: 2061
+zone: CackalackyCon
+title: Practice Booth - Brass Padlock
+description: >-
+  A weathered brass padlock hangs from a chain in this booth. It's seen better
+  days, but the mechanism is solid. Security pins make this one trickier.
+  <ansi fg="command">Picklock</ansi> the exit to leave.
+  A sign reads: "Difficulty: Medium - 15 gold reward"
+mapsymbol: "2"
+maplegend: Booth 2
+biome: indoor
+exits:
+  out:
+    roomid: 2020
+    lock:
+      difficulty: 10
+idlemessages:
+- The brass padlock swings gently.
+- Decades of use have worn the brass smooth.
+- Security pins lurk inside this one.
+nouns:
+  lock: An old brass padlock with a satisfying weight to it. Security pins inside.
+  padlock: :lock
+  sign: "Difficulty: Medium - Pick the exit lock for 15 gold!"
+  chain: A sturdy chain holds the practice lock in place.

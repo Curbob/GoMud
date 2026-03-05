@@ -1,10 +1,14 @@
 roomid: 2007
 zone: CackalackyCon
 title: Pool and Courtyard
-description: An outdoor oasis. Hackers lounge by the pool or huddle at patio tables. Fresh air and sunshine between sessions. LobbyCon north.
+description: >-
+  An outdoor oasis. Hackers lounge by the pool or huddle at patio tables. 
+  Fresh air and sunshine between sessions. Someone has released fish into 
+  the pool - you can <ansi fg="command">fish</ansi> here if you have a pole. LobbyCon north.
 mapsymbol: ~
 maplegend: Pool
 biome: outdoor
+isfishable: true
 exits:
   north:
     roomid: 2006
@@ -14,3 +18,10 @@ idlemessages:
 - A heated debate about crypto echoes.
 - Someone applies more sunscreen.
 - A drone hovers briefly, then flies off.
+- A fish splashes near the edge of the pool.
+- "Wait, are those fish in the pool?"
+- Someone casts a line into the deep end.
+nouns:
+  pool: A large hotel pool, currently stocked with fish. Nobody knows who put them there. The con neither confirms nor denies involvement.
+  fish: Various fish swim lazily in the chlorinated water. They seem... fine? Hackers gonna hack, even biology.
+  tables: Patio tables with umbrellas. Extension cords snake dangerously close to the water.

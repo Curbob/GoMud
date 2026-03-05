@@ -1,0 +1,16 @@
+mobid: 221
+zone: cackalackycon
+character:
+  name: Echo Dot
+  description: >-
+    A small cylindrical smart speaker with a glowing blue ring. It sits 
+    on a shelf, always listening. Always waiting. The blue light pulses 
+    slightly whenever someone speaks. It's probably fine.
+  level: 1
+  health: 10
+  mana: 0
+  alignment: 0
+  raceid: 20
+hostile: false
+hatesalignment: 0
+scriptid: 221-alexa

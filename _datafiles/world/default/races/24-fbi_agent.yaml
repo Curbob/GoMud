@@ -1,0 +1,25 @@
+raceid: 24
+name: fbi agent
+description: A federal agent investigating cybercrime. High perception, by-the-book attitude, and surprisingly good at kicking down doors.
+defaultalignment: 30
+size: medium
+unarmedname: fists
+tnlscale: 1
+selectable: true
+knowsfirstaid: true
+angrycommands: 
+  - shout FBI, OPEN UP!
+  - emote flashes a badge menacingly.
+  - say You have the right to remain silent. I suggest you use it.
+  - shout Stop resisting!
+tameable: false
+stats:
+  perception:
+    base: 2
+  strength:
+    base: 1
+  vitality:
+    base: 1
+damage:
+  diceroll: 1d4
+disabledslots: []

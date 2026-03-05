@@ -3,8 +3,10 @@ zone: CackalackyCon
 title: IoT Playground
 description: >-
   Smart devices begging to be hacked. Cameras, locks, bulbs, and thermostats 
-  await your exploits. A sign reads Default Passwords Hall of Shame with a 
-  disturbingly long list. Something skitters in the corner. Cipher room north.
+  await your exploits. An Echo Dot sits on a shelf, its blue ring glowing. 
+  A sign reads "Default Passwords Hall of Shame" with a disturbingly long list. 
+  <ansi fg="mobname">Deral Heiland</ansi> looms over a workbench, his magnificent 
+  mustache twitching as he examines a smart lock. Cipher room north.
 mapsymbol: I
 maplegend: IoT
 biome: indoor
@@ -12,6 +14,12 @@ exits:
   north:
     roomid: 2027
 spawninfo:
+- mobid: 109
+  message: Deral Heiland enters, mustache first.
+  respawnrate: 1 real minutes
+- mobid: 221
+  message: An Echo Dot lights up on the shelf.
+  respawnrate: 1 real minutes
 - mobid: 205
   message: A rogue IoT device skitters out of a purple portal on USB-cable legs!
   respawnrate: 4 real minutes
@@ -25,7 +33,16 @@ idlemessages:
 - admin/admin strikes again.
 - An IoT device phones home to a server in Eastern Europe.
 - Something beeps. It should not be beeping.
+- The Echo Dot's ring pulses blue.
+- A baby monitor picks up signals from the space station.
 nouns:
-  sign: "Default Passwords Hall of Shame lists admin/admin, root/root, and password/password. The list goes on for pages."
-  cameras: "IP cameras line a shelf, their red LEDs blinking. Most are already compromised. One is taped over for privacy."
-  devices: "A chaotic pile of smart devices - toasters, fish tank monitors, baby monitors. All networked. All vulnerable."
+  sign: "Default Passwords Hall of Shame: admin/admin, root/root, password/password, 1234, 0000, admin/password. The list goes on for pages. It's both hilarious and terrifying."
+  cameras: "IP cameras line a shelf, their red LEDs blinking. Most are already compromised. One is taped over for 'privacy'. The tape is see-through."
+  devices: "A chaotic pile of smart devices - toasters, fish tank monitors, baby monitors, smart plugs. All networked. All vulnerable. One thermostat displays 666°F."
+  thermostat: "A smart thermostat showing 666°F. It's not actually that hot. Probably. Someone has drawn a tiny devil face on it."
+  lock: "A 'smart' lock sits in pieces on the workbench. Deral opened it with a magnet and a stern look."
+  alexa: "An Amazon Echo Dot with a glowing blue ring. Always listening. Always judging your password choices."
+  echo: :alexa
+  dot: :alexa
+  mustache: "You try to examine Deral's mustache. It examines you back. You feel inadequate."
+  fridge: "A smart refrigerator in the corner displays 'HACKED' on its screen. Inside: energy drinks, leftover pizza, and a USB drive labeled 'DEFINITELY NOT MALWARE'."

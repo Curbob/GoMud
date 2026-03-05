@@ -1,0 +1,18 @@
+mobid: 112
+zone: cackalackycon
+character:
+  name: W00zles
+  description: >-
+    An impeccably dressed individual sporting a tuxedo that can only be 
+    described as "aggressive rainbow." The sequined top hat catches the 
+    light with every movement. They float through the ballroom like a 
+    technicolor ghost, dispensing "Cheerio!"s like party favors and 
+    treating every interaction as if it were high tea at Buckingham Palace.
+  level: 10
+  health: 100
+  mana: 50
+  alignment: 50
+  raceid: 1
+hostile: false
+hatesalignment: 0
+scriptid: 112-w00zles

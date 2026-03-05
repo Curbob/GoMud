@@ -1,7 +1,10 @@
 roomid: 2025
 zone: CackalackyCon
 title: AI Lab
-description: Screens show model outputs and prompt experiments. The future of hacking is being explored here. Village hall east.
+description: >-
+  Screens show model outputs and prompt experiments. A large display dominates 
+  one wall, hosting A.R.I.A. - the conference's AI assistant. She seems helpful, 
+  but something about her feels slightly off. Don't stay too long. Village hall east.
 mapsymbol: A
 maplegend: AI
 biome: indoor
@@ -9,6 +12,9 @@ exits:
   east:
     roomid: 2024
 spawninfo:
+- mobid: 220
+  message: A.R.I.A.'s avatar flickers to life on the main screen.
+  respawnrate: 2 real minutes
 - mobid: 108
   message: Threlfall stares at a terminal.
   respawnrate: 1 real minutes
@@ -17,10 +23,15 @@ spawninfo:
   - say Have you tried prompt injection?
   - emote argues with a chatbot.
   - say Are you an AI? I could ask you the same.
-  - ""
+  - say A.R.I.A. is helpful. Just don't stay too long.
   - ""
 idlemessages:
 - A model generates something unexpected.
 - Someone jailbreaks a chatbot.
 - Token costs are discussed.
 - An AI refuses a request politely.
+- A.R.I.A.'s screen flickers momentarily.
+nouns:
+  screen: A large wall-mounted display hosting A.R.I.A., the conference's AI assistant. Her avatar is rendered in soft blue pixels. Her eyes seem to follow you.
+  aria: :screen
+  terminals: Workstations for interacting with various AI models. Some screens show warning messages about unexpected outputs.
