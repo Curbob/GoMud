@@ -362,23 +362,29 @@ func (mod *FishingModule) catchFish(user *users.UserRecord, room *rooms.Room, sp
 
 	user.SendText(fmt.Sprintf(`You caught a <ansi fg="white-bold">%s</ansi>!`, fish.Name))
 	
-	// Handle treasure specially
-	if fish.Type == "treasure" && fish.MinGold > 0 {
+	// Handle based on fish type:
+	// - Fish with HP/buff → inventory only (eat or sell manually)
+	// - Treasure → auto-sell gold
+	// - Common fish with no HP/buff → auto-sell
+
+	if fish.HealAmount > 0 || fish.BuffId > 0 {
+		// Usable fish goes to inventory - no auto-gold
+		mod.addFishToInventory(user, fishId)
+		if fish.Value > 0 {
+			user.SendText(fmt.Sprintf(`Worth <ansi fg="gold">%d gold</ansi> at a vendor.`, fish.Value))
+		}
+		user.SendText(`<ansi fg="8">Added to inventory. Type <ansi fg="command">eat ` + strings.ToLower(fish.Name) + `</ansi> to consume it.</ansi>`)
+	} else if fish.Type == "treasure" && fish.MinGold > 0 {
+		// Treasure auto-sells
 		goldAmount := fish.MinGold + util.RollDice(1, fish.MaxGold-fish.MinGold+1) - 1
 		user.SendText(fmt.Sprintf(`Inside you find <ansi fg="gold">%d gold</ansi>!`, goldAmount))
 		user.Character.Gold += goldAmount
 		events.AddToQueue(events.EquipmentChange{UserId: user.UserId, GoldChange: goldAmount})
 	} else if fish.Value > 0 {
-		user.SendText(fmt.Sprintf(`Worth <ansi fg="gold">%d gold</ansi>.`, fish.Value))
-		// Add to inventory or auto-sell? For now, auto-add gold
+		// Common fish with no HP/buff - auto-sell
+		user.SendText(fmt.Sprintf(`Sold for <ansi fg="gold">%d gold</ansi>.`, fish.Value))
 		user.Character.Gold += fish.Value
 		events.AddToQueue(events.EquipmentChange{UserId: user.UserId, GoldChange: fish.Value})
-	}
-
-	// Store fish for eating if it has heal/buff
-	if fish.HealAmount > 0 || fish.BuffId > 0 {
-		mod.addFishToInventory(user, fishId)
-		user.SendText(`<ansi fg="8">The fish has been added to your inventory. Type <ansi fg="command">eat ` + strings.ToLower(fish.Name) + `</ansi> to consume it.</ansi>`)
 	}
 }
 
