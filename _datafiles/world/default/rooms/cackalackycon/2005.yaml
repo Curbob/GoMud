@@ -31,8 +31,8 @@ idlemessages:
 - The crowd laughs at a joke you didn't understand.
 - You notice everyone else nodding. You nod too.
 nouns:
-  stage: A raised stage with a podium and massive screen. The current slide shows code you definitely understand. Definitely.
-  projector: A high-end projector casts impossibly sharp text. The speaker's notes are visible if you squint.
-  chairs: Rows of uncomfortable hotel chairs. Some have power outlets built in. Those are taken.
-  schedule: A printed schedule on the seat next to you. Someone circled "Hacking the Planet: 30 Years Later" and wrote "flag{h4ck_th3_pl4n3t}" in the margin.
-  slides: The current slide shows an architecture diagram. In the corner: "Build bridges, not walls."
+  stage: "A raised stage with a podium and massive screen. The current slide shows code you definitely understand. Definitely."
+  projector: "A high-end projector casts impossibly sharp text. The speaker's notes are visible if you squint."
+  chairs: "Rows of uncomfortable hotel chairs. Some have power outlets built in. Those are taken."
+  schedule: "A printed schedule on the seat next to you. Someone circled 'Hacking the Planet: 30 Years Later' and wrote 'flag{h4ck_th3_pl4n3t}' in the margin."
+  slides: "The current slide shows an architecture diagram. In the corner: 'Build bridges, not walls.'"
