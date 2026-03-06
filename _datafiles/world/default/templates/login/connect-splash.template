@@ -40,3 +40,7 @@
                                                         <ansi fg="51">cackalackycon.org</ansi></ansi>
 
 <ansi fg="black-bold">{{ repeat "=" 80 }}</ansi>
+<ansi fg="yellow">
+  ⚠️  PLEASE DON'T HACK THE MUD — We're running on vibes and hotel WiFi.
+      Hack the puzzles inside, not the server outside. Be cool. 🍋</ansi>
+<ansi fg="black-bold">{{ repeat "=" 80 }}</ansi>
