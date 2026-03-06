@@ -7,7 +7,7 @@ groups:
   - hostiles
   - bosses
   - abstract
-activitylevel: 15
+activitylevel: 10
 idlecommands:
   - 'say Everyone here knows more than you.'
   - 'say They''re going to find out you don''t belong.'

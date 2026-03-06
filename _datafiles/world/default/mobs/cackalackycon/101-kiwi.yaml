@@ -6,7 +6,7 @@ maxwander: 0
 groups:
   - cackalackycon-staff
   - merchants
-activitylevel: 30
+activitylevel: 10
 idlecommands:
   - 'say What can I get you? Type <ansi fg="command">list</ansi> to see the menu.'
   - 'emote polishes a glass.'

@@ -5,7 +5,7 @@ hostile: false
 maxwander: 0
 groups:
   - cackalackycon-staff
-activitylevel: 20
+activitylevel: 10
 idlecommands:
   - 'emote looks over a resume.'
   - 'say Tailor it to the job description.'

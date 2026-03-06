@@ -5,7 +5,7 @@ hostile: false
 maxwander: 0
 groups:
   - cackalackycon-staff
-activitylevel: 35
+activitylevel: 10
 idlecommands:
   - 'emote adjusts his laptop.'
   - 'emote nods thoughtfully at the speaker.'

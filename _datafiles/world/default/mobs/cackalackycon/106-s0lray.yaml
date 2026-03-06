@@ -5,7 +5,7 @@ hostile: false
 maxwander: 0
 groups:
   - cackalackycon-staff
-activitylevel: 25
+activitylevel: 10
 idlecommands:
   - 'emote adjusts a microscope.'
   - 'say Surface mount is an art form.'

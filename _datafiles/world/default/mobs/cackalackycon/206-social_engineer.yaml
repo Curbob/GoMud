@@ -5,7 +5,7 @@ hostile: false
 maxwander: 5
 groups:
   - hostiles
-activitylevel: 20
+activitylevel: 10
 idlecommands:
   - 'say Hey, you look like someone who wants to fight.'
   - 'emote glances at your badge a little too long.'

@@ -5,7 +5,7 @@ hostile: false
 maxwander: 0
 groups:
   - cackalackycon-staff
-activitylevel: 30
+activitylevel: 10
 idlecommands:
   - 'say Welcome to CackalackyCon! Got your badge yet?'
   - 'emote checks another name off the registration list.'

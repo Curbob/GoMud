@@ -7,7 +7,7 @@ groups:
   - hostiles
   - infected
   - iot
-activitylevel: 35
+activitylevel: 10
 idlecommands:
   - 'emote beeps aggressively at you.'
   - 'say COMBAT PROTOCOL AVAILABLE. ENGAGE?'

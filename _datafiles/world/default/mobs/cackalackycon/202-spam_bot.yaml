@@ -6,7 +6,7 @@ maxwander: 6
 groups:
   - hostiles
   - bots
-activitylevel: 40
+activitylevel: 10
 idlecommands:
   - 'say CONGRATULATIONS! You have been selected!'
   - 'say Hot singles in your area want to FIGHT YOU!'

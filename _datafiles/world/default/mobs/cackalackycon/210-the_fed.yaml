@@ -6,7 +6,7 @@ maxwander: 4
 groups:
   - hostiles
   - bosses
-activitylevel: 15
+activitylevel: 10
 idlecommands:
   - 'emote adjusts their sunglasses. Indoors.'
   - 'say Interesting badge you have there.'

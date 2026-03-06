@@ -26,23 +26,23 @@ character:
       training: 6
     speed:
       training: 28
-      base: 1
     smarts:
       training: 1
-      base: 1
+      base: 2
     vitality:
       training: 5
+      base: 1
     mysticism:
       training: 1
-      base: 2
     perception:
       training: 2
+      base: 1
   level: 5
   experience: 17509
   trainingpoints: 44
   statpoints: 6
-  health: 60
-  mana: 32
+  health: 64
+  mana: 26
   actionpoints: 202
   alignment: -1
   gold: 9950
@@ -62,17 +62,9 @@ character:
   - itemid: 10001
   buffs:
     list:
-    - buffid: 28
-      permabuff: true
-      roundcounter: 22
-      triggersleft: 1000000000
-    - buffid: 29
-      permabuff: true
-      roundcounter: 15
-      triggersleft: 1000000000
     - buffid: 39
       permabuff: true
-      roundcounter: 4
+      roundcounter: 3
       triggersleft: 1000000000
   equipment:
     weapon:

@@ -6,7 +6,7 @@ maxwander: 10
 groups:
   - hostiles
   - abstract
-activitylevel: 50
+activitylevel: 10
 idlecommands:
   - 'emote flickers in and out of existence.'
   - 'say CONNECTION INTERRUPTED. ATTACK TO RECONNECT.'

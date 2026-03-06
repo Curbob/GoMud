@@ -6,7 +6,7 @@ maxwander: 3
 groups:
   - hostiles
   - skids
-activitylevel: 20
+activitylevel: 10
 idlecommands:
   - 'say I could totally hack the mainframe if I wanted to.'
   - 'emote furiously types on a cracked phone screen.'
