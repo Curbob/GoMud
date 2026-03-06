@@ -45,15 +45,15 @@ type Bounty struct {
 
 // PlayerBounty tracks a player's active bounty
 type PlayerBounty struct {
-	Bounty    Bounty    `json:"bounty"`
-	Progress  int       `json:"progress"`  // Kills so far
-	StartedAt time.Time `json:"startedat"` // When they accepted
+	Bounty        Bounty    `json:"bounty"`
+	StartingKills int       `json:"startingkills"` // Kill count when bounty was accepted
+	StartedAt     time.Time `json:"startedat"`     // When they accepted
 }
 
 // SaveData for persistence
 type SaveData struct {
 	ActiveBounties   map[int]*PlayerBounty        `json:"activebounties"`
-	BountyCooldowns  map[int]map[int]time.Time    `json:"bountycooldowns"` // UserId -> MobId -> CompletedAt
+	BountyCooldowns  map[int]map[int]time.Time    `json:"bountycooldowns"`
 }
 
 // BountyConfig is the structure of the bounties.yaml file
@@ -83,7 +83,7 @@ func init() {
 	mod.plug.Callbacks.SetOnLoad(mod.load)
 	mod.plug.Callbacks.SetOnSave(mod.save)
 
-	// Listen for mob deaths
+	// Listen for mob deaths - only for real-time notifications
 	events.RegisterListener(events.MobDeath{}, mod.onMobDeath)
 }
 
@@ -104,7 +104,6 @@ func (mod *BountyModule) load() {
 	var config BountyConfig
 	if err := mod.plug.ReadIntoStruct(`bounties`, &config); err == nil && len(config.Bounties) > 0 {
 		availableBounties = config.Bounties
-		// Sort by level
 		sort.Slice(availableBounties, func(i, j int) bool {
 			return availableBounties[i].MinLevel < availableBounties[j].MinLevel
 		})
@@ -121,7 +120,17 @@ func (mod *BountyModule) save() {
 	mod.plug.WriteStruct(`bountydata`, data)
 }
 
-// onMobDeath handles mob death events to track bounty progress
+// getProgress calculates current progress using GetMobKills
+func (mod *BountyModule) getProgress(user *users.UserRecord, bounty *PlayerBounty) int {
+	currentKills := user.Character.KD.GetMobKills(bounty.Bounty.MobId)
+	progress := currentKills - bounty.StartingKills
+	if progress < 0 {
+		progress = 0 // Safety check
+	}
+	return progress
+}
+
+// onMobDeath handles mob death events for real-time completion notifications
 func (mod *BountyModule) onMobDeath(e events.Event) events.ListenerReturn {
 	death, ok := e.(events.MobDeath)
 	if !ok {
@@ -142,53 +151,57 @@ func (mod *BountyModule) onMobDeath(e events.Event) events.ListenerReturn {
 		}
 
 		// Check if this mob matches the bounty
-		if death.MobId == playerBounty.Bounty.MobId {
-			playerBounty.Progress++
+		if death.MobId != playerBounty.Bounty.MobId {
+			mod.bountyLock.Unlock()
+			continue
+		}
 
-			user := users.GetByUserId(userId)
-			if user == nil {
-				mod.bountyLock.Unlock()
-				continue
+		user := users.GetByUserId(userId)
+		if user == nil {
+			mod.bountyLock.Unlock()
+			continue
+		}
+
+		// Calculate progress using GetMobKills
+		progress := mod.getProgress(user, playerBounty)
+
+		// Check if bounty is complete
+		if progress >= playerBounty.Bounty.Required {
+			// Award rewards
+			user.Character.Gold += playerBounty.Bounty.GoldReward
+			user.Character.Experience += playerBounty.Bounty.ExpReward
+
+			user.SendText(``)
+			user.SendText(`<ansi fg="green-bold">═══════════════════════════════════════</ansi>`)
+			user.SendText(`<ansi fg="green-bold">       🎯 BOUNTY COMPLETE! 🎯</ansi>`)
+			user.SendText(`<ansi fg="green-bold">═══════════════════════════════════════</ansi>`)
+			user.SendText(fmt.Sprintf(`You completed: <ansi fg="yellow">%s</ansi>`, playerBounty.Bounty.Description))
+			user.SendText(fmt.Sprintf(`Reward: <ansi fg="gold">%d gold</ansi> + <ansi fg="cyan">%d experience</ansi>`, playerBounty.Bounty.GoldReward, playerBounty.Bounty.ExpReward))
+			if playerBounty.Bounty.CooldownHours > 0 {
+				user.SendText(fmt.Sprintf(`<ansi fg="8">This bounty will be available again in %d hours.</ansi>`, playerBounty.Bounty.CooldownHours))
+			}
+			user.SendText(``)
+
+			events.AddToQueue(events.EquipmentChange{
+				UserId:     userId,
+				GoldChange: playerBounty.Bounty.GoldReward,
+			})
+
+			// Record cooldown if applicable
+			if playerBounty.Bounty.CooldownHours > 0 {
+				if mod.bountyCooldowns[userId] == nil {
+					mod.bountyCooldowns[userId] = make(map[int]time.Time)
+				}
+				mod.bountyCooldowns[userId][playerBounty.Bounty.MobId] = time.Now()
 			}
 
-			// Check if bounty is complete
-			if playerBounty.Progress >= playerBounty.Bounty.Required {
-				// Award rewards
-				user.Character.Gold += playerBounty.Bounty.GoldReward
-				user.Character.Experience += playerBounty.Bounty.ExpReward
-
-				user.SendText(``)
-				user.SendText(`<ansi fg="green-bold">═══════════════════════════════════════</ansi>`)
-				user.SendText(`<ansi fg="green-bold">       🎯 BOUNTY COMPLETE! 🎯</ansi>`)
-				user.SendText(`<ansi fg="green-bold">═══════════════════════════════════════</ansi>`)
-				user.SendText(fmt.Sprintf(`You completed: <ansi fg="yellow">%s</ansi>`, playerBounty.Bounty.Description))
-				user.SendText(fmt.Sprintf(`Reward: <ansi fg="gold">%d gold</ansi> + <ansi fg="cyan">%d experience</ansi>`, playerBounty.Bounty.GoldReward, playerBounty.Bounty.ExpReward))
-				if playerBounty.Bounty.CooldownHours > 0 {
-					user.SendText(fmt.Sprintf(`<ansi fg="8">This bounty will be available again in %d hours.</ansi>`, playerBounty.Bounty.CooldownHours))
-				}
-				user.SendText(``)
-
-				events.AddToQueue(events.EquipmentChange{
-					UserId:     userId,
-					GoldChange: playerBounty.Bounty.GoldReward,
-				})
-
-				// Record cooldown if applicable
-				if playerBounty.Bounty.CooldownHours > 0 {
-					if mod.bountyCooldowns[userId] == nil {
-						mod.bountyCooldowns[userId] = make(map[int]time.Time)
-					}
-					mod.bountyCooldowns[userId][playerBounty.Bounty.MobId] = time.Now()
-				}
-
-				// Remove completed bounty
-				delete(mod.activeBounties, userId)
-			} else {
-				// Progress update
-				remaining := playerBounty.Bounty.Required - playerBounty.Progress
-				user.SendText(fmt.Sprintf(`<ansi fg="yellow">🎯 Bounty progress:</ansi> %d/%d %s (%d remaining)`,
-					playerBounty.Progress, playerBounty.Bounty.Required, playerBounty.Bounty.MobName, remaining))
-			}
+			// Remove completed bounty
+			delete(mod.activeBounties, userId)
+		} else {
+			// Progress update
+			remaining := playerBounty.Bounty.Required - progress
+			user.SendText(fmt.Sprintf(`<ansi fg="yellow">🎯 Bounty progress:</ansi> %d/%d %s (%d remaining)`,
+				progress, playerBounty.Bounty.Required, playerBounty.Bounty.MobName, remaining))
 		}
 		mod.bountyLock.Unlock()
 	}
@@ -267,14 +280,12 @@ func (mod *BountyModule) showBountyBoard(user *users.UserRecord, room *rooms.Roo
 			
 			var line1 string
 			if cooldownRemaining > 0 {
-				// On cooldown - show grayed out
 				line1 = fmt.Sprintf(`<ansi fg="yellow">║</ansi>  <ansi fg="8">[%d] %-15s x%d   %4dg %4dxp  %s</ansi>`, 
 					i+1, b.MobName, b.Required, b.GoldReward, b.ExpReward, levelRange)
 			} else {
 				line1 = fmt.Sprintf(`<ansi fg="yellow">║</ansi>  <ansi fg="cyan-bold">[%d]</ansi> <ansi fg="white-bold">%-15s</ansi> x%d   <ansi fg="gold">%4dg</ansi> <ansi fg="cyan">%4dxp</ansi>  %s`, 
 					i+1, b.MobName, b.Required, b.GoldReward, b.ExpReward, levelRange)
 			}
-			// Pad to fit box
 			user.SendText(line1 + strings.Repeat(" ", 67-len(stripAnsi(line1))) + `<ansi fg="yellow">║</ansi>`)
 			
 			var line2 string
@@ -344,11 +355,14 @@ func (mod *BountyModule) acceptBounty(numStr string, user *users.UserRecord, roo
 		return true, nil
 	}
 
+	// Get current kill count for this mob type - this is the baseline
+	startingKills := user.Character.KD.GetMobKills(bounty.MobId)
+
 	mod.bountyLock.Lock()
 	mod.activeBounties[user.UserId] = &PlayerBounty{
-		Bounty:    bounty,
-		Progress:  0,
-		StartedAt: time.Now(),
+		Bounty:        bounty,
+		StartingKills: startingKills,
+		StartedAt:     time.Now(),
 	}
 	mod.bountyLock.Unlock()
 
@@ -371,8 +385,17 @@ func (mod *BountyModule) showProgress(user *users.UserRecord) (bool, error) {
 		return true, nil
 	}
 
-	remaining := playerBounty.Bounty.Required - playerBounty.Progress
-	pct := (playerBounty.Progress * 100) / playerBounty.Bounty.Required
+	// Calculate progress using GetMobKills
+	progress := mod.getProgress(user, playerBounty)
+	remaining := playerBounty.Bounty.Required - progress
+	if remaining < 0 {
+		remaining = 0
+	}
+	
+	pct := (progress * 100) / playerBounty.Bounty.Required
+	if pct > 100 {
+		pct = 100
+	}
 
 	// Progress bar
 	barLen := 20
@@ -384,10 +407,16 @@ func (mod *BountyModule) showProgress(user *users.UserRecord) (bool, error) {
 	user.SendText(`<ansi fg="yellow">       🎯 ACTIVE BOUNTY 🎯</ansi>`)
 	user.SendText(`<ansi fg="yellow">═══════════════════════════════════════</ansi>`)
 	user.SendText(fmt.Sprintf(`Target: <ansi fg="white-bold">%s</ansi> x%d`, playerBounty.Bounty.MobName, playerBounty.Bounty.Required))
-	user.SendText(fmt.Sprintf(`Progress: <ansi fg="cyan">[%s]</ansi> %d/%d (%d%%)`, bar, playerBounty.Progress, playerBounty.Bounty.Required, pct))
+	user.SendText(fmt.Sprintf(`Progress: <ansi fg="cyan">[%s]</ansi> %d/%d (%d%%)`, bar, progress, playerBounty.Bounty.Required, pct))
 	user.SendText(fmt.Sprintf(`Remaining: <ansi fg="red">%d</ansi>`, remaining))
 	user.SendText(fmt.Sprintf(`Reward: <ansi fg="gold">%d gold</ansi> + <ansi fg="cyan">%d experience</ansi>`, playerBounty.Bounty.GoldReward, playerBounty.Bounty.ExpReward))
 	user.SendText(``)
+
+	// Check if already complete (in case they killed mobs before checking status)
+	if progress >= playerBounty.Bounty.Required {
+		user.SendText(`<ansi fg="green-bold">Your bounty is complete! Kill one more to claim your reward.</ansi>`)
+		user.SendText(``)
+	}
 
 	return true, nil
 }
@@ -471,5 +500,3 @@ func stripAnsi(s string) string {
 	}
 	return result
 }
-
-// Bounties are sorted by level during load()
