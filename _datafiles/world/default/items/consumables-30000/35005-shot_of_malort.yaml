@@ -1,0 +1,13 @@
+itemid: 35005
+name: shot of Malort
+namesimple: malort
+description: >-
+  A shot glass filled with a yellow-green liquid that seems to absorb light 
+  and hope. The label reads "Jeppson's Malört - Chicago's Local Misery." 
+  The bartender watches with barely concealed glee as you consider drinking it.
+type: drink
+subtype: drinkable
+value: 5
+uses: 1
+buffids: 
+- 60

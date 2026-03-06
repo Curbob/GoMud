@@ -1,0 +1,24 @@
+raceid: 2
+name: white hat
+description: An ethical hacker who uses their powers for good. Skilled at finding vulnerabilities before the bad guys do.
+defaultalignment: 40
+size: medium
+unarmedname: fists
+tnlscale: 1
+selectable: true
+knowsfirstaid: true
+angrycommands: 
+  - emote cracks their knuckles over the keyboard.
+  - shout I'm going to patch YOU out of existence!
+  - say Time to run a penetration test... on your FACE.
+tameable: false
+stats:
+  smarts:
+    base: 2
+  perception:
+    base: 1
+  vitality:
+    base: 1
+damage:
+  diceroll: 1d3
+disabledslots: []

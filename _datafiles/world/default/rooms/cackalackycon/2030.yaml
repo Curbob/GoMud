@@ -30,8 +30,8 @@ idlemessages:
 - The karaoke machine displays "COBOL FOREVER" briefly. Someone hacked it.
 - A cheer goes up as someone nails the high note.
 nouns:
-  stage: A small raised platform with a screen showing lyrics. The microphone has "MAINFRAMES RULE" written on it in Sharpie.
-  screen: A karaoke screen cycling through song selections. Someone has added "COBOL: The Musical" to the queue.
-  microphone: A well-worn karaoke mic. Phil has personalized it with IBM stickers.
-  mic: :microphone
-  crowd: A mix of hackers, some singing along, others here for Phil's mainframe wisdom. Or the drinks.
+  stage: "A small raised platform with a screen showing lyrics. The microphone has MAINFRAMES RULE written on it in Sharpie."
+  screen: "A karaoke screen cycling through song selections. Someone has added COBOL: The Musical to the queue."
+  microphone: "A well-worn karaoke mic. Phil has personalized it with IBM stickers."
+  mic: ":microphone"
+  crowd: "A mix of hackers, some singing along, others here for Phil's mainframe wisdom. Or the drinks."

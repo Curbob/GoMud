@@ -71,6 +71,7 @@ type Room struct {
 	IsStorage         bool                              `yaml:"isstorage,omitempty"`                 // Is this a storage room? If so, players can add/remove objects here.
 	IsBar             bool                              `yaml:"isbar,omitempty"`                     // Is this a bar/tavern? If so, players can gamble here.
 	IsFishable        bool                              `yaml:"isfishable,omitempty"`                // Can players fish here?
+	IsSafeZone        bool                              `yaml:"issafezone,omitempty"`                // Is this a safe zone? If so, mobs won't wander into it.
 	IsCharacterRoom   bool                              `yaml:"ischaracterroom,omitempty"`           // Is this a room where characters can create new characters to swap between them?
 	Title             string                            `yaml:"title"`                               // Title shown to the user
 	Description       string                            `yaml:"description"`                         // Description shown to the user
@@ -903,6 +904,10 @@ func (r *Room) GetRandomExit() (exitName string, roomId int) {
 		if exit.Lock.IsLocked() {
 			continue
 		}
+		// Skip exits leading to safe zones (mobs can't wander there)
+		if exitRoom := LoadRoom(exit.RoomId); exitRoom != nil && exitRoom.IsSafeZone {
+			continue
+		}
 
 		allExits[exitName] = exit.RoomId
 	}
@@ -914,6 +919,10 @@ func (r *Room) GetRandomExit() (exitName string, roomId int) {
 				continue
 			}
 			if exit.Lock.IsLocked() {
+				continue
+			}
+			// Skip exits leading to safe zones (mobs can't wander there)
+			if exitRoom := LoadRoom(exit.RoomId); exitRoom != nil && exitRoom.IsSafeZone {
 				continue
 			}
 			allExits[exitName] = exit.RoomId

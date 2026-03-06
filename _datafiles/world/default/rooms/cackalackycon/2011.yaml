@@ -35,6 +35,7 @@ idlemessages:
 - The scoreboard updates. Rankings shift.
 - 'Someone whispers "flag{...}" and gets shushed.'
 nouns:
-  scoreboard: "A massive display showing team rankings, solve counts, and time remaining. Your team is... not on it."
+  scoreboard: "A massive display showing team rankings, solve counts, and time remaining. Your team is... not on it. Type 'status' to check your progress."
   screens: "Multiple screens show different challenge categories - Web, Crypto, Pwn, Rev, Misc. The Misc category looks suspiciously empty."
   laptops: "Laptops cover every surface, screens filled with hex editors, terminal windows, and one person definitely just playing Tetris."
+  rules: "CTF Rules: Find flags hidden around the con. Submit them here with 'submit flag{...}' - need 2 flags for the fragment."

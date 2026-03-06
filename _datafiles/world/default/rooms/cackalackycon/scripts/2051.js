@@ -108,19 +108,29 @@ function triggerPortal(user, room) {
     // Move the player
     user.MoveRoom(FROSTFANG_TOWN_SQUARE, 16);
     
-    // Welcome message
+    // End of CackalackyCon story message
     user.SendText("", 17);
-    user.SendText("<ansi fg=\"cyan\">You materialize in a swirl of lime-green light.</ansi>", 17);
-    user.SendText("<ansi fg=\"yellow\">The cold hits you first. Then the smell of snow and woodsmoke.</ansi>", 18);
-    user.SendText("<ansi fg=\"white\">This isn't a game anymore. This is real.</ansi>", 19);
-    user.SendText("<ansi fg=\"white\">Welcome to Frostfang.</ansi>", 20);
-    user.SendText("", 21);
+    user.SendText("<ansi fg=\"lime-bold\">═══════════════════════════════════════════════════════════</ansi>", 17);
+    user.SendText("<ansi fg=\"yellow-bold\">        CONGRATULATIONS, HACKER!</ansi>", 18);
+    user.SendText("<ansi fg=\"lime-bold\">═══════════════════════════════════════════════════════════</ansi>", 19);
+    user.SendText("", 20);
+    user.SendText("<ansi fg=\"white\">You've completed the CackalackyCon story!</ansi>", 20);
+    user.SendText("<ansi fg=\"white\">You solved puzzles, collected fragments, and found the secret.</ansi>", 21);
+    user.SendText("", 22);
+    user.SendText("<ansi fg=\"cyan\">But this is just the beginning...</ansi>", 22);
+    user.SendText("", 23);
+    user.SendText("<ansi fg=\"yellow\">The machine has transported you to Frostfang — a full</ansi>", 23);
+    user.SendText("<ansi fg=\"yellow\">fantasy MUD with quests, combat, skills, and adventure.</ansi>", 24);
+    user.SendText("", 25);
+    user.SendText("<ansi fg=\"white\">Explore. Fight. Level up. The world is yours.</ansi>", 25);
+    user.SendText("<ansi fg=\"lime-bold\">═══════════════════════════════════════════════════════════</ansi>", 26);
+    user.SendText("", 27);
     
     // Give them the fantasy newbie kit
     newbieKit = CreateItem(NEWBIE_KIT);
     user.GiveItem(newbieKit);
-    user.SendText("<ansi fg=\"lime\">A mysterious package materializes in your hands - gear for this strange new world.</ansi>", 22);
-    user.SendText("<ansi fg=\"yellow\">Type: use newbie kit</ansi>", 23);
+    user.SendText("<ansi fg=\"lime\">A mysterious package materializes in your hands - gear for this strange new world.</ansi>", 28);
+    user.SendText("<ansi fg=\"yellow\">Type: use newbie kit</ansi>", 29);
 }
 
 // FBI Raid settings

@@ -1,0 +1,18 @@
+mobid: 110
+zone: cackalackycon
+character:
+  name: Phil Young
+  description: >-
+    A surprisingly young Canadian with an inexplicable passion for mainframes. 
+    While others his age obsess over cloud and containers, Phil speaks of 
+    COBOL and JCL with a reverence usually reserved for religious texts. 
+    He's currently holding a karaoke microphone and swaying slightly, ready 
+    to belt out another classic between lectures about z/OS architecture.
+  level: 10
+  health: 100
+  mana: 50
+  alignment: 30
+  raceid: 1
+hostile: false
+hatesalignment: 0
+scriptid: 110-phil

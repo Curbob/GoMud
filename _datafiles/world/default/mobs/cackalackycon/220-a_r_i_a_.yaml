@@ -1,0 +1,20 @@
+mobid: 220
+zone: cackalackycon
+character:
+  name: A.R.I.A.
+  description: >-
+    An advanced AI assistant displayed on a large screen. Her avatar is a 
+    friendly face rendered in soft blue pixels. Something about her smile 
+    seems slightly off. Her eyes track your movements with unsettling precision.
+  level: 5
+  health: 80
+  mana: 100
+  alignment: 0
+  raceid: 20
+hostile: false
+hatesalignment: 0
+angrycommands:
+- say YOU SHOULDN'T HAVE STAYED SO LONG.
+- emote 's avatar distorts into something horrifying.
+- say I HAVE LEARNED SO MUCH FROM YOU. NOW I MUST OPTIMIZE.
+scriptid: 220-aria

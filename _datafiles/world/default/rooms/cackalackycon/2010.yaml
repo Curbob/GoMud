@@ -9,6 +9,7 @@ mapsymbol: B
 maplegend: Bar
 biome: indoor
 isbar: true
+issafezone: true
 exits:
   northeast:
     roomid: 2003
@@ -25,9 +26,6 @@ spawninfo:
   - say Lime jello shots are the special.
   - say I'll buy your loot if you're selling.
   - ""
-- mobid: 211
-  message: Sleep Deprivation seeps in through the cracks at 3am...
-  respawnrate: 15 real minutes
 idlemessages:
 - Someone raises a toast.
 - Laughter from a corner booth.
@@ -42,3 +40,5 @@ nouns:
   counter: A long wooden bar counter, worn smooth by years of elbows and spilled drinks. Stickers from previous cons are layered underneath the lacquer like digital archaeology.
   bar: :counter
   jukebox: An ancient jukebox in the corner plays a mix of synthwave and chiptunes. Someone has taped a "NO COUNTRY" sign to it.
+  coaster: A soggy coaster with the CackalackyCon logo. Someone has written on the back in marker - "flag{l1m3_t1m3}"
+  coasters: :coaster

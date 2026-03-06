@@ -5,16 +5,36 @@ hostile: false
 maxwander: 0
 groups:
   - cackalackycon-staff
-activitylevel: 20
+activitylevel: 35
 idlecommands:
   - 'emote adjusts his laptop.'
   - 'emote nods thoughtfully at the speaker.'
   - 'say That was a good point.'
   - 'emote takes a sip of coffee.'
+  - 'say Back in ''07, we had to smuggle in our own WiFi. Hotel charged by the hour.'
+  - 'say Remember when CarolinaCon fit in one room? Good times.'
+  - 'say I''ve seen this talk before. Well, a version of it. Nothing new under the sun.'
+  - 'say The badge challenge in ''14 was legendary. Took three of us all weekend.'
+  - 'emote stares into the distance, remembering.'
+  - 'say First con I ever went to, someone popped a vending machine. Simpler times.'
+  - 'say Twenty years of cons. Twenty years of bad hotel coffee.'
+  - 'say The kids today don''t know how good they have it. We used to share ONE projector.'
+  - 'say ''09 was wild. Someone brought a Tesla coil. Fire marshal was NOT happy.'
+  - 'say I remember when lockpick village was just a guy with a bucket of padlocks.'
+  - 'say The lime thing started as a joke in ''18. Now look at us.'
+  - 'emote chuckles at a memory only he remembers.'
+  - 'say Used to be you could fit every attendee in one photo. Now look at this place.'
+  - 'say I''ve got stories. So many stories. Ask me sometime.'
+  - ''
   - ''
   - ''
 character:
   name: Curbob
-  description: A con regular who never misses a talk. He's always here, laptop open, absorbing knowledge. Ask him about the schedule and he'll know exactly what's on next. Some say he's been to every CackalackyCon. All of them.
+  description: >-
+    A con legend. Curbob has been coming to CackalackyCon (and CarolinaCon before it) 
+    for twenty years. His laptop is covered in stickers from cons that no longer exist. 
+    He's seen it all — the golden age, the drama, the legendary hacks, the infamous 
+    parties. Ask him about the old days and he'll talk your ear off. He knows where 
+    all the bodies are buried. Metaphorically. Probably.
   raceid: 1
   level: 20

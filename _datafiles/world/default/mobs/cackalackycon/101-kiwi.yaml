@@ -43,6 +43,6 @@ character:
     - itemid: 35004
       quantitymax: 0
       price: 15
-    - itemid: 35010
+    - itemid: 35005
       quantitymax: 0
       price: 1

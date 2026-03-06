@@ -15,23 +15,23 @@ exits:
     roomid: 2030
 spawninfo:
 - mobid: 111
-  message: Hoodoer sweeps in, top hat gleaming. "Cheerio!"
+  message: Hoodoer sweeps in, top hat gleaming. Cheerio!
   respawnrate: 1 real minutes
 - mobid: 112
-  message: W00zles arrives in a shimmer of sequins. "Cheerio!"
+  message: W00zles arrives in a shimmer of sequins. Cheerio!
   respawnrate: 1 real minutes
 idlemessages:
 - Someone adjusts their bow tie.
 - Fancy cocktails circulate on trays.
 - A hacker in a gown discusses zero-days.
 - Formal but still talking shop.
-- Someone's cufflinks are blinking LEDs.
-- "Cheerio!" echoes from somewhere nearby.
+- Someones cufflinks are blinking LEDs.
+- Cheerio echoes from somewhere nearby.
 - A multicolored top hat bobs through the crowd.
 - Tiny cucumber sandwiches are passed around.
 - Two figures in rainbow tuxedos waltz past elegantly.
 nouns:
-  ballroom: An elegant space transformed for the Hacker Swan. Crystal chandeliers (probably hacked to blink in morse code) cast prismatic light.
-  chandelier: Crystal chandeliers that definitely blink "CHEERIO" in morse code if you watch long enough.
-  sandwiches: Tiny cucumber sandwiches. Very proper. Very British. Very confusing at a hacker con.
-  tuxedos: The room is full of formal wear, but Hoodoer and W00zles' multicolored masterpieces are in a league of their own.
+  ballroom: "An elegant space transformed for the Hacker Swan. Crystal chandeliers (probably hacked to blink in morse code) cast prismatic light."
+  chandelier: "Crystal chandeliers that definitely blink CHEERIO in morse code if you watch long enough."
+  sandwiches: "Tiny cucumber sandwiches. Very proper. Very British. Very confusing at a hacker con."
+  tuxedos: "The room is full of formal wear, but Hoodoer and W00zles multicolored masterpieces are in a league of their own."

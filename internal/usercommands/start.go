@@ -190,7 +190,8 @@ func Start(rest string, user *users.UserRecord, room *rooms.Room, flags events.E
 	events.AddToQueue(events.CharacterCreated{UserId: user.UserId, CharacterName: user.Character.Name})
 
 	duration := time.Now().Sub(user.Joined)
-	if duration.Hours() > 1 {
+	// TODO: Change back to `duration.Hours() > 1` before going live!
+	if duration.Minutes() >= 0 {
 
 		question := cmdPrompt.Ask(`Skip tutorial?`, []string{`yes`, `no`}, `yes`)
 		if !question.Done {

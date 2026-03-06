@@ -5,6 +5,14 @@ description: Workbenches with hot air stations, microscopes, and bins of compone
 mapsymbol: W
 maplegend: Hardware
 biome: indoor
+nouns:
+  board: "A prototype challenge board with three empty connection points. Colored wires dangle nearby - green, yellow, and red. Type 'examine board' for details."
+  puzzle: ":board"
+  circuit: ":board"
+  wires: "Three colored wires: green, yellow, and red. They need to be connected in the right sequence."
+  bins: "Plastic bins full of components. A sticky note on one reads: 'Lime green first. Always start with lime.'"
+  components: ":bins"
+  microscope: "A high-powered microscope for examining tiny chip markings. Currently focused on what looks like a JTAG header."
 exits:
   north:
     roomid: 2021

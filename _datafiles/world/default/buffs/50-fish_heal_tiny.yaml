@@ -1,6 +1,0 @@
-buffid: 50
-name: Nourished
-description: A light snack restores a bit of health.
-triggernow: true
-triggerrate: 1 round
-triggercount: 1

@@ -23,9 +23,6 @@ spawninfo:
   - emote takes a note.
   - say Ask me about the schedule.
   - ""
-- mobid: 212
-  message: Imposter Syndrome doesn't arrive through a portal. It was already here.
-  respawnrate: 12 real minutes
 idlemessages:
 - The speaker advances to the next slide.
 - Someone asks a brilliant question from the back.
@@ -37,3 +34,5 @@ nouns:
   stage: A raised stage with a podium and massive screen. The current slide shows code you definitely understand. Definitely.
   projector: A high-end projector casts impossibly sharp text. The speaker's notes are visible if you squint.
   chairs: Rows of uncomfortable hotel chairs. Some have power outlets built in. Those are taken.
+  schedule: A printed schedule on the seat next to you. Someone circled "Hacking the Planet: 30 Years Later" and wrote "flag{h4ck_th3_pl4n3t}" in the margin.
+  slides: The current slide shows an architecture diagram. In the corner: "Build bridges, not walls."

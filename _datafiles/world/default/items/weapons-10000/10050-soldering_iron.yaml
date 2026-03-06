@@ -1,0 +1,12 @@
+itemid: 10050
+name: soldering iron
+namesimple: iron
+description: >-
+  A well-used soldering iron, still warm from the hardware hacking village. 
+  The tip glows faintly orange. Perfect for circuit boards or self-defense. 
+  Don't ask what that smell is.
+type: weapon
+hands: 1
+subtype: stabbing
+damage:
+  diceroll: 1d4

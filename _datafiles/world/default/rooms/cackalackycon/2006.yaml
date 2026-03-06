@@ -1,10 +1,17 @@
 roomid: 2006
 zone: CackalackyCon
 title: LobbyCon
-description: The unofficial hallway track. Hackers network, debate, and scheme. Pool south, Karaoke east. Con floor west.
+description: >-
+  The unofficial hallway track. Hackers network, debate, and scheme. 
+  A big <ansi fg="noun">board</ansi> on the wall displays names of everyone who's passed through. 
+  Pool south, Karaoke east. Con floor west.
 mapsymbol: O
 maplegend: LobbyCon
 biome: indoor
+nouns:
+  board: "A large board covered with names and handles. Everyone who passes through LobbyCon gets added automatically. Type 'examine board' to see the list."
+  names: ":board"
+  sign: ":board"
 exits:
   west:
     roomid: 2003

@@ -1,0 +1,18 @@
+mobid: 113
+zone: cackalackycon
+character:
+  name: Eversec CTF
+  description: >-
+    Three hackers moving in perfect synchronization, like a single organism 
+    with six arms and three keyboards. They finish each other's sentences, 
+    type on each other's laptops, and seem to share a single caffeinated 
+    hivemind. No one has ever seen them apart. Rumor has it they even dream 
+    the same exploits. They run this CTF with terrifying efficiency.
+  level: 20
+  health: 200
+  mana: 100
+  alignment: 30
+  raceid: 1
+hostile: false
+hatesalignment: 0
+scriptid: 113-eversec
