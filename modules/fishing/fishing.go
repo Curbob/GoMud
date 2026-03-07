@@ -371,8 +371,12 @@ func (mod *FishingModule) catchFish(user *users.UserRecord, room *rooms.Room, sp
 	item := items.New(itemId)
 	if user.Character.StoreItem(item) {
 		itemSpec := item.GetSpec()
-		user.SendText(fmt.Sprintf(`Worth <ansi fg="gold">%d gold</ansi> at a merchant.`, itemSpec.Value))
-		user.SendText(`<ansi fg="8">Added to your inventory. Use <ansi fg="command">eat %s</ansi> to consume or sell to a merchant.</ansi>`)
+		sellValue := itemSpec.Value / 4 // Merchants pay ~25%
+		if sellValue < 1 {
+			sellValue = 1
+		}
+		user.SendText(fmt.Sprintf(`Sells for around <ansi fg="gold">%d gold</ansi>.`, sellValue))
+		user.SendText(`<ansi fg="8">Added to your inventory.</ansi>`)
 		events.AddToQueue(events.ItemOwnership{
 			UserId: user.UserId,
 			Item:   item,
