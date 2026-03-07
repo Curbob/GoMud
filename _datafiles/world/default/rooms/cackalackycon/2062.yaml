@@ -1,11 +1,9 @@
 roomid: 2062
 zone: CackalackyCon
 title: Practice Booth - Master Lock
-description: >-
-  A gleaming Master Lock No. 3 - the classic. Don't let its simplicity fool you;
-  this lock has humbled many aspiring pickers. Spool pins and tight tolerances.
-  <ansi fg="command">Picklock</ansi> the exit to prove yourself.
-  A sign reads: "Difficulty: Hard - 30 gold reward"
+description: A gleaming Master Lock No. 3 - the classic. Spool pins and tight
+  tolerances have humbled many. PICKLOCK the exit to prove yourself.
+  Difficulty Hard - 30 gold reward.
 mapsymbol: "3"
 maplegend: Booth 3
 biome: indoor

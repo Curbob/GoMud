@@ -1,11 +1,9 @@
 roomid: 2030
 zone: CackalackyCon
 title: Karaoke Lounge
-description: >-
-  A small stage with a screen and microphones. <ansi fg="mobname">Phil Young</ansi>, 
-  a surprisingly young Canadian, runs the show - alternating between belting out 
-  classics and evangelizing about mainframes. The crowd seems equally entertained 
-  by both. LobbyCon west, Swan south, Trivia east.
+description: A small stage with a screen and microphones. Phil Young runs the
+  show, alternating between belting out classics and evangelizing about mainframes.
+  LobbyCon west, Swan south, Trivia east.
 mapsymbol: K
 maplegend: Karaoke
 biome: indoor

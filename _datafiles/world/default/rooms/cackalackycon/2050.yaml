@@ -1,11 +1,9 @@
 roomid: 2050
 zone: CackalackyCon
 title: Service Hallway
-description: >-
-  A dimly lit corridor behind the con floor. Staff-only signs are cheerfully 
-  ignored. Exposed pipes run along the ceiling and the carpet gives way to 
-  concrete. Something hums from further down the hall. A door to the east 
-  looks like it has not been opened in years. Con floor is west.
+description: A dimly lit corridor behind the con floor. Staff-only signs cheerfully
+  ignored. Exposed pipes and concrete. Something hums further down. A door east
+  looks unopened for years. Con floor west.
 mapsymbol: .
 maplegend: Service
 biome: indoor

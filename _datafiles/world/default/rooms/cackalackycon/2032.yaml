@@ -1,11 +1,9 @@
 roomid: 2032
 zone: CackalackyCon
 title: Trivia Stage
-description: >-
-  A darkened stage where the disembodied voice of <ansi fg="mobname">Vic Vandal</ansi> 
-  echoes from hidden speakers, asking trivia questions about hacker movies, code, 
-  and infosec history. No one has ever seen Vic in person. Just answer when he 
-  asks — <ansi fg="command">say</ansi> your answer out loud! Karaoke west.
+description: A darkened stage where the disembodied voice of Vic Vandal echoes from
+  hidden speakers, asking trivia about hacker movies and infosec history. No one
+  has seen Vic in person. SAY your answer out loud when asked. Karaoke west.
 mapsymbol: "?"
 maplegend: Trivia
 biome: indoor

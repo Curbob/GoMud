@@ -1,11 +1,8 @@
 roomid: 2061
 zone: CackalackyCon
 title: Practice Booth - Brass Padlock
-description: >-
-  A weathered brass padlock hangs from a chain in this booth. It's seen better
-  days, but the mechanism is solid. Security pins make this one trickier.
-  <ansi fg="command">Picklock</ansi> the exit to leave.
-  A sign reads: "Difficulty: Medium - 15 gold reward"
+description: A weathered brass padlock hangs from a chain. Security pins make this
+  one trickier. PICKLOCK the exit to leave. Difficulty Medium - 15 gold reward.
 mapsymbol: "2"
 maplegend: Booth 2
 biome: indoor

@@ -1,11 +1,9 @@
 roomid: 2063
 zone: CackalackyCon
 title: The Challenge Booth
-description: >-
-  Darkness. The booth is pitch black except for a single red LED blinking slowly.
-  Somewhere in the dark, a high-security lock waits. You'll have to pick it
-  entirely by feel. The exit is sealed with something serious.
-  A voice whispers from a speaker: "100 gold... if you can escape."
+description: Darkness. Pitch black except for a single red LED blinking slowly.
+  A high-security lock waits in the dark. Pick it by feel. A voice whispers from
+  a speaker - 100 gold if you can escape.
 mapsymbol: "!"
 maplegend: Challenge
 biome: indoor

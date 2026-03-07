@@ -1,16 +1,16 @@
 function onEnter(user, room) {
-    var visitors = room.GetLongTermData("visitors");
+    var visitors = room.GetPermData("visitors");
     if (visitors == null) {
         visitors = {};
     }
     visitors[user.GetCharacterName(false)] = UtilGetRoundNumber();
-    room.SetLongTermData("visitors", visitors);
+    room.SetPermData("visitors", visitors);
     return false;
 }
 
 function onCommand(cmd, rest, user, room) {
     if (cmd == "board") {
-        var visitors = room.GetLongTermData("visitors");
+        var visitors = room.GetPermData("visitors");
         user.SendText("===========================================");
         user.SendText("    LOBBYCON VISITOR BOARD");
         user.SendText("===========================================");

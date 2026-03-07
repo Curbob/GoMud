@@ -1,10 +1,9 @@
 roomid: 2025
 zone: CackalackyCon
 title: AI Lab
-description: >-
-  Screens show model outputs and prompt experiments. A large display dominates 
-  one wall, hosting A.R.I.A. - the conference's AI assistant. She seems helpful, 
-  but something about her feels slightly off. Don't stay too long. Village hall east.
+description: Screens show model outputs and prompt experiments. A large display hosts
+  A.R.I.A. - the conference AI. She seems helpful but something feels off.
+  Don't stay too long. Village hall east.
 mapsymbol: A
 maplegend: AI
 biome: indoor

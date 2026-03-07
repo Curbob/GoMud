@@ -1,11 +1,9 @@
 roomid: 2001
 zone: CackalackyCon
 title: Hotel Lobby
-description: >-
-  The hotel lobby has been completely overtaken by CackalackyCon attendees. 
-  Every outlet has a power strip daisy-chained to dangerous levels. Hackers 
-  sprawl on couches with laptops, the hotel's complimentary WiFi groaning 
-  under the load. Registration is north, the entrance south.
+description: The hotel lobby has been overtaken by CackalackyCon attendees. Every
+  outlet has power strips daisy-chained to dangerous levels. Hackers sprawl on
+  couches with laptops. Registration north, entrance south.
 mapsymbol: L
 maplegend: Lobby
 biome: indoor

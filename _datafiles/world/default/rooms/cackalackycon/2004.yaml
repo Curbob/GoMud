@@ -1,10 +1,8 @@
 roomid: 2004
 zone: CackalackyCon
 title: North Hallway
-description: >-
-  A wide corridor lined with hand-painted village signs pointing in every 
-  direction. Lockpicking west, Badge Hacking east, Village Hall north. 
-  The con floor lies south. You feel like you're being watched.
+description: A wide corridor lined with hand-painted village signs pointing in every
+  direction. Lockpicking west, Badge Hacking east, Village Hall north. Con floor south.
 mapsymbol: H
 maplegend: Hallway
 biome: indoor

@@ -1,12 +1,9 @@
 roomid: 2051
 zone: CackalackyCon
 title: The Server Room
-description: >-
-  An ancient server room that time forgot. Racks of equipment from decades past 
-  line the walls, their fans spinning at different speeds. In the center sits 
-  THE OLD MACHINE - a beige tower from 1994, its CRT monitor casting an eerie 
-  green glow. It is still running. It has been running this whole time. The screen 
-  flickers with text - WELCOME TO FROSTFANG MUD - CONNECTING... 
+description: An ancient server room time forgot. Racks of equipment from decades past.
+  In the center sits THE OLD MACHINE - a beige tower from 1994, CRT glowing green.
+  It is still running. The screen flickers - WELCOME TO FROSTFANG MUD... 
   The service hallway is west.
 mapsymbol: S
 maplegend: Server

@@ -1,10 +1,9 @@
 roomid: 2007
 zone: CackalackyCon
 title: Pool and Courtyard
-description: >-
-  An outdoor oasis. Hackers lounge by the pool or huddle at patio tables. 
-  Fresh air and sunshine between sessions. Someone has released fish into 
-  the pool - you can <ansi fg="command">fish</ansi> here if you have a pole. LobbyCon north.
+description: An outdoor oasis. Hackers lounge by the pool or huddle at patio tables.
+  Someone released fish into the pool. You can FISH here if you have a pole.
+  LobbyCon north.
 mapsymbol: ~
 maplegend: Pool
 biome: outdoor

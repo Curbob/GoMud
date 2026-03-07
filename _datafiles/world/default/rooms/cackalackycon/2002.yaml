@@ -1,11 +1,9 @@
 roomid: 2002
 zone: CackalackyCon
 title: Registration
-description: >-
-  Volunteers hand out electronic badges from tables stacked with laptops, 
-  lanyards, and of course, limes. The smell of fresh-printed badges fills 
-  the air. Ask about your <ansi fg="command">badge</ansi> to get registered! 
-  Con floor north, lobby south.
+description: Volunteers hand out electronic badges from tables stacked with laptops,
+  lanyards, and limes. The smell of fresh-printed badges fills the air. Con floor
+  north, lobby south.
 mapsymbol: R
 maplegend: Registration
 biome: indoor

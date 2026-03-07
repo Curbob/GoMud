@@ -1,12 +1,9 @@
 roomid: 2031
 zone: CackalackyCon
 title: Hacker Swan Ballroom
-description: >-
-  The fancy dress party. Hackers in formal wear mingle under dim lights while 
-  <ansi fg="mobname">Hoodoer</ansi> and <ansi fg="mobname">W00zles</ansi> glide 
-  through the crowd in their magnificent multicolored tuxedos and top hats, 
-  greeting everyone with enthusiastic "Cheerio!"s. It's classy, it's nerdy, 
-  it's Hacker Swan. Karaoke north.
+description: The fancy dress party. Hackers in formal wear mingle under dim lights
+  while Hoodoer and W00zles glide through the crowd in magnificent rainbow tuxedos.
+  It's classy, it's nerdy, it's Hacker Swan. Karaoke north.
 mapsymbol: S
 maplegend: Swan
 biome: indoor

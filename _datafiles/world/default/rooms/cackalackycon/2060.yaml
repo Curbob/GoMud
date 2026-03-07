@@ -1,11 +1,9 @@
 roomid: 2060
 zone: CackalackyCon
 title: Practice Booth - Clear Lock
-description: >-
-  A small booth with a single clear acrylic practice lock mounted on the wall.
-  You can see all the pins inside - perfect for beginners. The exit back to
-  the village has a simple lock you'll need to <ansi fg="command">picklock</ansi> to leave.
-  A sign reads: "Difficulty: Easy - 5 gold reward"
+description: A small booth with a clear acrylic practice lock on the wall. You can
+  see all the pins inside - perfect for beginners. PICKLOCK the exit to leave.
+  Difficulty Easy - 5 gold reward.
 mapsymbol: "1"
 maplegend: Booth 1
 biome: indoor

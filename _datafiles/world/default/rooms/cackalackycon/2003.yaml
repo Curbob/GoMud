@@ -1,12 +1,9 @@
 roomid: 2003
 zone: CackalackyCon
 title: Con Floor
-description: >-
-  The heart of CackalackyCon pulses with chaotic energy. Massive banners hang from 
-  the ceiling, the CackalackyCon logo glowing in lime green. A schedule board 
-  dominates one wall, constantly updating. Vendor booths line the edges, hawking 
-  everything from lockpicks to LED badges. Villages north, registration south, 
-  talks west, social east, bar southwest.
+description: The heart of CackalackyCon pulses with chaotic energy. Massive banners
+  hang from the ceiling in lime green. Vendor booths hawk lockpicks and LED badges.
+  Villages north, registration south, talks west, social east, bar southwest.
 mapsymbol: C
 maplegend: Con Floor
 biome: indoor

@@ -1,12 +1,9 @@
 roomid: 2029
 zone: CackalackyCon
 title: IoT Playground
-description: >-
-  Smart devices begging to be hacked. Cameras, locks, bulbs, and thermostats 
-  await your exploits. An Echo Dot sits on a shelf, its blue ring glowing. 
-  A sign reads "Default Passwords Hall of Shame" with a disturbingly long list. 
-  <ansi fg="mobname">Deral Heiland</ansi> looms over a workbench, his magnificent 
-  mustache twitching as he examines a smart lock. Cipher room north.
+description: Smart devices begging to be hacked. Cameras, locks, bulbs, thermostats.
+  An Echo Dot glows on a shelf. A sign reads Default Passwords Hall of Shame.
+  Deral Heiland looms over a workbench examining a smart lock. Cipher room north.
 mapsymbol: I
 maplegend: IoT
 biome: indoor
