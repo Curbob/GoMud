@@ -13,6 +13,8 @@ exits:
   north:
     roomid: 2002
 spawninfo:
+- mobid: 114
+  respawnrate: 0
 - mobid: 200
   message: A glitching purple portal spits out a script kiddie!
   respawnrate: 5 real minutes
@@ -27,3 +29,4 @@ nouns:
   couches: Hotel couches sag under the weight of hackers and their gear. Stickers cover every surface. One cushion has a suspicious burn mark.
   outlets: Power strips daisy-chained to power strips. This is definitely a fire hazard. Nobody cares.
   desk: The hotel front desk has a lime sitting on it. The staff have stopped questioning things.
+  table: A folding table overflowing with lost items — phone chargers, cables, badges, and things best not identified. Lost Larry presides over it all.

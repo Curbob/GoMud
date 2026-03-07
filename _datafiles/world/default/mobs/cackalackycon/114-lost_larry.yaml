@@ -1,0 +1,40 @@
+mobid: 114
+zone: CackalackyCon
+itemdropchance: 0
+hostile: false
+maxwander: 0
+groups:
+  - cackalackycon-staff
+  - merchants
+activitylevel: 10
+idlecommands:
+  - 'emote rummages through a cardboard box.'
+  - 'say Lost something? Found something? I''m your guy.'
+  - 'emote examines a tangled mess of cables.'
+  - 'say One person''s junk is another''s... still junk. But I''ll buy it.'
+  - 'say You wouldn''t BELIEVE what people lose at cons.'
+  - ''
+  - ''
+character:
+  name: Lost Larry
+  description: >-
+    A weathered hotel employee who has seen it all. Larry runs the unofficial 
+    lost and found from behind a folding table piled high with phone chargers, 
+    lanyards, and unidentified electronics. He'll buy almost anything — 
+    "someone will want it eventually."
+  raceid: 1
+  level: 15
+  gold: 500
+  shop:
+    - itemid: 30120
+      quantitymax: 10
+      price: 3
+    - itemid: 30121
+      quantitymax: 10
+      price: 3
+    - itemid: 30122
+      quantitymax: 10
+      price: 5
+    - itemid: 30123
+      quantitymax: 5
+      price: 8
