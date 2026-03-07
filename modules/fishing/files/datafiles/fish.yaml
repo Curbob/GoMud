@@ -1,116 +1,119 @@
 # Fish Definitions
+# Each fish maps to an existing item by itemid
 # Types: common, buff, junk, treasure
-# HP/buffs are now handled by item definitions
 
 fish:
   # === COMMON FISH ===
   pool_minnow:
+    itemid: 30100
     name: "Pool Minnow"
     description: "A tiny fish. How did it even get on the hook?"
-    value: 1
     type: common
 
   mudfish:
+    itemid: 30101
     name: "Mudfish"
     description: "A common bottom-feeder. Not tasty, but edible."
-    value: 2
     type: common
 
   frost_trout:
+    itemid: 30102
     name: "Frost Trout"
     description: "A cold-water fish prized for its flavor."
-    value: 5
     type: common
 
   silver_carp:
+    itemid: 30103
     name: "Silver Carp"
     description: "Shimmering scales make this fish easy to spot."
-    value: 8
     type: common
 
   # === BUFF FISH ===
   glowfin:
+    itemid: 30110
     name: "Glowfin"
     description: "A luminescent fish. Eating it grants enhanced vision."
-    value: 15
     type: buff
 
   swiftscale:
+    itemid: 30111
     name: "Swiftscale"
     description: "An incredibly fast fish. Its energy is contagious."
-    value: 20
     type: buff
 
   ironbelly:
+    itemid: 30112
     name: "Ironbelly"
     description: "A heavily armored fish. Tough to chew, tougher to digest."
-    value: 25
     type: buff
 
   healfin:
+    itemid: 30113
     name: "Healfin"
     description: "A rare fish with regenerative properties."
-    value: 30
+    type: buff
+
+  frost_sturgeon:
+    itemid: 30114
+    name: "Frost Sturgeon"
+    description: "An ancient-looking fish from cold depths."
     type: buff
 
   # === JUNK ===
   old_boot:
+    itemid: 30120
     name: "Old Boot"
     description: "Someone lost this ages ago. Smells like it."
-    value: 1
     type: junk
 
   seaweed:
+    itemid: 30121
     name: "Seaweed"
     description: "Slimy and green. Maybe useful for something?"
-    value: 1
     type: junk
 
   rusty_hook:
+    itemid: 30122
     name: "Rusty Hook"
     description: "An old fishing hook. Ironic."
-    value: 2
     type: junk
 
   waterlogged_book:
+    itemid: 30123
     name: "Waterlogged Book"
     description: "The pages are ruined, but the cover looks interesting."
-    value: 3
     type: junk
 
   # === CON POOL SPECIALS ===
-  forgotten_usb:
-    name: "Forgotten USB Drive"
-    description: "Someone dropped this in the pool. Wonder what's on it..."
-    value: 50
-    type: treasure
-
   lost_badge:
+    itemid: 30124
     name: "Lost Con Badge"
     description: "A waterlogged badge. The name is illegible."
-    value: 5
     type: junk
 
   wet_business_card:
+    itemid: 30125
     name: "Wet Business Card"
     description: "Recruiter? Vendor? The ink has run too much to tell."
-    value: 1
     type: junk
 
+  # === TREASURE ===
   coin_pouch:
+    itemid: 30130
     name: "Coin Pouch"
     description: "Someone's lost gold! Finders keepers."
-    value: 25
+    type: treasure
+    mingold: 10
+    maxgold: 50
+
+  forgotten_usb:
+    itemid: 30131
+    name: "Forgotten USB Drive"
+    description: "Someone dropped this in the pool. Wonder what's on it..."
     type: treasure
 
-  frost_sturgeon:
-    name: "Frost Sturgeon"
-    description: "An ancient-looking fish from cold depths."
-    value: 35
-    type: buff
-
   golden_fish:
+    itemid: 30132
     name: "Golden Fish"
     description: "A legendary fish that glows with inner light. Worth a fortune!"
-    value: 100
     type: treasure

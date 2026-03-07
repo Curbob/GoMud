@@ -20,32 +20,6 @@ var (
 	files embed.FS
 )
 
-// Map fish YAML IDs to real item IDs
-var fishItemIds = map[string]int{
-	// Common fish
-	"pool_minnow": 30100,
-	"mudfish":     30101,
-	"frost_trout": 30102,
-	"silver_carp": 30103,
-	// Buff fish
-	"glowfin":      30110,
-	"swiftscale":   30111,
-	"ironbelly":    30112,
-	"healfin":      30113,
-	"frost_sturgeon": 30114,
-	// Junk
-	"old_boot":          30120,
-	"seaweed":           30121,
-	"rusty_hook":        30122,
-	"waterlogged_book":  30123,
-	"lost_badge":        30124,
-	"wet_business_card": 30125,
-	// Treasure
-	"coin_pouch":    30130,
-	"forgotten_usb": 30131,
-	"golden_fish":   30132,
-}
-
 // FishingModule manages the fishing system
 type FishingModule struct {
 	plug          *plugins.Plugin
@@ -70,6 +44,7 @@ type FishConfig struct {
 
 // Fish defines a catchable fish
 type Fish struct {
+	ItemId      int    `yaml:"itemid"`
 	Name        string `yaml:"name"`
 	Description string `yaml:"description"`
 	Value       int    `yaml:"value"`
@@ -294,17 +269,12 @@ func (mod *FishingModule) catchJunk(user *users.UserRecord, room *rooms.Room, sp
 
 	junkId := spot.Junk[util.RollDice(1, len(spot.Junk))-1]
 	fish, exists := mod.fishData.Fish[junkId]
-	if !exists {
+	if !exists || fish.ItemId == 0 {
 		user.SendText(`<ansi fg="8">You caught some debris and threw it back.</ansi>`)
 		return
 	}
 
-	// Get the item ID for this junk
-	itemId, hasItem := fishItemIds[junkId]
-	if !hasItem {
-		user.SendText(`<ansi fg="8">You caught some debris and threw it back.</ansi>`)
-		return
-	}
+	itemId := fish.ItemId
 
 	user.SendText(``)
 	user.SendText(`<ansi fg="yellow">*splash*</ansi>`)
@@ -360,17 +330,12 @@ func (mod *FishingModule) catchFish(user *users.UserRecord, room *rooms.Room, sp
 
 	fishId := fishList[util.RollDice(1, len(fishList))-1]
 	fish, exists := mod.fishData.Fish[fishId]
-	if !exists {
+	if !exists || fish.ItemId == 0 {
 		user.SendText(`<ansi fg="8">Something slipped off the hook!</ansi>`)
 		return
 	}
 
-	// Get the item ID for this fish
-	itemId, hasItem := fishItemIds[fishId]
-	if !hasItem {
-		user.SendText(`<ansi fg="8">Something slipped off the hook!</ansi>`)
-		return
-	}
+	itemId := fish.ItemId
 
 	// Display catch based on rarity
 	user.SendText(``)
