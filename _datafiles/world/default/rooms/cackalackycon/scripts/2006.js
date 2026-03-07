@@ -23,33 +23,25 @@ function onEnter(user, room) {
     return false;
 }
 
-function onCommand_examine(rest, user, room) {
-    if (rest.toLowerCase().includes("board") || 
-        rest.toLowerCase().includes("sign") ||
-        rest.toLowerCase().includes("names")) {
-        showBoard(user, room);
-        return true;
-    }
-    return false;
+// Custom commands - "board", "visitors", "names" all show the board
+function onCommand_board(rest, user, room) {
+    showBoard(user, room);
+    return true;
 }
 
-function onCommand_read(rest, user, room) {
-    if (rest.toLowerCase().includes("board") || 
-        rest.toLowerCase().includes("sign") ||
-        rest.toLowerCase().includes("names")) {
-        showBoard(user, room);
-        return true;
-    }
-    return false;
+function onCommand_visitors(rest, user, room) {
+    showBoard(user, room);
+    return true;
 }
 
-function onCommand_look(rest, user, room) {
-    if (rest.toLowerCase().includes("board") || 
-        rest.toLowerCase().includes("sign")) {
-        showBoard(user, room);
-        return true;
-    }
-    return false;
+function onCommand_names(rest, user, room) {
+    showBoard(user, room);
+    return true;
+}
+
+function onCommand_sign(rest, user, room) {
+    showBoard(user, room);
+    return true;
 }
 
 function showBoard(user, room) {
