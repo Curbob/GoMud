@@ -13,6 +13,7 @@ import (
 	"github.com/GoMudEngine/GoMud/internal/rooms"
 	"github.com/GoMudEngine/GoMud/internal/users"
 	"github.com/GoMudEngine/GoMud/internal/util"
+	"gopkg.in/yaml.v2"
 )
 
 var (
@@ -115,9 +116,13 @@ func init() {
 }
 
 func (mod *FishingModule) load() {
-	// Load fish definitions
-	mod.plug.ReadIntoStruct(`fish`, &mod.fishData)
-	mod.plug.ReadIntoStruct(`fishspots`, &mod.spotData)
+	// Load fish definitions from embedded files
+	if b, err := plugins.ReadFile("fish.yaml"); err == nil {
+		yaml.Unmarshal(b, &mod.fishData)
+	}
+	if b, err := plugins.ReadFile("fishspots.yaml"); err == nil {
+		yaml.Unmarshal(b, &mod.spotData)
+	}
 
 	// Set defaults if not loaded
 	if mod.spotData.Timing.MinWait == 0 {
