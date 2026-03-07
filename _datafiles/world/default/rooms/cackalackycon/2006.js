@@ -5,7 +5,7 @@ function onEnter(user, room) {
     }
     visitors[user.GetCharacterName(false)] = UtilGetRoundNumber();
     room.SetPermData("visitors", visitors);
-    return true;
+    return false;
 }
 
 function onCommand(cmd, rest, user, room) {
