@@ -1,0 +1,15 @@
+itemid: 20101
+name: hacker hoodie
+namesimple: hoodie
+description: >-
+  A comfortable black hoodie with the CackalackyCon logo embroidered on the 
+  chest. The hood is deep enough to hide your face from surveillance cameras. 
+  Multiple pockets for tools, snacks, and plausible deniability. +2 to looking
+  mysterious at 3am.
+type: body
+subtype: wearable
+value: 40
+damagereduction: 3
+statmods:
+  mysticism: 1
+  perception: 1

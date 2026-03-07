@@ -5,6 +5,7 @@ hostile: false
 maxwander: 0
 groups:
   - cackalackycon-staff
+  - merchants
 activitylevel: 10
 idlecommands:
   - 'say Welcome to CackalackyCon! Got your badge yet?'
@@ -13,6 +14,7 @@ idlecommands:
   - 'emote hands a shiny electronic badge to a newcomer.'
   - 'say Looking for someone? I know where everyone is.'
   - 'say The badge this year is pretty special. Don''t ask me how the virus thing works.'
+  - 'say Need swag? Type <ansi fg="command">list</ansi> to see what we''ve got.'
   - ''
   - ''
 character:
@@ -25,5 +27,16 @@ character:
     from previous years.
   raceid: 1
   level: 10
+  gold: 200
+  shop:
+    - itemid: 20100
+      quantitymax: 0
+      price: 10
+    - itemid: 20101
+      quantitymax: 0
+      price: 60
+    - itemid: 25001
+      quantitymax: 0
+      price: 0
   training:
     mobid: 0
