@@ -89,8 +89,8 @@ var hintGiven = false;
 function onIdle(room) {
     roundsSinceQuestion++;
     
-    // Ask a new question every ~20 rounds if none active
-    if (!questionAsked && roundsSinceQuestion >= 20) {
+    // Ask a new question every ~8 rounds if none active (~32 seconds)
+    if (!questionAsked && roundsSinceQuestion >= 8) {
         askQuestion(room);
         return true;
     }
@@ -148,7 +148,7 @@ function askQuestion(room) {
     SendRoomMessage(room.RoomId(), "");
     SendRoomMessage(room.RoomId(), "<ansi fg=\"white-bold\">\"" + currentQuestion.q + "\"</ansi>");
     SendRoomMessage(room.RoomId(), "");
-    SendRoomMessage(room.RoomId(), "<ansi fg=\"green\">Type your answer to win " + REWARD_GOLD + " gold!</ansi>");
+    SendRoomMessage(room.RoomId(), "<ansi fg=\"green\">Type ANSWER followed by your answer to win " + REWARD_GOLD + " gold!</ansi>");
     SendRoomMessage(room.RoomId(), "");
 }
 
