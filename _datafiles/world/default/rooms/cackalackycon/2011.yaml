@@ -1,7 +1,9 @@
 roomid: 2011
 zone: CackalackyCon
 title: CTF Arena
-description: "Screens display scoreboards and challenge categories. Teams huddle over laptops, racing to capture flags. Check the RULES to learn how to play. Check your STATUS anytime. The bar is east."
+description: Screens display scoreboards and challenge categories. Teams huddle
+  over laptops, racing to capture flags. Check the RULES to learn how to play.
+  Check your STATUS anytime. The bar is east.
 mapsymbol: F
 maplegend: CTF
 biome: indoor
