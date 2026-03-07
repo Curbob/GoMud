@@ -77,3 +77,40 @@ fish:
     description: "The pages are ruined, but the cover looks interesting."
     value: 3
     type: junk
+
+  # === CON POOL SPECIALS ===
+  forgotten_usb:
+    name: "Forgotten USB Drive"
+    description: "Someone dropped this in the pool. Wonder what's on it..."
+    value: 50
+    type: treasure
+
+  lost_badge:
+    name: "Lost Con Badge"
+    description: "A waterlogged badge. The name is illegible."
+    value: 5
+    type: junk
+
+  wet_business_card:
+    name: "Wet Business Card"
+    description: "Recruiter? Vendor? The ink has run too much to tell."
+    value: 1
+    type: junk
+
+  coin_pouch:
+    name: "Coin Pouch"
+    description: "Someone's lost gold! Finders keepers."
+    value: 25
+    type: treasure
+
+  frost_sturgeon:
+    name: "Frost Sturgeon"
+    description: "An ancient-looking fish from cold depths."
+    value: 35
+    type: buff
+
+  golden_fish:
+    name: "Golden Fish"
+    description: "A legendary fish that glows with inner light. Worth a fortune!"
+    value: 100
+    type: treasure
