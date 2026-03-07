@@ -38,3 +38,9 @@ character:
     - itemid: 30123
       quantitymax: 5
       price: 8
+    - itemid: 30130
+      quantitymax: 3
+      price: 20
+    - itemid: 30131
+      quantitymax: 2
+      price: 40
