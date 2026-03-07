@@ -1,10 +1,7 @@
 roomid: 2010
 zone: CackalackyCon
 title: The Bar
-description: >-
-  CackalackyCon's social hub. Hackers unwind with drinks and war stories. 
-  A bowl of limes sits on the counter. Try your luck with <ansi fg="command">dice</ansi> 
-  or <ansi fg="command">highorlow</ansi> gambling. CTF west, con floor northeast.
+description: "CackalackyCon's social hub. Hackers unwind with drinks and war stories. A bowl of limes sits on the counter. Soggy coasters litter the bar. Try your luck with DICE or HIGHORLOW gambling. CTF west, con floor northeast."
 mapsymbol: B
 maplegend: Bar
 biome: indoor

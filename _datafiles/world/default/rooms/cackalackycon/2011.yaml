@@ -1,10 +1,7 @@
 roomid: 2011
 zone: CackalackyCon
 title: CTF Arena
-description: >-
-  Screens display scoreboards and challenge categories. Teams huddle over laptops, 
-  racing to capture flags. <ansi fg="mobname">Eversec CTF</ansi> — three hackers who 
-  move as one — run the competition with unnerving efficiency. The bar is east.
+description: "Screens display scoreboards and challenge categories. Teams huddle over laptops, racing to capture flags. Check the RULES to learn how to play. Check your STATUS anytime. The bar is east."
 mapsymbol: F
 maplegend: CTF
 biome: indoor
@@ -38,4 +35,4 @@ nouns:
   scoreboard: "A massive display showing team rankings, solve counts, and time remaining. Your team is... not on it. Type 'status' to check your progress."
   screens: "Multiple screens show different challenge categories - Web, Crypto, Pwn, Rev, Misc. The Misc category looks suspiciously empty."
   laptops: "Laptops cover every surface, screens filled with hex editors, terminal windows, and one person definitely just playing Tetris."
-  rules: "CTF Rules: Find flags hidden around the con. Submit them here with 'submit flag{...}' - need 2 flags for the fragment."
+  rules: "CTF RULES: Flags are hidden around the con - look for 'flag{...}' written on objects. EXAMINE things in other rooms (coasters, schedules, whiteboards). When you find a flag, come back here and type: submit flag{whatever}. You need 2 flags to earn the fragment. Type STATUS to check your progress."

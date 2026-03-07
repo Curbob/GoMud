@@ -1,11 +1,7 @@
 roomid: 2005
 zone: CackalackyCon
 title: Main Talk Track
-description: >-
-  Rows of chairs face a stage with a massive projector screen. A speaker 
-  walks through slides about something you probably should understand better. 
-  The audience takes notes, nods knowingly, and occasionally naps. Everyone 
-  here seems to know what they're doing. Do you? Con floor east.
+description: "Rows of chairs face a stage with a massive projector screen. A speaker walks through slides about something you probably should understand better. A printed SCHEDULE sits on the seat next to you. Everyone here seems to know what they're doing. Do you? Con floor east."
 mapsymbol: T
 maplegend: Talks
 biome: indoor
