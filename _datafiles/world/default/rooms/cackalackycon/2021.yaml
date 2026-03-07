@@ -24,9 +24,6 @@ spawninfo:
 - mobid: 203
   message: A badge sparks violently, rising with purple electricity!
   respawnrate: 5 real minutes
-- mobid: 203
-  message: Another badge crackles to life, infected and hostile!
-  respawnrate: 7 real minutes
 idlemessages:
 - A small explosion. Someone waves away smoke.
 - Solder fumes fill the air.
