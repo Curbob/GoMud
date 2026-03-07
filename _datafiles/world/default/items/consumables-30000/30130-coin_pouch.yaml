@@ -1,0 +1,7 @@
+itemid: 30130
+name: coin pouch
+namesimple: pouch
+description: Someone's lost gold! Finders keepers.
+type: other
+subtype: treasure
+value: 25

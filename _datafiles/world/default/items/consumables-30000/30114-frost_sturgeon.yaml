@@ -1,0 +1,10 @@
+itemid: 30114
+name: frost sturgeon
+namesimple: sturgeon
+description: An ancient-looking fish from cold depths.
+type: food
+subtype: edible
+uses: 1
+value: 35
+buffids:
+- 50

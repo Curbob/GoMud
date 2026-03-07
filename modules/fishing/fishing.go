@@ -28,15 +28,22 @@ var fishItemIds = map[string]int{
 	"frost_trout": 30102,
 	"silver_carp": 30103,
 	// Buff fish
-	"glowfin":   30110,
-	"swiftscale": 30111,
-	"ironbelly": 30112,
-	"healfin":   30113,
+	"glowfin":      30110,
+	"swiftscale":   30111,
+	"ironbelly":    30112,
+	"healfin":      30113,
+	"frost_sturgeon": 30114,
 	// Junk
-	"old_boot":         30120,
-	"seaweed":          30121,
-	"rusty_hook":       30122,
-	"waterlogged_book": 30123,
+	"old_boot":          30120,
+	"seaweed":           30121,
+	"rusty_hook":        30122,
+	"waterlogged_book":  30123,
+	"lost_badge":        30124,
+	"wet_business_card": 30125,
+	// Treasure
+	"coin_pouch":    30130,
+	"forgotten_usb": 30131,
+	"golden_fish":   30132,
 }
 
 // FishingModule manages the fishing system
