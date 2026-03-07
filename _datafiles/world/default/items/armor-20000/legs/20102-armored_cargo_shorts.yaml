@@ -1,0 +1,14 @@
+itemid: 20102
+name: armored cargo shorts
+namesimple: shorts
+description: >-
+  Tactical cargo shorts with reinforced knees and more pockets than seems 
+  physically possible. Each pocket is labeled: lockpicks, snacks, backup 
+  battery, "misc," and "DO NOT OPEN." The fabric is surprisingly cut-resistant. 
+  Peak hacker fashion.
+type: legs
+subtype: wearable
+value: 35
+damagereduction: 2
+statmods:
+  speed: 1

@@ -35,6 +35,9 @@ character:
     - itemid: 20101
       quantitymax: 0
       price: 60
+    - itemid: 20102
+      quantitymax: 0
+      price: 45
     - itemid: 25001
       quantitymax: 0
       price: 0
