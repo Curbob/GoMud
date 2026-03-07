@@ -12,5 +12,5 @@ function onEnter(user, room) {
     } else {
         user.SendText("<ansi fg=\"green\">Pick the exit lock to escape and earn 5 gold!</ansi>");
     }
-    return false;
+    return true; // true = show room description
 }

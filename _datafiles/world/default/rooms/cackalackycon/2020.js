@@ -40,7 +40,7 @@ function onEnter(user, room) {
             }
         }
     }
-    return false;
+    return true; // true = show room description
 }
 
 function onIdle(room) {

@@ -68,5 +68,5 @@ function onEnter(user, room) {
     if (round % 3 == 0) {
         user.SendText("<ansi fg=\"cyan\">A social engineer looks at you appraisingly. \"Looking for something? Examine the props.\"</ansi>");
     }
-    return false;
+    return true; // true = show room description
 }

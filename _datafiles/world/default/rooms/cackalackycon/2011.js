@@ -148,5 +148,5 @@ function onEnter(user, room) {
     if (round % 4 == 0) {
         user.SendText("<ansi fg=\"cyan\">Uncue looks up. \"Here to compete? Find flags hidden around the con. Submit them here.\"</ansi>");
     }
-    return false;
+    return true; // true = show room description
 }

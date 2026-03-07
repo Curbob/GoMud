@@ -10,5 +10,5 @@ function onEnter(user, room) {
     } else {
         user.SendText("<ansi fg=\"green\">The classic Master Lock. Escape for 30 gold!</ansi>");
     }
-    return false;
+    return true; // true = show room description
 }

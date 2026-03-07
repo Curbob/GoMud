@@ -11,5 +11,5 @@ function onEnter(user, room) {
         user.SendText("<ansi fg=\"red\">Complete darkness. 100 gold if you escape.</ansi>");
         user.SendText("<ansi fg=\"red\">Pick by feel alone.</ansi>");
     }
-    return false;
+    return true; // true = show room description
 }

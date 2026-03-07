@@ -161,7 +161,7 @@ function onEnter(user, room) {
     if (round % 5 == 0) {
         user.SendText("<ansi fg=\"cyan\">s0lray looks up from a microscope. \"Try the challenge board. Examine it.\"</ansi>");
     }
-    return false;
+    return true; // true = show room description
 }
 
 // Add puzzle hint to room nouns

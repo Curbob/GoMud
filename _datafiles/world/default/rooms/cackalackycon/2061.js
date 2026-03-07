@@ -10,5 +10,5 @@ function onEnter(user, room) {
     } else {
         user.SendText("<ansi fg=\"green\">Security pins await. Escape for 15 gold!</ansi>");
     }
-    return false;
+    return true; // true = show room description
 }
