@@ -360,6 +360,11 @@ func MoveToRoom(userId int, toRoomId int, isSpawn ...bool) error {
 	user.Character.RoomId = newRoom.RoomId
 	user.Character.Zone = newRoom.Zone
 	user.Character.RememberRoom(newRoom.RoomId) // Mark this room as remembered.
+	if zCfg := GetZoneConfig(newRoom.Zone); zCfg != nil {
+		user.Character.MarkVisitedRoom(newRoom.RoomId, newRoom.Zone, zCfg.RoomIds) // Permanently record the visit.
+	} else {
+		user.Character.MarkVisitedRoom(newRoom.RoomId, newRoom.Zone, nil) // Permanently record the visit.
+	}
 
 	playerCt := newRoom.AddPlayer(userId)
 	roomManager.roomsWithUsers[newRoom.RoomId] = playerCt

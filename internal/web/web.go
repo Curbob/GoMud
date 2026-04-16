@@ -221,6 +221,7 @@ func serveTemplate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Execute the template and write it to the response.
+	w.Header().Set("Cache-Control", "no-store")
 	if err := tmpl.Execute(w, templateData); err != nil {
 		mudlog.Error("HTML ERROR", "action", "Execute", "error", err)
 		http.Error(w, "Error executing template", http.StatusInternalServerError)

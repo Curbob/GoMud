@@ -622,6 +622,16 @@ func handleTelnetConnection(connDetails *connections.ConnectionDetails, wg *sync
 
 			worldManager.SendEnterWorld(userObject.UserId, userObject.Character.RoomId)
 
+			// Prime the modular webclient with an initial snapshot immediately after login.
+			// Without this, many panels stay blank until a later gameplay event fires.
+			if connections.IsWebsocket(userObject.ConnectionId()) {
+				events.AddToQueue(events.Input{UserId: userObject.UserId, InputText: `look`, ReadyTurn: 0})
+				userObject.CommandFlagged(`score`, events.CmdSecretly)
+				userObject.CommandFlagged(`inventory`, events.CmdSecretly)
+				userObject.CommandFlagged(`equipment`, events.CmdSecretly)
+				userObject.CommandFlagged(`quests`, events.CmdSecretly)
+			}
+
 			clientInput.Reset()
 			continue
 		}
@@ -790,6 +800,13 @@ func HandleWebSocketConnection(conn *websocket.Conn) {
 
 			mudlog.Warn("WS Read", "error", err)
 			break
+		}
+
+		// Ignore webclient protocol and GMCP bootstrap messages until login is complete.
+		// The browser sends these immediately on connect, and treating them as
+		// Enter-submitted login input causes bogus username validation failures.
+		if userObject == nil && len(message) > 0 && strings.HasPrefix(string(message), "!!") {
+			continue
 		}
 
 		clientInput.DataIn = message

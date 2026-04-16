@@ -33,7 +33,7 @@ Server:
   # - MudName -
   #   Display name of the MUD.
   #   This will be used a few places by default (such as the web pages).
-  MudName: "GoMud"
+  MudName: "CackalackyCon MUD"
   # - Seed -
   #   The seed used for certain types of content generation
   #   To prevent certain secrets or content from being spoiled, you can set this
@@ -389,7 +389,7 @@ Network:
   # - HttpPort -
   #   The port the server listens on for web requests
   #   0 (zero) means none.
-  HttpPort: 80
+  HttpPort: 8080
   # - HttpsPort -
   #   The port the server listens on for web requests
   #   Note: Must have a cert/key file (See FilePaths)

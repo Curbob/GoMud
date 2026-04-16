@@ -9,7 +9,6 @@ import (
 
 	"github.com/GoMudEngine/GoMud/internal/configs"
 	"github.com/GoMudEngine/GoMud/internal/connections"
-	"github.com/GoMudEngine/GoMud/internal/events"
 	"github.com/GoMudEngine/GoMud/internal/mudlog"
 	"github.com/GoMudEngine/GoMud/internal/templates"
 	"github.com/GoMudEngine/GoMud/internal/term"
@@ -354,16 +353,15 @@ func sendPrompt(step *PromptStep, clientInput *connections.ClientInput, results 
 	parsedPrompt := templates.AnsiParse(promptTxt)
 	connections.SendTo([]byte(parsedPrompt), clientInput.ConnectionId)
 
-	// Handle websocket masking command
+	// Handle websocket masking command immediately so the input box type flips
+	// before the user starts typing. Using the async event queue here can race
+	// behind the prompt render and leak visible password characters briefly.
 	if connections.IsWebsocket(clientInput.ConnectionId) {
 		maskCmd := "TEXTMASK:false"
 		if step.MaskInput {
 			maskCmd = "TEXTMASK:true"
 		}
-		events.AddToQueue(events.WebClientCommand{
-			ConnectionId: clientInput.ConnectionId,
-			Text:         maskCmd,
-		})
+		connections.SendTo([]byte(maskCmd), clientInput.ConnectionId)
 	}
 }
 

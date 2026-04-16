@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/GoMudEngine/GoMud/internal/events"
+	"github.com/GoMudEngine/GoMud/internal/mobs"
 	"github.com/GoMudEngine/GoMud/internal/mudlog"
 	"github.com/GoMudEngine/GoMud/internal/parties"
 	"github.com/GoMudEngine/GoMud/internal/plugins"
@@ -173,6 +174,8 @@ func (g *GMCPPartyModule) GetPartyNode(party *parties.Party, gmcpModule string) 
 
 	roomTitles := map[int]string{}
 
+	charmedMobInstanceIds := []int{}
+
 	for _, uId := range party.GetMembers() {
 
 		if user := users.GetByUserId(uId); user != nil {
@@ -196,6 +199,8 @@ func (g *GMCPPartyModule) GetPartyNode(party *parties.Party, gmcpModule string) 
 				Location:      roomTitle,
 			}
 
+			charmedMobInstanceIds = append(charmedMobInstanceIds, user.Character.GetCharmIds()...)
+
 			if gmcpModule == `Party.Vitals` {
 				continue
 			}
@@ -214,6 +219,44 @@ func (g *GMCPPartyModule) GetPartyNode(party *parties.Party, gmcpModule string) 
 
 		}
 
+	}
+
+	for _, mobInstanceId := range charmedMobInstanceIds {
+		m := mobs.GetInstance(mobInstanceId)
+		if m == nil {
+			continue
+		}
+
+		mHPct := int(math.Floor((float64(m.Character.Health) / float64(m.Character.HealthMax.Value)) * 100))
+		if mHPct < 0 {
+			mHPct = 0
+		}
+
+		mRoomTitle, ok := roomTitles[m.Character.RoomId]
+		if !ok {
+			if mRoom := rooms.LoadRoom(m.Character.RoomId); mRoom != nil {
+				mRoomTitle = mRoom.Title
+				roomTitles[m.Character.RoomId] = mRoomTitle
+			}
+		}
+
+		partyPayload.Vitals[m.Character.Name] = GMCPPartyModule_Payload_Vitals{
+			Level:         m.Character.Level,
+			HealthPercent: mHPct,
+			Location:      mRoomTitle,
+		}
+
+		if gmcpModule == `Party.Vitals` {
+			continue
+		}
+
+		partyPayload.Members = append(partyPayload.Members,
+			GMCPPartyModule_Payload_User{
+				Name:     m.Character.Name,
+				Status:   `♥friend`,
+				Position: `-`,
+			},
+		)
 	}
 
 	for _, uId := range party.GetInvited() {
