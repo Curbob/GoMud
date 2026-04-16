@@ -29,6 +29,10 @@ func init() {
 	plug.AddUserCommand(`gamble`, GambleCommand, true, false)
 	plug.AddUserCommand(`dice`, DiceCommand, true, false)
 	plug.AddUserCommand(`highorlow`, HighOrLowCommand, true, false)
+	plug.AddUserCommand(`high`, HighCommand, true, false)
+	plug.AddUserCommand(`low`, LowCommand, true, false)
+	plug.AddUserCommand(`cash`, CashCommand, true, false)
+	plug.AddUserCommand(`cashout`, CashCommand, true, false)
 }
 
 // GambleCommand - Main gambling menu/help
@@ -143,6 +147,18 @@ func DiceCommand(rest string, user *users.UserRecord, room *rooms.Room, flags ev
 	return true, nil
 }
 
+func HighCommand(rest string, user *users.UserRecord, room *rooms.Room, flags events.EventFlag) (bool, error) {
+	return handleHighOrLowGuess(`high`, user, room)
+}
+
+func LowCommand(rest string, user *users.UserRecord, room *rooms.Room, flags events.EventFlag) (bool, error) {
+	return handleHighOrLowGuess(`low`, user, room)
+}
+
+func CashCommand(rest string, user *users.UserRecord, room *rooms.Room, flags events.EventFlag) (bool, error) {
+	return handleHighOrLowGuess(`cash`, user, room)
+}
+
 // HighOrLowCommand - Guess if next roll is higher or lower
 func HighOrLowCommand(rest string, user *users.UserRecord, room *rooms.Room, flags events.EventFlag) (bool, error) {
 
@@ -155,7 +171,7 @@ func HighOrLowCommand(rest string, user *users.UserRecord, room *rooms.Room, fla
 
 	if len(args) == 0 {
 		user.SendText(`Usage: <ansi fg="command">highorlow [amount]</ansi> - Start a high/low guessing game.`)
-		user.SendText(`After the first roll, guess <ansi fg="command">high</ansi> or <ansi fg="command">low</ansi> for the next roll.`)
+		user.SendText(`After the first roll, guess with <ansi fg="command">high</ansi>, <ansi fg="command">low</ansi>, or <ansi fg="command">cash</ansi>.`)
 		user.SendText(`Keep guessing correctly to multiply your winnings!`)
 		user.SendText(fmt.Sprintf(`You have <ansi fg="gold">%d gold</ansi> on hand.`, user.Character.Gold))
 		return true, nil
@@ -200,7 +216,7 @@ func HighOrLowCommand(rest string, user *users.UserRecord, room *rooms.Room, fla
 	user.SendText(fmt.Sprintf(`The dice show: 🎲 <ansi fg="cyan-bold">%d</ansi>`, firstRoll))
 	user.SendText(``)
 	user.SendText(`Will the next roll be <ansi fg="command">high</ansi>er or <ansi fg="command">low</ansi>er?`)
-	user.SendText(`(Or <ansi fg="command">highorlow cash</ansi> to take your winnings)`)
+	user.SendText(`Type <ansi fg="command">high</ansi>, <ansi fg="command">low</ansi>, or <ansi fg="command">cash</ansi>.`)
 
 	events.AddToQueue(events.EquipmentChange{
 		UserId:     user.UserId,
@@ -265,6 +281,7 @@ func handleHighOrLowGuess(guess string, user *users.UserRecord, room *rooms.Room
 		user.SetTempData(`highorlow_roll`, newRoll)
 		user.SendText(``)
 		user.SendText(`Will the next roll be <ansi fg="command">high</ansi>er or <ansi fg="command">low</ansi>er?`)
+		user.SendText(`Type <ansi fg="command">high</ansi>, <ansi fg="command">low</ansi>, or <ansi fg="command">cash</ansi>.`)
 		return true, nil
 	}
 
@@ -276,7 +293,7 @@ func handleHighOrLowGuess(guess string, user *users.UserRecord, room *rooms.Room
 		user.SendText(fmt.Sprintf(`<ansi fg="green-bold">✓ Correct!</ansi> Streak: %d (potential win: <ansi fg="gold">%d gold</ansi> at x%.1f)`, streak, potentialWin, multiplier))
 		user.SendText(``)
 		user.SendText(`Will the next roll be <ansi fg="command">high</ansi>er or <ansi fg="command">low</ansi>er?`)
-		user.SendText(`(Or <ansi fg="command">highorlow cash</ansi> to take your winnings)`)
+		user.SendText(`Type <ansi fg="command">high</ansi>, <ansi fg="command">low</ansi>, or <ansi fg="command">cash</ansi>.`)
 		
 		user.SetTempData(`highorlow_roll`, newRoll)
 		user.SetTempData(`highorlow_streak`, streak)

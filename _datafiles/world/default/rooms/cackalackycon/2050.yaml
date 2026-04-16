@@ -12,7 +12,6 @@ exits:
     roomid: 2003
   east:
     roomid: 2051
-    secret: true
 idlemessages:
 - Pipes groan overhead.
 - The fluorescent lights flicker.

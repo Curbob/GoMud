@@ -173,8 +173,10 @@ func AnsiHandler(clientInput *connections.ClientInput, sharedState map[string]an
 			continue
 		}
 
-		// Unhanlded ANSI command, log it
+		// Unhandled ANSI command: log it, but let the rest of the input continue down the
+		// handler chain in case printable text/newlines arrived in the same read.
 		mudlog.Debug("Received", "type", "ANSI", "size", len(ansiCmds), "data", term.AnsiCommandToString(ansiCmds))
+		nextHandler = true
 	}
 
 	return nextHandler

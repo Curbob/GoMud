@@ -7,7 +7,7 @@ groups:
   - hostiles
   - bosses
   - abstract
-activitylevel: 10
+activitylevel: 4
 idlecommands:
   - 'emote whispers in a voice like white noise.'
   - 'say You could just... rest your eyes. Just for a minute.'

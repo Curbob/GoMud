@@ -15,7 +15,7 @@ exits:
     roomid: 2003
 spawninfo:
 - mobid: 100
-  message: Base16 looks up from the list.
+  message: Bace16 looks up from the list.
   respawnrate: 1 real minutes
   idlecommands:
   - say Welcome to CackalackyCon! Ask me about your <ansi fg="command">badge</ansi>.

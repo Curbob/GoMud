@@ -139,7 +139,7 @@ func serveTemplate(w http.ResponseWriter, r *http.Request) {
 			{`Home`, `/`},
 			{`Who's Online`, `/online`},
 			{`Web Client`, `/webclient`},
-			{`See Configuration`, `/viewconfig`},
+			{`Map`, `/map`},
 		},
 	}
 

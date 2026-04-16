@@ -1,19 +1,4 @@
 <ansi clear="all"></ansi>
-<ansi fg="green">
-                          ___
-                       ,-'   `-.
-                      /   ,-.   \
-                     /   /   \   \
-                    |   |     |   |
-                    |   |     |   |      <ansi fg="green-bold">🍋 CACKALACKYCON 2026 🍋</ansi>
-                     \   \   /   /
-                      \   `-'   /        <ansi fg="cyan">Durham, NC</ansi>
-                       `-.___,-'
-                          | |
-                          | |
-                         _| |_
-                        |_____|</ansi>
-
 <ansi fg="black-bold">{{ repeat "=" 80 }}</ansi>
 <ansi fg="cyan">
      ██████╗ █████╗  ██████╗██╗  ██╗ █████╗ ██╗      █████╗  ██████╗██╗  ██╗██╗   ██╗

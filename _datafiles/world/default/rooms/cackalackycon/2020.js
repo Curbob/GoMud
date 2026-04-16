@@ -4,43 +4,84 @@
 const REG_DESK_ROOM = 2002;
 const RAID_CHANCE_PERCENT = 2;
 const CHECK_INTERVAL_ROUNDS = 15;
+const LOCKPICK_KIT = 8;
+const LOCKPICK_KIT_GIVEN = "cackalackycon_lockpick_kit_given";
+const LOCKPICK_KIT_REWARD_SUFFIX = "_lockpick_rewarded";
+const BOOTH_EXIT_REWARD_SUFFIX = "_entered_reward_room";
 
 // Booth reward tracking
 const BOOTHS = [
-    { key: "lockpick_booth_2060", gold: 5, name: "Clear Lock" },
-    { key: "lockpick_booth_2061", gold: 15, name: "Brass Padlock" },
-    { key: "lockpick_booth_2062", gold: 30, name: "Master Lock" },
-    { key: "lockpick_booth_2063", gold: 100, name: "Challenge Booth" }
+    { key: "lockpick_booth_2060", gold: 5, name: "Clear Lock", exit: "booth1" },
+    { key: "lockpick_booth_2061", gold: 15, name: "Brass Padlock", exit: "booth2" },
+    { key: "lockpick_booth_2062", gold: 30, name: "Master Lock", exit: "booth3" },
+    { key: "lockpick_booth_2063", gold: 100, name: "Challenge Booth", exit: "challenge" }
 ];
 
 function onEnter(user, room) {
+    if (!user.GetMiscCharacterData(LOCKPICK_KIT_GIVEN)) {
+        user.GiveItem(LOCKPICK_KIT);
+        user.SetMiscCharacterData(LOCKPICK_KIT_GIVEN, true);
+        user.SendText("");
+        user.SendText("<ansi fg=\"yellow\">Unregistered flips you a <ansi fg=\"itemname\">lockpick kit</ansi>.</ansi>");
+        user.SendText("<ansi fg=\"cyan\">It was added to your inventory.</ansi>");
+        user.SendText("");
+    }
+
     // Check if they just escaped from a booth
     for (var i = 0; i < BOOTHS.length; i++) {
         var booth = BOOTHS[i];
         
-        // Did they enter this booth recently?
-        if (user.GetTempData(booth.key)) {
-            // Clear the temp flag
-            user.SetTempData(booth.key, false);
-            
-            // Have they already completed this booth?
-            if (!user.GetMiscData(booth.key + "_completed")) {
-                // First time completion!
-                user.SetMiscData(booth.key + "_completed", true);
+        // Reward on first entry after successfully unlocking from the village.
+        if (user.GetTempData(booth.key + BOOTH_EXIT_REWARD_SUFFIX)) {
+            user.SetTempData(booth.key + BOOTH_EXIT_REWARD_SUFFIX, false);
+
+            if (!user.GetMiscCharacterData(booth.key + "_completed")) {
+                user.SetMiscCharacterData(booth.key + "_completed", true);
                 user.AddGold(booth.gold);
                 user.SendText("");
                 user.SendText("<ansi fg=\"green-bold\">★ " + booth.name + " COMPLETED! ★</ansi>");
                 user.SendText("<ansi fg=\"yellow\">You earned " + booth.gold + " gold!</ansi>");
+                if (!user.GetMiscCharacterData(booth.key + LOCKPICK_KIT_REWARD_SUFFIX)) {
+                    user.GiveItem(LOCKPICK_KIT);
+                    user.SetMiscCharacterData(booth.key + LOCKPICK_KIT_REWARD_SUFFIX, true);
+                    user.SendText("<ansi fg=\"cyan\">You also receive a fresh <ansi fg=\"itemname\">lockpick kit</ansi> for the next booth.</ansi>");
+                }
                 user.SendText("");
-                
+
                 room.SendText(
-                    "<ansi fg=\"username\">" + user.GetCharacterName(false) + "</ansi> emerges from " + booth.name + ", pocketing gold!",
+                    "<ansi fg=\"username\">" + user.GetCharacterName(false) + "</ansi> claims the reward for " + booth.name + "!",
                     user.UserId()
                 );
             }
         }
     }
     return true; // true = show room description
+}
+
+function onCommand(cmd, rest, user, room) {
+    var destination = (rest || "").toLowerCase().trim();
+
+    if (cmd == "go") {
+        for (var i = 0; i < BOOTHS.length; i++) {
+            var booth = BOOTHS[i];
+            if (destination == booth.exit) {
+                user.SetTempData(booth.key + BOOTH_EXIT_REWARD_SUFFIX, true);
+                return false;
+            }
+        }
+    }
+
+    if (cmd == "picklock") {
+        for (var i = 0; i < BOOTHS.length; i++) {
+            var booth = BOOTHS[i];
+            if (destination == booth.exit && !user.GetMiscCharacterData(booth.key + "_completed")) {
+                user.SetTempData(booth.key + BOOTH_EXIT_REWARD_SUFFIX, true);
+                return false;
+            }
+        }
+    }
+
+    return false;
 }
 
 function onIdle(room) {

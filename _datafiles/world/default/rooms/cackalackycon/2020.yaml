@@ -2,8 +2,9 @@ roomid: 2020
 zone: CackalackyCon
 title: Lockpick Village
 description: Tables covered with practice locks, picks, and tension wrenches. The
-  satisfying click of locks opening fills the air. Practice booths line the walls.
-  Exits are BOOTH1, BOOTH2, BOOTH3, CHALLENGE. Hallway east.
+  satisfying click of locks opening fills the air. Practice booths line the walls,
+  each worked from the outside. Exits are BOOTH1, BOOTH2, BOOTH3, CHALLENGE.
+  Hallway east.
 mapsymbol: P
 maplegend: Lockpick
 biome: indoor
@@ -36,7 +37,7 @@ idlemessages:
 - Someone asks about security pins.
 - A triumphant picker emerges from a booth, pocketing gold.
 nouns:
-  booths: Four practice booths line the walls. Each has a lock you must pick to escape. Rewards increase with difficulty.
-  tables: Covered with every type of lock imaginable. Practice picks available.
-  picks: Tension wrenches, rakes, hooks, diamonds - every pick style represented.
+  booths: Four practice booths line the walls. Work each lock from out here. Look at BOOTH1, BOOTH2, BOOTH3, or CHALLENGE to see the prize.
+  tables: Covered with every type of lock imaginable. A small prize table sits beside each booth.
+  picks: Tension wrenches, rakes, hooks, diamonds - every pick style represented. Unregistered can sell you a cheap lockpick kit.
   locks: Padlocks, deadbolts, pin tumblers, disc detainers. A picker's paradise.

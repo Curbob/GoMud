@@ -65,6 +65,7 @@ var (
 		`command`:     {Command, false, true}, // Admin only
 		`conditions`:  {Conditions, true, false},
 		`consider`:    {Consider, true, false},
+		`connect`:     {Connect, true, false},
 		`deafen`:      {Deafen, true, true}, // Admin only
 		`default`:     {Default, false, false},
 		`disarm`:      {Disarm, false, false},
@@ -149,6 +150,7 @@ var (
 		`stash`:       {Stash, false, false},
 		`status`:      {Status, true, false},
 		`storage`:     {Storage, false, false},
+		`submit`:      {Submit, true, false},
 		`suicide`:     {Suicide, true, false},
 		`syslogs`:     {SysLogs, true, true}, // Admin only
 		`tame`:        {Tame, false, false},

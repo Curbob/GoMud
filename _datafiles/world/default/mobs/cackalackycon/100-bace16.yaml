@@ -6,7 +6,7 @@ maxwander: 0
 groups:
   - cackalackycon-staff
   - merchants
-activitylevel: 10
+activitylevel: 6
 idlecommands:
   - 'say Welcome to CackalackyCon! Got your badge yet?'
   - 'emote checks another name off the registration list.'
@@ -18,9 +18,9 @@ idlecommands:
   - ''
   - ''
 character:
-  name: Base16
+  name: Bace16
   description: >-
-    A friendly volunteer behind the registration desk, Base16 has the calm 
+    A friendly volunteer behind the registration desk, Bace16 has the calm 
     efficiency of someone who's checked in hundreds of hackers and hasn't 
     lost a single badge yet. Their shirt reads "I void warranties" and a 
     lanyard around their neck holds at least five different electronic badges 

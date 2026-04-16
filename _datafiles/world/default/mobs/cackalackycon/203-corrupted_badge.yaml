@@ -6,7 +6,7 @@ maxwander: 2
 groups:
   - hostiles
   - infected
-activitylevel: 10
+activitylevel: 4
 idlecommands:
   - 'emote sparks with purple electricity.'
   - 'emote hovers menacingly, LEDs flickering in corrupted patterns.'

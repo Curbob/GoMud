@@ -4,7 +4,7 @@
 const HARDWARE_FRAGMENT = 5101;
 
 // The correct wire sequence (colors)
-const CORRECT_SEQUENCE = ["green", "yellow", "red"];
+const CORRECT_SEQUENCE = ["green", "white", "red"];
 
 function onCommand_connect(rest, user, room) {
     if (user.HasItemId(HARDWARE_FRAGMENT)) {
@@ -59,10 +59,10 @@ function onCommand_connect(rest, user, room) {
         
         if (attempts >= 3) {
             user.SendText("");
-            user.SendText("<ansi fg=\"cyan\">s0lray glances over: \"Lime green first. Always start with lime.\"</ansi>");
+            user.SendText("<ansi fg=\"cyan\">s0lray glances over: \"Ground first. Green wire. Always start with ground.\"</ansi>");
         }
         if (attempts >= 5) {
-            user.SendText("<ansi fg=\"cyan\">\"Then yellow for caution, red for power.\"</ansi>");
+            user.SendText("<ansi fg=\"cyan\">\"Then neutral white, red for power.\"</ansi>");
         }
         
         user.SendText("");
@@ -107,8 +107,8 @@ function onCommand_examine(rest, user, room) {
     if (target.includes("bin") || target.includes("component")) {
         user.SendText("");
         user.SendText("<ansi fg=\"white\">Bins of components: resistors, capacitors, LEDs...</ansi>");
-        user.SendText("<ansi fg=\"white\">You spot wires in three colors: green, yellow, and red.</ansi>");
-        user.SendText("<ansi fg=\"cyan\">A sticky note reads: \"Lime first, always.\"</ansi>");
+        user.SendText("<ansi fg=\"white\">You spot wires in three colors: green, white, and red.</ansi>");
+        user.SendText("<ansi fg=\"cyan\">A sticky note reads: \"Ground is green. Neutral is white. Red is power.\"</ansi>");
         user.SendText("");
         return true;
     }
@@ -141,10 +141,10 @@ function showPuzzle(user) {
     user.SendText("<ansi fg=\"white\">A prototype board with three connection points.</ansi>");
     user.SendText("<ansi fg=\"white\">Three colored wires dangle nearby:</ansi>");
     user.SendText("");
-    user.SendText("  <ansi fg=\"green\">● GREEN</ansi>  <ansi fg=\"yellow\">● YELLOW</ansi>  <ansi fg=\"red\">● RED</ansi>");
+    user.SendText("  <ansi fg=\"red\">● RED</ansi>  <ansi fg=\"green\">● GREEN</ansi>  <ansi fg=\"white\">● WHITE</ansi>");
     user.SendText("");
     user.SendText("<ansi fg=\"white\">A label reads: \"Connect in sequence to unlock.\"</ansi>");
-    user.SendText("<ansi fg=\"white\">Below it, someone scratched: \"GND → CAUTION → PWR\"</ansi>");
+    user.SendText("<ansi fg=\"white\">Below it, someone scratched: \"GND → NEUTRAL → PWR\"</ansi>");
     user.SendText("");
     user.SendText("<ansi fg=\"yellow\">Type: connect [color] [color] [color]</ansi>");
     user.SendText("<ansi fg=\"cyan\">═══════════════════════════════════════════</ansi>");
@@ -170,8 +170,8 @@ function onCommand_read(rest, user, room) {
     if (target.includes("note") || target.includes("sticky") || target.includes("label")) {
         user.SendText("");
         user.SendText("<ansi fg=\"white\">The sticky note reads:</ansi>");
-        user.SendText("<ansi fg=\"lime\">\"When in doubt, start with lime (green).\"</ansi>");
-        user.SendText("<ansi fg=\"yellow\">\"Yellow means proceed with caution.\"</ansi>");
+        user.SendText("<ansi fg=\"lime\">\"Ground is green. Start there.\"</ansi>");
+        user.SendText("<ansi fg=\"white\">\"Neutral is white.\"</ansi>");
         user.SendText("<ansi fg=\"red\">\"Red brings the power.\"</ansi>");
         user.SendText("");
         return true;

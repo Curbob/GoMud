@@ -1,4 +1,4 @@
-// Trivia Stage - Vic Vandal's Hacker Trivia
+// Trivia Stage - VicBot's Hacker Trivia
 // Disembodied voice asks questions, players answer for gold
 
 const REWARD_GOLD = 10;
@@ -98,7 +98,7 @@ function onIdle(room) {
     // Give hint after 10 rounds
     if (questionAsked && !hintGiven && roundsSinceQuestion >= 10) {
         SendRoomMessage(room.RoomId(), "");
-        SendRoomMessage(room.RoomId(), "<ansi fg=\"yellow\">Vic Vandal's voice echoes: \"Need a hint? " + currentQuestion.hint + "\"</ansi>");
+        SendRoomMessage(room.RoomId(), "<ansi fg=\"yellow\">VicBot's voice echoes: \"Need a hint? " + currentQuestion.hint + "\"</ansi>");
         hintGiven = true;
         return true;
     }
@@ -106,7 +106,7 @@ function onIdle(room) {
     // Time out after 20 rounds
     if (questionAsked && roundsSinceQuestion >= 25) {
         SendRoomMessage(room.RoomId(), "");
-        SendRoomMessage(room.RoomId(), "<ansi fg=\"red\">Vic Vandal sighs: \"Time's up! The answer was: " + currentQuestion.a[0] + "\"</ansi>");
+        SendRoomMessage(room.RoomId(), "<ansi fg=\"red\">VicBot sighs: \"Time's up! The answer was: " + currentQuestion.a[0] + "\"</ansi>");
         SendRoomMessage(room.RoomId(), "<ansi fg=\"cyan\">\"Better luck next round, hackers!\"</ansi>");
         questionAsked = false;
         currentQuestion = null;
@@ -115,11 +115,11 @@ function onIdle(room) {
         return true;
     }
     
-    // Random Vic commentary
+    // Random VicBot commentary
     if (UtilGetRoundNumber() % 8 == 0 && !questionAsked) {
         var quips = [
             "",
-            "<ansi fg=\"cyan\">Vic Vandal's voice echoes: \"Who's ready for some trivia?\"</ansi>",
+            "<ansi fg=\"cyan\">VicBot's voice echoes: \"Who's ready for some trivia?\"</ansi>",
             "<ansi fg=\"cyan\">A disembodied voice chuckles somewhere in the darkness.</ansi>",
             "",
             ""
@@ -164,7 +164,7 @@ function onCommand_say(rest, user, room) {
             // Correct!
             SendRoomMessage(room.RoomId(), "");
             SendRoomMessage(room.RoomId(), "<ansi fg=\"green-bold\">★ CORRECT! ★</ansi>");
-            SendRoomMessage(room.RoomId(), "<ansi fg=\"cyan\">Vic Vandal exclaims: \"" + user.GetCharacterName(false) + " NAILS IT!\"</ansi>");
+            SendRoomMessage(room.RoomId(), "<ansi fg=\"cyan\">VicBot exclaims: \"" + user.GetCharacterName(false) + " NAILS IT!\"</ansi>");
             SendRoomMessage(room.RoomId(), "");
             
             user.AddGold(REWARD_GOLD);
@@ -185,7 +185,7 @@ function onCommand_say(rest, user, room) {
 function onCommand_answer(rest, user, room) {
     // Alias for answering
     if (!questionAsked) {
-        user.SendText("<ansi fg=\"yellow\">Vic Vandal's voice whispers: \"No question active right now. Wait for the next one!\"</ansi>");
+        user.SendText("<ansi fg=\"yellow\">VicBot's voice whispers: \"No question active right now. Wait for the next one!\"</ansi>");
         return true;
     }
     

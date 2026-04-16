@@ -1,0 +1,32 @@
+[Unit]
+Description=MudBot - Discord Bot for GoMud
+After=network.target
+
+[Service]
+Type=simple
+User=mudbot
+Group=mudbot
+WorkingDirectory=/opt/mudbot
+ExecStart=/opt/mudbot/bin/mudbot
+Restart=always
+RestartSec=5
+
+# Security settings
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadOnlyPaths=/opt/gomud/_datafiles/world/default/users
+PrivateTmp=yes
+
+# Environment variables
+Environment=DISCORD_TOKEN=your_bot_token_here
+Environment=DISCORD_GUILD_ID=your_guild_id_here
+Environment=GOMUD_USERS_PATH=/opt/gomud/_datafiles/world/default/users
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=mudbot
+
+[Install]
+WantedBy=multi-user.target

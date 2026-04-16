@@ -6,7 +6,7 @@ maxwander: 0
 groups:
   - cackalackycon-staff
   - merchants
-activitylevel: 10
+activitylevel: 6
 idlecommands:
   - 'emote rummages through a cardboard box.'
   - 'say Lost something? Found something? I''m your guy.'

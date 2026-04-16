@@ -5,7 +5,8 @@ hostile: false
 maxwander: 0
 groups:
   - cackalackycon-staff
-activitylevel: 10
+  - merchants
+activitylevel: 6
 idlecommands:
   - 'emote picks a lock without looking.'
   - 'say Feel the feedback.'
@@ -18,3 +19,8 @@ character:
   description: The lockpick master. Nobody knows their real name — they just go by Unregistered. Rumor has it they've never met a lock they couldn't pick. They teach with patience but expect you to practice.
   raceid: 1
   level: 25
+  gold: 200
+  shop:
+    - itemid: 8
+      quantitymax: 0
+      price: 3

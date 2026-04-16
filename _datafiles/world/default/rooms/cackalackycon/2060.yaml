@@ -2,21 +2,28 @@ roomid: 2060
 zone: CackalackyCon
 title: Practice Booth - Clear Lock
 description: A small booth with a clear acrylic practice lock on the wall. You can
-  see all the pins inside - perfect for beginners. PICKLOCK the exit to leave.
-  Difficulty Easy - 5 gold reward.
+  see all the pins inside - perfect for beginners. From Lockpick Village, use
+  PICKLOCK BOOTH1 to open it. A small table inside holds 5 gold and a fresh
+  lockpick kit.
 mapsymbol: "1"
 maplegend: Booth 1
 biome: indoor
+containers:
+  table:
+    gold: 5
+    items:
+    - itemid: 8
 exits:
   out:
     roomid: 2020
     lock:
-      difficulty: 5
+      difficulty: 2
 idlemessages:
 - The clear lock gleams under the lights.
 - You can see exactly how the pins work.
 - A perfect training lock for beginners.
 nouns:
-  lock: A clear acrylic lock shows all its inner workings. Five pins, standard configuration.
-  sign: "Difficulty: Easy - Pick the exit lock for 5 gold!"
-  pins: Five brass pins visible through the clear housing.
+  lock: A clear acrylic lock shows all its inner workings. Just two pins, perfect for beginners.
+  sign: "Difficulty: Easy - From the village, PICKLOCK BOOTH1, then GET GOLD FROM TABLE and GET LOCKPICKS FROM TABLE."
+  pins: Two brass pins visible through the clear housing.
+  table: A small folding table with the booth prize on it.

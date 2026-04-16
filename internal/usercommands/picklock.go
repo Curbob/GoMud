@@ -43,6 +43,15 @@ func Picklock(rest string, user *users.UserRecord, room *rooms.Room, flags event
 	containerName := room.FindContainerByName(args[0])
 	exitName, _ := room.FindExitByName(args[0])
 
+	// Special case: from Lockpick Village, allow booth names to resolve to booth room exits,
+	// so players can use PICKLOCK BOOTH1/BOOTH2/BOOTH3/CHALLENGE from outside.
+	if exitName == `` && room.RoomId == 2020 {
+		switch args[0] {
+		case `booth1`, `booth2`, `booth3`, `challenge`:
+			exitName = args[0]
+		}
+	}
+
 	if containerName != `` {
 
 		container := room.Containers[containerName]
@@ -70,11 +79,44 @@ func Picklock(rest string, user *users.UserRecord, room *rooms.Room, flags event
 		exitInfo, _ := room.GetExitInfo(exitName)
 
 		if !exitInfo.HasLock() {
-			user.SendText("There is no lock there.")
-			return true, nil
+			// Lockpick Village booths are solved from the outside, but their visible exit lock
+			// lives on the booth room's `out` exit. Bridge that here.
+			if room.RoomId == 2020 && (exitName == `booth1` || exitName == `booth2` || exitName == `booth3` || exitName == `challenge`) {
+				boothRoom := rooms.LoadRoom(exitInfo.RoomId)
+				if boothRoom != nil {
+					boothExitName, _ := boothRoom.FindExitByName(`out`)
+					if boothExitName != `` {
+						boothExitInfo, _ := boothRoom.GetExitInfo(boothExitName)
+						if boothExitInfo.HasLock() {
+							room = boothRoom
+							exitName = boothExitName
+							exitInfo = boothExitInfo
+						} else {
+							user.SendText("There is no lock there.")
+							return true, nil
+						}
+					} else {
+						user.SendText("There is no lock there.")
+						return true, nil
+					}
+				} else {
+					user.SendText("There is no lock there.")
+					return true, nil
+				}
+			} else {
+				user.SendText("There is no lock there.")
+				return true, nil
+			}
 		}
 
 		if !exitInfo.Lock.IsLocked() {
+			// Lockpick Village booths are intentionally repeat-enterable from outside.
+			// If already unlocked, still allow passage into the booth so first-clear reward
+			// logic can fire on entry without forcing another pick cycle.
+			if room.RoomId == 2020 && (args[0] == `booth1` || args[0] == `booth2` || args[0] == `booth3` || args[0] == `challenge`) {
+				user.SendText("The booth is already open.")
+				return true, nil
+			}
 			user.SendText("It's already unlocked.")
 			return true, nil
 		}

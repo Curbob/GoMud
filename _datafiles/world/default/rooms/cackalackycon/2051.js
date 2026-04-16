@@ -7,6 +7,10 @@ const HARDWARE_FRAGMENT = 5101;
 const SOCIAL_FRAGMENT = 5102;
 const CTF_FRAGMENT = 5103;
 const NEWBIE_KIT = 100; // Fantasy starter gear
+const UPGRADED_BADGE = 25002;
+const HARDENED_BADGE = 25003;
+const LEGENDARY_BADGE = 25004;
+const BADGE_PORTAL_UNLOCK_KEY = "cackalackycon-badge-portal-unlocked";
 
 function onCommand_connect(rest, user, room) {
     attemptPortal(user, room);
@@ -105,6 +109,9 @@ function triggerPortal(user, room) {
         15
     );
     
+    // Unlock the badge fast-travel feature before transfer
+    user.SetMiscCharacterData(BADGE_PORTAL_UNLOCK_KEY, true);
+
     // Move the player
     user.MoveRoom(FROSTFANG_TOWN_SQUARE, 16);
     
@@ -123,14 +130,32 @@ function triggerPortal(user, room) {
     user.SendText("<ansi fg=\"yellow\">fantasy MUD with quests, combat, skills, and adventure.</ansi>", 24);
     user.SendText("", 25);
     user.SendText("<ansi fg=\"white\">Explore. Fight. Level up. The world is yours.</ansi>", 25);
-    user.SendText("<ansi fg=\"lime-bold\">═══════════════════════════════════════════════════════════</ansi>", 26);
-    user.SendText("", 27);
+    user.SendText("", 26);
+    user.SendText("<ansi fg=\"cyan\">Your upgraded badge vibrates against your chest.</ansi>", 26);
+    user.SendText("<ansi fg=\"lime\">NEW FEATURE UNLOCKED: PORTAL RECALL</ansi>", 27);
+    user.SendText("<ansi fg=\"white\">You can now <ansi fg=\"command\">use badge</ansi> to jump between <ansi fg=\"room-title\">Village Hall</ansi> and <ansi fg=\"room-title\">Town Square</ansi> from anywhere.</ansi>", 28);
+    user.SendText("<ansi fg=\"lime-bold\">═══════════════════════════════════════════════════════════</ansi>", 29);
+    user.SendText("", 30);
     
+    // Upgrade their badge if needed, but preserve stronger badge tiers
+    if (user.HasItemId(LEGENDARY_BADGE)) {
+        user.SendText("<ansi fg=\"lime\">Your <ansi fg=\"itemname\">legendary lime badge</ansi> flashes, confirming its portal recall routine is active.</ansi>", 31);
+    } else if (user.HasItemId(HARDENED_BADGE)) {
+        user.SendText("<ansi fg=\"lime\">Your <ansi fg=\"itemname\">hardened badge</ansi> flashes, confirming its portal recall routine is active.</ansi>", 31);
+    } else if (user.HasItemId(UPGRADED_BADGE)) {
+        user.SendText("<ansi fg=\"lime\">Your <ansi fg=\"itemname\">upgraded badge</ansi> flashes, confirming its portal recall routine is active.</ansi>", 31);
+    } else if (user.HasItemId(25001)) {
+        user.TakeItem(25001);
+        upgradedBadge = CreateItem(HARDENED_BADGE);
+        user.GiveItem(upgradedBadge);
+        user.SendText("<ansi fg=\"lime\">Your conference badge reboots itself and hardens into a <ansi fg=\"itemname\">hardened badge</ansi>.</ansi>", 31);
+    }
+
     // Give them the fantasy newbie kit
     newbieKit = CreateItem(NEWBIE_KIT);
     user.GiveItem(newbieKit);
-    user.SendText("<ansi fg=\"lime\">A mysterious package materializes in your hands - gear for this strange new world.</ansi>", 28);
-    user.SendText("<ansi fg=\"yellow\">Type: use newbie kit</ansi>", 29);
+    user.SendText("<ansi fg=\"lime\">A mysterious package materializes in your hands - gear for this strange new world.</ansi>", 32);
+    user.SendText("<ansi fg=\"yellow\">Type: use newbie kit</ansi>", 33);
 }
 
 // FBI Raid settings

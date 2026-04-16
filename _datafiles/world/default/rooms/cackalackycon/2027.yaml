@@ -1,7 +1,9 @@
 roomid: 2027
 zone: CackalackyCon
 title: Cipher Room
-description: Puzzles, codes, and cryptographic challenges cover every surface. Decode messages for prizes and glory. Village hall west, IoT south.
+description: Cryptographic puzzles cover every surface. A brass cipher wheel hangs on the wall. Read wheel to study it. Village hall west, IoT south.
+mapdisplay:
+  threecolumn: true
 mapsymbol: "*"
 maplegend: Cipher
 biome: indoor
@@ -18,6 +20,6 @@ idlemessages:
 - Pencils scratch on cipher worksheets.
 - A cipher wheel glows faintly in the corner.
 nouns:
-  wheel: An ancient brass cipher wheel mounted on the wall. Strange symbols surround it, and a faint glow emanates from within. Type <ansi fg="command">examine wheel</ansi> to see the puzzle, then <ansi fg="command">solve [answer]</ansi> to attempt it.
+  wheel: An ancient brass cipher wheel mounted on the wall. Strange symbols surround it, and a faint glow emanates from within. Type <ansi fg="command">read wheel</ansi> to study the cipher, then <ansi fg="command">solve [answer]</ansi> to attempt it.
   cipher: :wheel
   puzzle: :wheel

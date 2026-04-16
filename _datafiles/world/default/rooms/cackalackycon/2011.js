@@ -38,8 +38,8 @@ function onCommand_submit(rest, user, room) {
         return true;
     }
     
-    // Track submitted flags in MiscData
-    var submitted = user.GetMiscData("ctf_flags");
+    // Track submitted flags in character misc data
+    var submitted = user.GetMiscCharacterData("ctf_flags");
     if (submitted == null) {
         submitted = [];
     }
@@ -57,7 +57,7 @@ function onCommand_submit(rest, user, room) {
     
     // Add the flag
     submitted.push(flag);
-    user.SetMiscData("ctf_flags", submitted);
+    user.SetMiscCharacterData("ctf_flags", submitted);
     
     user.SendText("");
     user.SendText("<ansi fg=\"green\">✓ FLAG ACCEPTED!</ansi>");
@@ -111,7 +111,7 @@ function onCommand_status(rest, user, room) {
 }
 
 function showStatus(user) {
-    var submitted = user.GetMiscData("ctf_flags");
+    var submitted = user.GetMiscCharacterData("ctf_flags");
     var count = 0;
     if (submitted != null) {
         count = submitted.length;

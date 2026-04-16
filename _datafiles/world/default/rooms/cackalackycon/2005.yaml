@@ -3,8 +3,8 @@ zone: CackalackyCon
 title: Main Talk Track
 description: Rows of chairs face a stage with a massive projector screen. A speaker
   walks through slides about something you probably should understand better. A
-  printed SCHEDULE sits on the seat next to you. Everyone here seems to know what
-  they're doing. Do you? Con floor east.
+  printed CON SCHEDULE sits on the seat next to you. Everyone here seems to know
+  what they're doing. Do you? Con floor east.
 mapsymbol: T
 maplegend: Talks
 biome: indoor
@@ -20,7 +20,7 @@ spawninfo:
   - emote nods at the speaker knowingly.
   - say Good talk.
   - emote takes a note.
-  - say Ask me about the schedule.
+  - say Ask me about the con schedule.
   - ""
 idlemessages:
 - The speaker advances to the next slide.
@@ -33,5 +33,7 @@ nouns:
   stage: "A raised stage with a podium and massive screen. The current slide shows code you definitely understand. Definitely."
   projector: "A high-end projector casts impossibly sharp text. The speaker's notes are visible if you squint."
   chairs: "Rows of uncomfortable hotel chairs. Some have power outlets built in. Those are taken."
-  schedule: "A printed schedule on the seat next to you. Someone circled 'Hacking the Planet: 30 Years Later' and wrote 'flag{h4ck_th3_pl4n3t}' in the margin."
+  con schedule: "A printed schedule on the seat next to you. Someone circled 'Hacking the Planet: 30 Years Later' and wrote 'flag{h4ck_th3_pl4n3t}' in the margin."
+  printed schedule: ":con schedule"
+  schedule: ":con schedule"
   slides: "The current slide shows an architecture diagram. In the corner: 'Build bridges, not walls.'"

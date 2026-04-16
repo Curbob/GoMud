@@ -52,6 +52,9 @@ function onCommand_examine(rest, user, room) {
     if (rest.toLowerCase().includes("cipher") || 
         rest.toLowerCase().includes("puzzle") ||
         rest.toLowerCase().includes("wheel")) {
+        user.SendText("");
+        user.SendText("<ansi fg=\"white\">You look at the wheel:</ansi>");
+        user.SendText("");
         showPuzzle(user);
         return true;
     }

@@ -1,9 +1,9 @@
 roomid: 2032
 zone: CackalackyCon
 title: Trivia Stage
-description: A darkened stage where the disembodied voice of Vic Vandal echoes from
+description: A darkened stage where the disembodied voice of VicBot echoes from
   hidden speakers, asking trivia about hacker movies and infosec history. No one
-  has seen Vic in person. SAY your answer out loud when asked. Karaoke west.
+  has seen VicBot in person. SAY your answer out loud when asked. Karaoke west.
 mapsymbol: "?"
 maplegend: Trivia
 biome: indoor
@@ -13,14 +13,14 @@ exits:
 idlemessages:
 - The stage lights flicker mysteriously.
 - Speakers crackle with anticipation.
-- Someone claims they once saw Vic's shadow. No one believes them.
+- Someone claims they once saw VicBot's shadow. No one believes them.
 - A correct answer echoes through the room.
-- Teams huddle, whispering theories about who Vic really is.
+- Teams huddle, whispering theories about who VicBot really is.
 - The darkness seems to be watching. Judging.
 nouns:
-  stage: A darkened platform with dramatic lighting. Speakers are mounted everywhere, but no host is visible. Just Vic's voice.
-  speakers: Professional audio equipment. Vic's voice comes from all of them simultaneously, making him impossible to locate.
-  vic: You look around for Vic Vandal, but there's no one there. Just the voice. Always the voice.
+  stage: A darkened platform with dramatic lighting. Speakers are mounted everywhere, but no host is visible. Just VicBot's voice.
+  speakers: Professional audio equipment. VicBot's voice comes from all of them simultaneously, making the host impossible to locate.
+  vic: You look around for VicBot, but there's no one there. Just the voice. Always the voice.
   vandal: :vic
   darkness: The stage is shrouded in deliberate darkness. Vic prefers it this way.
   lights: Dramatic spotlights that illuminate contestants but leave the host's area in complete shadow.

@@ -7,6 +7,7 @@ import (
 	"github.com/GoMudEngine/GoMud/internal/events"
 	"github.com/GoMudEngine/GoMud/internal/items"
 	"github.com/GoMudEngine/GoMud/internal/rooms"
+	"github.com/GoMudEngine/GoMud/internal/scripting"
 	"github.com/GoMudEngine/GoMud/internal/users"
 )
 
@@ -63,37 +64,48 @@ func Use(rest string, user *users.UserRecord, room *rooms.Room, flags events.Eve
 	// Check whether the user has an item in their inventory that matches
 	matchItem, found := user.Character.FindInBackpack(rest)
 
+	// If not in backpack, check worn gear too so wearable/scripted items (like badges)
+	// can still respond to `use <item>`.
+	if !found {
+		matchItem, found = user.Character.FindOnBody(rest)
+	}
+
 	if !found {
 		user.SendText(fmt.Sprintf(`You don't have a "%s" to use.`, rest))
-	} else {
+		return true, nil
+	}
 
-		itemSpec := matchItem.GetSpec()
+	// Let item scripts intercept first, regardless of subtype.
+	if handled, err := scripting.TryItemCommand(`use`, matchItem, user.UserId); handled || err != nil {
+		return handled, err
+	}
 
-		if itemSpec.Subtype != items.Usable {
-			user.SendText(
-				fmt.Sprintf(`You can't use <ansi fg="itemname">%s</ansi>.`, matchItem.DisplayName()))
-			return true, nil
-		}
+	itemSpec := matchItem.GetSpec()
 
-		user.Character.CancelBuffsWithFlag(buffs.Hidden)
+	if itemSpec.Subtype != items.Usable {
+		user.SendText(
+			fmt.Sprintf(`You can't use <ansi fg="itemname">%s</ansi>.`, matchItem.DisplayName()))
+		return true, nil
+	}
 
-		user.SendText(fmt.Sprintf(`You use the <ansi fg="itemname">%s</ansi>.`, matchItem.DisplayName()))
-		room.SendText(fmt.Sprintf(`<ansi fg="username">%s</ansi> uses their <ansi fg="itemname">%s</ansi>.`, user.Character.Name, matchItem.DisplayName()), user.UserId)
+	user.Character.CancelBuffsWithFlag(buffs.Hidden)
 
-		// If no more uses, will be lost, so trigger event
-		if usesLeft := user.Character.UseItem(matchItem); usesLeft < 1 {
+	user.SendText(fmt.Sprintf(`You use the <ansi fg="itemname">%s</ansi>.`, matchItem.DisplayName()))
+	room.SendText(fmt.Sprintf(`<ansi fg="username">%s</ansi> uses their <ansi fg="itemname">%s</ansi>.`, user.Character.Name, matchItem.DisplayName()), user.UserId)
 
-			events.AddToQueue(events.ItemOwnership{
-				UserId: user.UserId,
-				Item:   matchItem,
-				Gained: false,
-			})
+	// If no more uses, will be lost, so trigger event
+	if usesLeft := user.Character.UseItem(matchItem); usesLeft < 1 {
 
-		}
+		events.AddToQueue(events.ItemOwnership{
+			UserId: user.UserId,
+			Item:   matchItem,
+			Gained: false,
+		})
 
-		for _, buffId := range itemSpec.BuffIds {
-			user.AddBuff(buffId, `item`)
-		}
+	}
+
+	for _, buffId := range itemSpec.BuffIds {
+		user.AddBuff(buffId, `item`)
 	}
 
 	return true, nil

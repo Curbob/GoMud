@@ -6,7 +6,7 @@ maxwander: 0
 groups:
   - cackalackycon-staff
   - merchants
-activitylevel: 10
+activitylevel: 6
 idlecommands:
   - 'emote squints at a circuit board.'
   - 'say This firmware is interesting...'

@@ -2,20 +2,26 @@ roomid: 2062
 zone: CackalackyCon
 title: Practice Booth - Master Lock
 description: A gleaming Master Lock No. 3 - the classic. Spool pins and tight
-  tolerances have humbled many. PICKLOCK the exit to prove yourself.
-  Difficulty Hard - 30 gold reward.
+  tolerances have humbled many. From Lockpick Village, use PICKLOCK BOOTH3 to
+  open it. A small table inside holds 30 gold and a fresh lockpick kit.
 mapsymbol: "3"
 maplegend: Booth 3
 biome: indoor
+containers:
+  table:
+    gold: 30
+    items:
+    - itemid: 8
 exits:
   out:
     roomid: 2020
     lock:
-      difficulty: 15
+      difficulty: 4
 idlemessages:
 - The Master Lock gleams defiantly.
 - Spool pins click inside the lock body.
 - Many have tried. Many have failed.
 nouns:
-  lock: A Master Lock No. 3. Simple looking, deceptively tricky. Spool pins inside.
-  sign: "Difficulty: Hard - Pick the exit lock for 30 gold!"
+  lock: A Master Lock No. 3. Four pins, tighter tolerances, and much less forgiveness.
+  sign: "Difficulty: Hard - From the village, PICKLOCK BOOTH3, then GET GOLD FROM TABLE and GET LOCKPICKS FROM TABLE."
+  table: A small folding table with the booth prize on it.

@@ -1,21 +1,32 @@
 roomid: 2024
 zone: CackalackyCon
 title: Village Hall
-description: A hub connecting the various villages. Signs point to Phreak, Cipher, IoT, and more. Career north, AI west, Phreak south, Cipher east.
+description: A hub connecting the various villages. Signs point to Phreak, Cipher, IoT, and more. Hacker posters cover the walls, a folding table holds a water station, and a dented waste bin sits nearby. Career north, AI west, North Hallway south, Cipher east, Phreak southeast.
 mapsymbol: V
 maplegend: Villages
 biome: indoor
+nouns:
+  posters: Hacker posters advertise villages, contests, and half-legible slogans about packet capture, badge hacking, and "responsible chaos."
+  table: A folding table holds a water station, stacks of paper cups, and the kind of sad conference granola bars nobody actually wants.
+  water: Clear plastic pitchers of water sweat onto the table. A handwritten sign says HYDRATE OR SEGFAULT.
+  station: ":water"
+  waste bin: A dented waste bin stuffed with crushed paper cups, badge backing scraps, and other con debris. Near the top, a crumpled note sticks out just enough to notice.
+  bin: ":waste bin"
+  trash: ":waste bin"
+  note: A crumpled note in rushed handwriting. "They split the access key into four pieces again. Probably for the best. No way the old machine comes online without all four."
+  paper: ":note"
+  scrap: ":note"
 exits:
   north:
     roomid: 2023
   west:
     roomid: 2025
   south:
-    roomid: 2026
+    roomid: 2004
   east:
     roomid: 2027
-  northwest:
-    roomid: 2004
+  southeast:
+    roomid: 2026
 idlemessages:
 - Attendees navigate between villages.
 - Someone checks the village schedule.

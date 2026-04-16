@@ -2,7 +2,7 @@ roomid: 2011
 zone: CackalackyCon
 title: CTF Arena
 description: Screens display scoreboards and challenge categories. Teams huddle
-  over laptops, racing to capture flags. Check the RULES to learn how to play.
+  over laptops, racing to capture flags. LOOK at the RULES to learn how to play.
   Check your STATUS anytime. The bar is east.
 mapsymbol: F
 maplegend: CTF
@@ -42,4 +42,4 @@ nouns:
     windows, and one person definitely just playing Tetris.
   rules: CTF RULES - Flags are hidden around the con. EXAMINE things in other
     rooms (coasters, schedules, whiteboards). When you find a flag, come back
-    here and type SUBMIT flag. You need 2 flags to earn the fragment.
+    here and type SUBMIT flag{flagname}. You need 2 flags to earn the fragment.

@@ -6,7 +6,7 @@ maxwander: 2
 groups:
   - hostiles
   - corporate
-activitylevel: 10
+activitylevel: 4
 idlecommands:
   - 'say Let''s circle back on that... with our fists.'
   - 'say We need to leverage our synergies in combat.'

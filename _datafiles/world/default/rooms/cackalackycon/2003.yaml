@@ -2,7 +2,8 @@ roomid: 2003
 zone: CackalackyCon
 title: Con Floor
 description: The heart of CackalackyCon pulses with chaotic energy. Massive banners
-  hang from the ceiling in lime green. Vendor booths hawk lockpicks and LED badges.
+  hang from the ceiling in lime green. One banner hangs oddly away from the wall,
+  as if something is behind it. Vendor booths hawk lockpicks and LED badges.
   Villages north, registration south, talks west, social east, bar southwest.
 mapsymbol: C
 maplegend: Con Floor
@@ -41,8 +42,9 @@ idlemessages:
 nouns:
   schedule: "The schedule board is a massive display showing talk times, village events, and CTF standings. Names scroll by too fast to read. Someone has drawn a lime in the corner."
   board: ":schedule"
-  banners: "Massive lime green banners hang from the ceiling, emblazoned with the CackalackyCon logo. They flutter slightly in the aggressive air conditioning."
+  banners: "Massive lime green banners hang from the ceiling, emblazoned with the CackalackyCon logo. One hangs oddly away from the wall, and when you look closer, you notice a plain door marked SERVICE - STAFF ONLY behind it."
+  banner: ":banners"
   booths: "Vendor booths line the edges, selling lockpicks, USB rubber duckies, soldering kits, and merch. One booth is just a guy with a cardboard sign that says FREE ADVICE."
   vendors: ":booths"
-  door: "A plain door marked SERVICE - STAFF ONLY is barely visible behind a banner. It looks like it might lead somewhere interesting. Try searching the area."
+  door: "A plain door marked SERVICE - STAFF ONLY is barely visible behind a banner. It looks like it might lead somewhere interesting."
   service: ":door"

@@ -65,8 +65,8 @@ function onIdle(mob, room) {
 
     roundsPassed = roundNow - lastTipRound;
 
-    // give at least 5 rounds between tips, even if the user remains inactive.
-    if ( roundsPassed < 5 ) {
+    // give at least 12 rounds between tips, even if the user remains inactive.
+    if ( roundsPassed < 12 ) {
         return false;
     }
 

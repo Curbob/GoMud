@@ -21,7 +21,7 @@ function onCommand_use(user, item, room) {
     }
 
     SendUserMessage(user.UserId(), "");
-    SendUserMessage(user.UserId(), "<ansi fg=\"yellow\">Tip: Get your badge from Base16 at Registration!</ansi>");
+    SendUserMessage(user.UserId(), "<ansi fg=\"yellow\">Tip: Get your badge from Bace16 at Registration!</ansi>");
 
     item.AddUsesLeft(-1);
     item.MarkLastUsed();

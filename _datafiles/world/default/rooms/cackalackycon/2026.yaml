@@ -1,12 +1,12 @@
 roomid: 2026
 zone: CackalackyCon
 title: Phreak Me
-description: Rotary phones, blue boxes, and telecom history. The old school art of phone phreaking lives on here. Village hall north, SAV east.
+description: Rotary phones, blue boxes, and telecom history. The old school art of phone phreaking lives on here. Village Hall northwest, SAV east.
 mapsymbol: P
 maplegend: Phreak
 biome: indoor
 exits:
-  north:
+  northwest:
     roomid: 2024
   east:
     roomid: 2028

@@ -6,7 +6,7 @@ maxwander: 5
 groups:
   - hostiles
   - corporate
-activitylevel: 10
+activitylevel: 4
 idlecommands:
   - 'say Have you considered a career in cybersecurity?'
   - 'emote thrusts a business card toward you aggressively.'

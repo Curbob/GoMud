@@ -6,7 +6,6 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/GoMudEngine/GoMud/internal/characters"
 	"github.com/GoMudEngine/GoMud/internal/configs"
@@ -188,48 +187,6 @@ func Start(rest string, user *users.UserRecord, room *rooms.Room, flags events.E
 	user.EventLog.Add(`char`, fmt.Sprintf(`Created a new character: <ansi fg="username">%s</ansi>`, user.Character.Name))
 
 	events.AddToQueue(events.CharacterCreated{UserId: user.UserId, CharacterName: user.Character.Name})
-
-	duration := time.Now().Sub(user.Joined)
-	// TODO: Change back to `duration.Hours() > 1` before going live!
-	if duration.Minutes() >= 0 {
-
-		question := cmdPrompt.Ask(`Skip tutorial?`, []string{`yes`, `no`}, `yes`)
-		if !question.Done {
-			return true, nil
-		}
-
-		if question.Response != `no` {
-
-			user.ClearPrompt()
-
-			user.SendText(fmt.Sprintf(`<ansi fg="magenta">Suddenly, a vortex appears before you, drawing you in before you have any chance to react!</ansi>%s`, term.CRLFStr))
-
-			if destRoom := rooms.LoadRoom(rooms.StartRoomIdAlias); destRoom != nil {
-
-				rooms.MoveToRoom(user.UserId, destRoom.RoomId)
-
-				// Tell the new room they have arrived
-
-				destRoom.SendText(
-					fmt.Sprintf(configs.GetTextFormatsConfig().EnterRoomMessageWrapper.String(),
-						fmt.Sprintf(`<ansi fg="username">%s</ansi> enters from <ansi fg="exit">somewhere</ansi>.`, user.Character.Name),
-					),
-					user.UserId,
-				)
-
-				if doLook, err := scripting.TryRoomScriptEvent(`onEnter`, user.UserId, destRoom.RoomId); err != nil || doLook {
-					Look(``, user, destRoom, events.CmdSecretly) // Do a secret look.
-				}
-
-				room.PlaySound(`room-exit`, `movement`, user.UserId)
-				destRoom.PlaySound(`room-enter`, `movement`, user.UserId)
-
-				return true, nil
-			}
-
-		}
-
-	}
 
 	user.ClearPrompt()
 

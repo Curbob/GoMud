@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"net/mail"
+	"regexp"
 	"strings"
-	"unicode/utf8"
 
 	"github.com/GoMudEngine/GoMud/internal/configs"
 	"github.com/GoMudEngine/GoMud/internal/connections"
@@ -20,6 +20,7 @@ var (
 	ErrInputRequired        = errors.New(`input required`)
 	ErrInvalidResponse      = errors.New(`invalid response`)
 	ErrPasswordsDidNotMatch = errors.New(`your passwords did not match`)
+	terminalResponseRe      = regexp.MustCompile(`\x1b\[[0-9;?]*[A-Za-z]`)
 )
 
 const promptHandlerStateKey = "PromptHandlerState" // Keep unexported if only used within this package
@@ -29,6 +30,20 @@ const promptHandlerStateKey = "PromptHandlerState" // Keep unexported if only us
 // It should return true if the overall process succeeded and the handler can be removed,
 // false otherwise (e.g., login failed, disconnect).
 type CompletionFunc func(results map[string]string, sharedState map[string]any, clientInput *connections.ClientInput) bool
+
+func sanitizePromptInput(input string) string {
+	if input == "" {
+		return input
+	}
+
+	input = terminalResponseRe.ReplaceAllString(input, "")
+	input = strings.ReplaceAll(input, "\x1b", "")
+	input = strings.ReplaceAll(input, string(term.ASCII_CR), "")
+	input = strings.ReplaceAll(input, string(term.ASCII_LF), "")
+	input = strings.ReplaceAll(input, string(term.ASCII_NULL), "")
+
+	return input
+}
 
 // PromptHandlerState holds the current state of the multi-step prompt process for a connection.
 type PromptHandlerState struct {
@@ -77,14 +92,19 @@ func DefaultValidator(input string, _ map[string]string) (string, error) {
 }
 
 func ValidateNewEntry(input string, _ map[string]string) (string, error) {
+	input = strings.TrimSpace(sanitizePromptInput(input))
 	if strings.ToLower(input) == `new` {
 		return `new`, nil
 	}
 
 	validation := configs.GetValidationConfig()
-
-	if len(input) < int(validation.NameSizeMin) {
-		return "", errors.New("try again.")
+	if len(input) < int(validation.NameSizeMin) || len(input) > int(validation.NameSizeMax) {
+		return "", fmt.Errorf("username must be between %d and %d characters long", validation.NameSizeMin, validation.NameSizeMax)
+	}
+	if validation.NameRejectRegex != `` {
+		if !regexp.MustCompile(validation.NameRejectRegex.String()).MatchString(input) {
+			return "", errors.New(validation.NameRejectReason.String())
+		}
 	}
 
 	return input, nil
@@ -197,67 +217,45 @@ func CreatePromptHandler(steps []*PromptStep, onComplete CompletionFunc) connect
 
 		currentStep := state.Steps[state.CurrentStepIndex]
 
-		// Input Buffering and Echo
+		// Input Buffering and Echo, close to original behavior.
 		if !clientInput.EnterPressed {
 
 			if clientInput.BSPressed && len(clientInput.Buffer) > 0 {
-
-				// Handle Backspace - properly handle UTF-8 multi-byte characters
-				bufferStr := string(clientInput.Buffer)
-				if len(bufferStr) > 0 {
-					// Find the start of the last rune
-					_, size := utf8.DecodeLastRune(clientInput.Buffer)
-					if size > 0 {
-						clientInput.Buffer = clientInput.Buffer[:len(clientInput.Buffer)-size]
-					}
-				}
-				//connections.SendTo([]byte{term.ASCII_BACKSPACE, term.ASCII_SPACE, term.ASCII_BACKSPACE}, clientInput.ConnectionId)
-
+				// Cleanser already updates the buffer for backspace, so there is nothing
+				// else to do here.
 			} else if !clientInput.BSPressed && len(clientInput.DataIn) > 0 && clientInput.DataIn[0] >= 32 {
 
-				// Handle printable characters
-				//clientInput.Buffer = append(clientInput.Buffer, clientInput.DataIn...)
-
-				// Echo or Mask
 				if currentStep.MaskInput {
-
-					// Cache the mask template string if needed
 					if state.maskTemplate == "" && currentStep.MaskTemplate != "" {
-
 						if maskStr, err := templates.Process(currentStep.MaskTemplate, nil); err != nil {
 							mudlog.Error("Mask template error", "template", currentStep.MaskTemplate, "error", err)
-							state.maskTemplate = "*" // Fallback mask
+							state.maskTemplate = "*"
 						} else {
 							state.maskTemplate = templates.AnsiParse(maskStr)
 						}
-
 					} else if state.maskTemplate == "" {
-						state.maskTemplate = "*" // Default fallback if no template specified
+						state.maskTemplate = "*"
 					}
 
-					// Send mask character(s)
 					for i := 0; i < len(clientInput.DataIn); i++ {
 						connections.SendTo([]byte(state.maskTemplate), clientInput.ConnectionId)
 					}
-
 				} else {
-					// Echo input directly
 					connections.SendTo(clientInput.DataIn, clientInput.ConnectionId)
 				}
-
 			}
 
-			// Non-Enter input processed, wait for more
 			return false
 		}
 
 		if connections.IsWebsocket(clientInput.ConnectionId) {
-			connections.SendTo(clientInput.Buffer, clientInput.ConnectionId) // Echo newline
+			connections.SendTo(clientInput.Buffer, clientInput.ConnectionId)
 		}
 
 		// Enter Pressed: Process Input
-		connections.SendTo(term.CRLF, clientInput.ConnectionId) // Echo newline
-		submittedInput := strings.TrimSpace(string(clientInput.Buffer))
+		connections.SendTo(term.CRLF, clientInput.ConnectionId)
+		rawInput := string(clientInput.Buffer)
+		submittedInput := strings.TrimSpace(sanitizePromptInput(rawInput))
 		clientInput.Buffer = clientInput.Buffer[:0] // Clear buffer for next input
 		state.maskTemplate = ""                     // Clear cached mask template
 
@@ -279,13 +277,17 @@ func CreatePromptHandler(steps []*PromptStep, onComplete CompletionFunc) connect
 				currentStep = state.Steps[state.CurrentStepIndex]
 			}
 
-			// Increment failure counter in case we want to disconnect the user
-			currentStep.FailureCount++
-			if currentStep.FailureCount >= 3 {
-				connections.SendTo([]byte(term.CRLFStr+`Too many mistakes.`+term.CRLFStr+term.CRLFStr), clientInput.ConnectionId)
-				connections.Remove(clientInput.ConnectionId)
-				state.CurrentStepIndex += 99
-				return false
+			// Increment failure counter in case we want to disconnect the user.
+			// Don't burn attempts on the initial username probe step since it is expected
+			// to see names that may already exist.
+			if currentStep.ID != "username" {
+				currentStep.FailureCount++
+				if currentStep.FailureCount >= 3 {
+					connections.SendTo([]byte(term.CRLFStr+`Too many mistakes.`+term.CRLFStr+term.CRLFStr), clientInput.ConnectionId)
+					connections.Remove(clientInput.ConnectionId)
+					state.CurrentStepIndex += 99
+					return false
+				}
 			}
 
 			// Resend current prompt

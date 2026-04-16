@@ -19,7 +19,7 @@ Visit a bar and try your luck!
     - <ansi fg="command">highorlow [amount]</ansi> - Start a new game
     - <ansi fg="command">high</ansi> - Guess higher
     - <ansi fg="command">low</ansi> - Guess lower
-    - <ansi fg="command">highorlow cash</ansi> - Cash out your winnings
+    - <ansi fg="command">cash</ansi> - Cash out your winnings
     
     Each correct guess increases your multiplier:
     - 1 streak: 1.5x

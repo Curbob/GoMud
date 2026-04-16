@@ -1,9 +1,13 @@
 // Con Floor - Secret exit discovery script
-// Players can find the service exit by examining/opening the door
+// Players can find the service exit by looking at or searching the door
 
-function onCommand_open(rest, user, room) {
-    if (rest.toLowerCase().includes("door") || 
-        rest.toLowerCase().includes("service")) {
+function referencesServiceDoor(rest) {
+    const text = (rest || "").toLowerCase();
+    return text.includes("door") || text.includes("service");
+}
+
+function onCommand_look(rest, user, room) {
+    if (referencesServiceDoor(rest)) {
         revealServiceExit(user, room);
         return true;
     }
@@ -11,17 +15,15 @@ function onCommand_open(rest, user, room) {
 }
 
 function onCommand_examine(rest, user, room) {
-    if (rest.toLowerCase().includes("door") || 
-        rest.toLowerCase().includes("service")) {
+    if (referencesServiceDoor(rest)) {
         revealServiceExit(user, room);
         return true;
     }
     return false;
 }
 
-function onCommand_push(rest, user, room) {
-    if (rest.toLowerCase().includes("door") || 
-        rest.toLowerCase().includes("service")) {
+function onCommand_search(rest, user, room) {
+    if (referencesServiceDoor(rest)) {
         revealServiceExit(user, room);
         return true;
     }

@@ -1,13 +1,15 @@
 package inputhandlers
 
 import (
-	"strings"
+	"regexp"
 	"unicode"
 	"unicode/utf8"
 
 	"github.com/GoMudEngine/GoMud/internal/connections"
 	"github.com/GoMudEngine/GoMud/internal/term"
 )
+
+var strippedAnsiFragmentRe = regexp.MustCompile(`(?:\^\[\[|\[)[0-9;?]*[A-Za-z]`)
 
 // CleanserInputHandler's job is to remove any bad characters from the input stream
 // before passing it down the chain.
@@ -55,18 +57,28 @@ func CleanserInputHandler(clientInput *connections.ClientInput, sharedState map[
 		}
 	}
 
-	// Remove non printing chars
-	//clientInput.DataIn = trimNonPrintingBytes(clientInput.DataIn)
-
-	clientInput.DataIn = []byte(strings.Map(func(r rune) rune {
-		if unicode.IsPrint(r) {
-			return r
+	// Remove non printing chars, but preserve CR/LF so Enter still works and we don't
+	// accidentally append prior buffered text again on submit.
+	cleanedRunes := make([]rune, 0, len(string(clientInput.DataIn)))
+	for _, r := range string(clientInput.DataIn) {
+		if r == '\r' || r == '\n' {
+			cleanedRunes = append(cleanedRunes, r)
+			continue
 		}
-		return -1
-	}, string(clientInput.DataIn)))
+		if unicode.IsPrint(r) {
+			cleanedRunes = append(cleanedRunes, r)
+		}
+	}
 
-	// Add all input to the currentBuffer
-	clientInput.Buffer = append(clientInput.Buffer, clientInput.DataIn...)
+	cleaned := strippedAnsiFragmentRe.ReplaceAllString(string(cleanedRunes), "")
+	clientInput.DataIn = []byte(cleaned)
+
+	// Only append actual printable characters to the current buffer.
+	for _, b := range clientInput.DataIn {
+		if b != term.ASCII_CR && b != term.ASCII_LF && b != term.ASCII_NULL {
+			clientInput.Buffer = append(clientInput.Buffer, b)
+		}
+	}
 
 	return true
 }

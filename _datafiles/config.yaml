@@ -378,7 +378,7 @@ Translation:
 Network:
   # - MaxTelnetConnections -
   #   The maximum number of telnet connections the server will accept.
-  MaxTelnetConnections: 100
+  MaxTelnetConnections: 200
   # - TelnetPort -
   #   The port the server listens on for telnet connections. Listen on multiple
   #   ports by separating them with commas. For example, [33333, 33334, 33335]

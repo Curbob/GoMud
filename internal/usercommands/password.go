@@ -2,6 +2,7 @@ package usercommands
 
 import (
 	"github.com/GoMudEngine/GoMud/internal/events"
+	"github.com/GoMudEngine/GoMud/internal/prompt"
 	"github.com/GoMudEngine/GoMud/internal/rooms"
 	"github.com/GoMudEngine/GoMud/internal/users"
 )
@@ -12,6 +13,7 @@ func Password(rest string, user *users.UserRecord, room *rooms.Room, flags event
 	cmdPrompt, _ := user.StartPrompt(`password`, rest)
 
 	question := cmdPrompt.Ask(`What is your current password?`, []string{})
+	question.Flags |= prompt.FlagMaskInput
 	if !question.Done {
 		return true, nil
 	}
@@ -23,6 +25,7 @@ func Password(rest string, user *users.UserRecord, room *rooms.Room, flags event
 	}
 
 	question = cmdPrompt.Ask(`What new password would you like?`, []string{})
+	question.Flags |= prompt.FlagMaskInput
 	if !question.Done {
 		return true, nil
 	}
@@ -30,6 +33,7 @@ func Password(rest string, user *users.UserRecord, room *rooms.Room, flags event
 	newPW := question.Response
 
 	question = cmdPrompt.Ask(`Confirm the change by entered the new password one more time.`, []string{})
+	question.Flags |= prompt.FlagMaskInput
 	if !question.Done {
 		return true, nil
 	}

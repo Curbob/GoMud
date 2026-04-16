@@ -5,7 +5,8 @@ description: >-
   This badge has been security-hardened by Nutcrunch personally. The firmware 
   is signed, the bootloader is locked, and it runs a custom antivirus that 
   makes corrupted badges keep their distance. The case has been reinforced 
-  with a subtle metal frame. Elite status.
+  with a subtle metal frame. Elite status. Its portal recall routines can 
+  carry you between Frostfang and CackalackyCon once fully awakened.
 type: neck
 subtype: wearable
 value: 150

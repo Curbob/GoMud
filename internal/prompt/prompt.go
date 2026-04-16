@@ -29,6 +29,10 @@ if cmdPrompt := prompt.Get(userId); cmdPrompt != nil {
 
 */
 
+const (
+	FlagMaskInput = 1 << iota
+)
+
 type Question struct {
 	Question        string   // What's the prompt?
 	Options         []string // What options (if any) are available? None = freeform
@@ -186,6 +190,10 @@ func (q *Question) RejectResponse() {
 
 	q.Response = `` // Clear the response
 	q.Done = false  // Mark as not done
+}
+
+func (q *Question) IsMasked() bool {
+	return q.Flags&FlagMaskInput != 0
 }
 
 func (q *Question) String() string {
