@@ -23,7 +23,7 @@ character:
     and malicious code. Its LEDs pulse in sickly purple patterns, and 
     the screen displays only static and fragments of error messages.
   raceid: 1
-  level: 5
+  level: 2
   gold: 5
   stats:
     mysticism:
