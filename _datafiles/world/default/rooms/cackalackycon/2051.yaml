@@ -19,9 +19,10 @@ idlemessages:
 - The screen reads WAITING FOR CONNECTION...
 - A lime sits on top of the beige tower. Why?
 nouns:
-  machine: "THE OLD MACHINE. A beige tower from 1994, still humming. The case is yellowed, the badge says 486 DX2/66. Someone has written DO NOT TURN OFF in faded marker. Type connect to use it."
+  machine: "THE OLD MACHINE. A beige tower from 1994, still humming. The case is yellowed, the badge says 486 DX2/66. Someone has written DO NOT TURN OFF in faded marker. Type connect to use it, or try use machine or use server."
   tower: ":machine"
   computer: ":machine"
+  server: ":machine"
   monitor: "A 14-inch CRT monitor, curved glass reflecting your face in green phosphor. Text scrolls - Welcome to Frostfang MUD. Press any key to connect..."
   crt: ":monitor"
   screen: ":monitor"

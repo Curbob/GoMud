@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/GoMudEngine/GoMud/internal/characters"
@@ -73,6 +74,11 @@ func init() {
 //////////////////////////////////////////////////////////////////////
 
 // Using a struct gives a way to store longer term data.
+var leaderboardHiddenCharacters = map[string]bool{
+	"adminant":   true,
+	"testcurbob": true,
+}
+
 type LeaderboardModule struct {
 
 	// Keep a reference to the plugin when we create it so that we can call ReadBytes() and WriteBytes() on it.
@@ -341,6 +347,10 @@ func (l *leaderboardData) Reset(size int) {
 
 func (l *leaderboardData) Consider(userId int, char characters.Character, val int) {
 	if val == 0 {
+		return
+	}
+
+	if leaderboardHiddenCharacters[strings.ToLower(strings.TrimSpace(char.Name))] {
 		return
 	}
 

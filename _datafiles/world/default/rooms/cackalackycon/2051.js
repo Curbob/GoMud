@@ -18,9 +18,11 @@ function onCommand_connect(rest, user, room) {
 }
 
 function onCommand_use(rest, user, room) {
-    if (rest.toLowerCase().includes("computer") || 
-        rest.toLowerCase().includes("machine") || 
-        rest.toLowerCase().includes("terminal")) {
+    const target = rest.toLowerCase();
+    if (target.includes("computer") || 
+        target.includes("machine") || 
+        target.includes("terminal") ||
+        target.includes("server")) {
         attemptPortal(user, room);
         return true;
     }
