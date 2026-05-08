@@ -96,6 +96,11 @@ func Ask(rest string, user *users.UserRecord, room *rooms.Room, flags events.Eve
 		}
 
 		if mob.Character.IsCharmed(user.UserId) {
+			if len(args) == 0 {
+				mob.Command(`emote looks confused.`)
+				mob.Command(`say Tell me what you want me to do.`)
+				return true, nil
+			}
 
 			mobCmd := args[0]
 			askRest := strings.Join(args[1:], ` `)
@@ -119,8 +124,16 @@ func Ask(rest string, user *users.UserRecord, room *rooms.Room, flags events.Eve
 			// Check if actual command is allowed
 			for _, allowedCmd := range allowedCommands {
 				if mobCmd == allowedCmd {
+					if len(askRest) == 0 {
+						switch mobCmd {
+						case `drop`, `get`, `give`, `throw`, `show`:
+							mob.Command(`emote looks confused.`)
+							mob.Command(`say You need to tell me what to ` + mobCmd + `.`)
+							return true, nil
+						}
+					}
 
-					mob.Command(fmt.Sprintf(`%s %s`, mobCmd, askRest))
+					mob.Command(strings.TrimSpace(fmt.Sprintf(`%s %s`, mobCmd, askRest)))
 
 					return true, nil
 				}

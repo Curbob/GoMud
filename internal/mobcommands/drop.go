@@ -17,6 +17,11 @@ func Drop(rest string, mob *mobs.Mob, room *rooms.Room) (bool, error) {
 
 	args := util.SplitButRespectQuotes(strings.ToLower(rest))
 
+	if len(args) == 0 {
+		mob.Command(`emote looks confused about what to drop.`)
+		return true, nil
+	}
+
 	if args[0] == "all" {
 
 		iCopies := []items.Item{}

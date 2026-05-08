@@ -14,6 +14,9 @@ import (
 func Alchemy(rest string, mob *mobs.Mob, room *rooms.Room) (bool, error) {
 
 	args := util.SplitButRespectQuotes(strings.ToLower(rest))
+	if len(args) == 0 {
+		return true, nil
+	}
 
 	if args[0] == "random" {
 		// select a random item
