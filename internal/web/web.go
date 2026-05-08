@@ -313,6 +313,17 @@ func Listen(wg *sync.WaitGroup, webSocketHandler func(*websocket.Conn)) {
 		doBasicAuth(roomData),
 	))
 
+	// Observability Admin
+	http.HandleFunc("GET /admin/observability/", RunWithMUDLocked(
+		doBasicAuth(observabilityIndex),
+	))
+	http.HandleFunc("GET /admin/api/observability/events", RunWithMUDLocked(
+		doBasicAuth(observabilityEventsAPI),
+	))
+	http.HandleFunc("GET /admin/api/observability/players", RunWithMUDLocked(
+		doBasicAuth(observabilityPlayersAPI),
+	))
+
 	//
 	// Https server start up
 	//

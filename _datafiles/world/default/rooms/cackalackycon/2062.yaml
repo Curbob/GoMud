@@ -23,5 +23,5 @@ idlemessages:
 - Many have tried. Many have failed.
 nouns:
   lock: A Master Lock No. 3. Four pins, tighter tolerances, and much less forgiveness.
-  sign: "Difficulty: Hard - From the village, PICKLOCK BOOTH3, then GET GOLD FROM TABLE and GET LOCKPICKS FROM TABLE."
+  sign: "Difficulty: Hard - Step outside to Lockpick Village so the booth can lock, then PICKLOCK BOOTH3. After it opens, GET GOLD FROM TABLE and GET LOCKPICKS FROM TABLE."
   table: A small folding table with the booth prize on it.

@@ -24,6 +24,6 @@ idlemessages:
 nouns:
   lock: An old brass padlock with a satisfying weight to it. Three pins and a touch more resistance.
   padlock: :lock
-  sign: "Difficulty: Medium - From the village, PICKLOCK BOOTH2, then GET GOLD FROM TABLE and GET LOCKPICKS FROM TABLE."
+  sign: "Difficulty: Medium - Step outside to Lockpick Village so the booth can lock, then PICKLOCK BOOTH2. After it opens, GET GOLD FROM TABLE and GET LOCKPICKS FROM TABLE."
   chain: A sturdy chain holds the practice lock in place.
   table: A small folding table with the booth prize on it.

@@ -28,6 +28,6 @@ nouns:
   led: A single red LED pulses slowly. It illuminates nothing.
   light: :led
   lock: You can't see it. Five pins in the dark, found only by touch.
-  speaker: "A small speaker mounted somewhere. It whispers: PICKLOCK CHALLENGE, then GET GOLD FROM TABLE and GET LOCKPICKS FROM TABLE."
+  speaker: "A small speaker mounted somewhere. It whispers: Step outside to Lockpick Village so the booth can lock, then PICKLOCK CHALLENGE. After it opens, GET GOLD FROM TABLE and GET LOCKPICKS FROM TABLE."
   table: A small folding table with the challenge prize on it.
   darkness: Absolute. Intentional. Part of the test.

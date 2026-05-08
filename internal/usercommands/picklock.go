@@ -43,6 +43,11 @@ func Picklock(rest string, user *users.UserRecord, room *rooms.Room, flags event
 	containerName := room.FindContainerByName(args[0])
 	exitName, _ := room.FindExitByName(args[0])
 
+	if isLockpickVillageBoothRoom(room.RoomId) && args[0] == `out` {
+		user.SendText("Step outside into Lockpick Village first so the booth can lock, then pick it from there.")
+		return true, nil
+	}
+
 	// Special case: from Lockpick Village, allow booth names to resolve to booth room exits,
 	// so players can use PICKLOCK BOOTH1/BOOTH2/BOOTH3/CHALLENGE from outside.
 	if exitName == `` && room.RoomId == 2020 {
@@ -113,7 +118,7 @@ func Picklock(rest string, user *users.UserRecord, room *rooms.Room, flags event
 			// Lockpick Village booths are intentionally repeat-enterable from outside.
 			// If already unlocked, still allow passage into the booth so first-clear reward
 			// logic can fire on entry without forcing another pick cycle.
-			if room.RoomId == 2020 && (args[0] == `booth1` || args[0] == `booth2` || args[0] == `booth3` || args[0] == `challenge`) {
+			if room.RoomId == 2020 && isLockpickVillageBoothName(args[0]) {
 				user.SendText("The booth is already open.")
 				return true, nil
 			}
@@ -361,6 +366,24 @@ func GetLockRender(sequence string, entered string, viewingUserId int) string {
 
 	return tplTxt
 
+}
+
+func isLockpickVillageBoothName(name string) bool {
+	switch name {
+	case `booth1`, `booth2`, `booth3`, `challenge`:
+		return true
+	default:
+		return false
+	}
+}
+
+func isLockpickVillageBoothRoom(roomID int) bool {
+	switch roomID {
+	case 2060, 2061, 2062, 2063:
+		return true
+	default:
+		return false
+	}
 }
 
 func sequenceMatches(input string, correctSequence string) bool {

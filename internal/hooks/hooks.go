@@ -2,6 +2,7 @@ package hooks
 
 import (
 	"github.com/GoMudEngine/GoMud/internal/events"
+	"github.com/GoMudEngine/GoMud/internal/observability"
 )
 
 // Register hooks here...
@@ -82,6 +83,9 @@ func RegisterListeners() {
 
 	// Log tee to users
 	events.RegisterListener(events.Log{}, FollowLogs)
+
+	// Admin/web observability feed
+	observability.RegisterListeners()
 
 	// Listener for debugging some stuff (catches all events)
 	/*
