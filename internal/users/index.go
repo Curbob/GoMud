@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"sort"
 	"strings"
 
 	"github.com/GoMudEngine/GoMud/internal/configs"
@@ -40,6 +41,10 @@ type IndexMetaData struct {
 type IndexUserRecord struct {
 	UserID   int64
 	Username [80]byte
+}
+
+func (r IndexUserRecord) UsernameString() string {
+	return string(bytes.TrimRight(r.Username[:], "\x00"))
 }
 
 // UserIndex is the central struct that holds the index filename and methods
@@ -216,42 +221,64 @@ func (idx *UserIndex) FindByUsername(username string) (int64, bool) {
 // FindByUserId searches for a user record matching the provided userId.
 // If found, it returns the corresponding username.
 func (idx *UserIndex) FindByUserId(userId int64) (string, bool) {
-	f, err := os.Open(idx.Filename)
+	records, err := idx.ListRecords()
 	if err != nil {
 		return "", false
 	}
+
+	for _, rec := range records {
+		if rec.UserID == userId {
+			return rec.UsernameString(), true
+		}
+	}
+	return "", false
+}
+
+func (idx *UserIndex) ListRecords() ([]IndexUserRecord, error) {
+	if !idx.Exists() {
+		return nil, ErrIndexMissing
+	}
+
+	f, err := os.Open(idx.Filename)
+	if err != nil {
+		return nil, err
+	}
 	defer f.Close()
 
+	records := make([]IndexUserRecord, 0, idx.metaData.RecordCount)
 	for i := uint64(0); i < idx.metaData.RecordCount; i++ {
 		offset := int64(idx.metaData.MetaDataSize) + int64(i*idx.metaData.RecordSize)
 		if _, err := f.Seek(offset, io.SeekStart); err != nil {
-			return "", false
+			return nil, err
 		}
 
-		var recUsername [80]byte
-		if n, err := io.ReadFull(f, recUsername[:]); err != nil || n != 80 {
-			return "", false
+		var rec IndexUserRecord
+		if n, err := io.ReadFull(f, rec.Username[:]); err != nil || n != 80 {
+			if err == nil {
+				err = io.ErrUnexpectedEOF
+			}
+			return nil, err
 		}
-
-		var recUserId int64
-		if err := binary.Read(f, binary.LittleEndian, &recUserId); err != nil {
-			return "", false
+		if err := binary.Read(f, binary.LittleEndian, &rec.UserID); err != nil {
+			return nil, err
 		}
 
 		term := make([]byte, 1)
 		if _, err := f.Read(term); err != nil {
-			return "", false
+			return nil, err
 		}
 		if term[0] != IndexLineTerminatorV1 {
-			return "", false
+			return nil, fmt.Errorf("invalid record terminator")
 		}
 
-		if recUserId == userId {
-			username := string(bytes.TrimRight(recUsername[:], "\x00"))
-			return username, true
-		}
+		records = append(records, rec)
 	}
-	return "", false
+
+	sort.Slice(records, func(i, j int) bool {
+		return records[i].UserID < records[j].UserID
+	})
+
+	return records, nil
 }
 
 func (idx *UserIndex) getMetaDataFromFile() IndexMetaData {
