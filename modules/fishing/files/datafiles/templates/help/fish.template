@@ -7,7 +7,7 @@ and the occasional piece of junk.
 
 <ansi fg="yellow-bold">Commands:</ansi>
 
-  <ansi fg="command">fish</ansi> or <ansi fg="command">cast</ansi>
+  <ansi fg="command">fish</ansi>
     Cast your line and start fishing. Wait for a bite!
 
   <ansi fg="command">reel</ansi>

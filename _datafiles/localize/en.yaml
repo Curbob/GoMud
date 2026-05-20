@@ -20,7 +20,7 @@ RoomId:
 '%d user online':
 
 Login.CreateUser: |-
-  Would you like to create a new user/login named <ansi fg="magenta">{{ .Username }}</ansi>?
+  Create login account <ansi fg="magenta">{{ .Username }}</ansi>? You will choose your character name later.
 
 Inbox.UnreadMessageWithCheck: >-
   <ansi fg="159">You have <ansi fg="alert-4">%d</ansi> unread messages and <ansi fg="alert-4">%d</ansi> old messages.

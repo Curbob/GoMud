@@ -134,7 +134,8 @@ func ValidatePassword2(input string, results map[string]string) (string, error) 
 
 func ValidateEmail(input string, results map[string]string) (string, error) {
 
-	if input == `` {
+	cleanInput := strings.TrimSpace(strings.ToLower(input))
+	if cleanInput == `` || cleanInput == `skip` || cleanInput == `none` {
 
 		if configs.GetValidationConfig().EmailOnJoin == `required` {
 			return ``, ErrInputRequired
@@ -143,11 +144,11 @@ func ValidateEmail(input string, results map[string]string) (string, error) {
 		return ``, nil
 	}
 
-	if _, err := mail.ParseAddress(input); err != nil {
+	if _, err := mail.ParseAddress(strings.TrimSpace(input)); err != nil {
 		return ``, err
 	}
 
-	return input, nil
+	return strings.TrimSpace(input), nil
 }
 
 func ValidateYesNo(input string, _ map[string]string) (string, error) {
@@ -247,7 +248,7 @@ func CreatePromptHandler(steps []*PromptStep, onComplete CompletionFunc) connect
 			return false
 		}
 
-		if connections.IsWebsocket(clientInput.ConnectionId) {
+		if connections.IsWebsocket(clientInput.ConnectionId) && !currentStep.MaskInput {
 			connections.SendTo(clientInput.Buffer, clientInput.ConnectionId)
 		}
 

@@ -105,7 +105,6 @@ func init() {
 
 	// Register commands - only fishing commands, eat/sell use built-in systems
 	mod.plug.AddUserCommand(`fish`, mod.FishCommand, true, false)
-	mod.plug.AddUserCommand(`cast`, mod.FishCommand, true, false)
 	mod.plug.AddUserCommand(`reel`, mod.ReelCommand, true, false)
 
 	// Register callbacks

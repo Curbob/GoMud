@@ -2,6 +2,19 @@ const CACKALACKYCON_VILLAGE_HALL = 2024;
 const FROSTFANG_TOWN_SQUARE = 1;
 const PORTAL_UNLOCK_KEY = "cackalackycon-badge-portal-unlocked";
 
+function hasAnyConBadge(user) {
+    return user.HasItemId(25001) || user.HasItemId(25002) || user.HasItemId(25003) || user.HasItemId(25004);
+}
+
+function onPurchase(user, item, room) {
+    if (hasAnyConBadge(user)) {
+        SendUserMessage(user.UserId(), "Bace16 says, \"You've already got a badge! One per hacker.\"");
+        return false;
+    }
+
+    return true;
+}
+
 function onCommand(cmd, user, item, room) {
     if (cmd != "use") {
         return false;

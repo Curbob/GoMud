@@ -1193,11 +1193,12 @@ const Client = (() => {
             // Enter
             if (event.key === 'Enter') {
                 const currentValue = event.target.value;
+                const allowBlankSubmit = textInput.type === 'password' || term.buffer.active.cursorY < 20;
 
-                // Ignore blank submits from the webclient input. During login,
-                // these can fire before the user has typed anything and trigger
-                // spurious validation errors that do not appear in telnet.
-                if (currentValue === '') {
+                // Ignore accidental blank submits from the webclient during normal
+                // gameplay, but allow them for login/signup prompt flows where
+                // Enter can intentionally mean "skip".
+                if (currentValue === '' && !allowBlankSubmit) {
                     if (event.preventDefault) { event.preventDefault(); }
                     return false;
                 }
