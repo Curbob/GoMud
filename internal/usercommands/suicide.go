@@ -214,13 +214,20 @@ func Suicide(rest string, user *users.UserRecord, room *rooms.Room, flags events
 
 	user.Character.CancelBuffsWithFlag(buffs.All)
 
-	user.Character.Health = -10
+	deathRoomId := int(configs.GetSpecialRoomsConfig().DeathRecoveryRoom)
+	if zCfg := rooms.GetZoneConfig(user.Character.Zone); zCfg != nil && zCfg.DeathRecoveryRoom != 0 {
+		// Zone has its own respawn room — arrive with 1 HP rather than using the Shadow Realm heal mechanic
+		deathRoomId = zCfg.DeathRecoveryRoom
+		user.Character.Health = 1
+	} else {
+		user.Character.Health = -10
+	}
 	user.Character.Mana = 0
 	events.AddToQueue(events.CharacterVitalsChanged{UserId: user.UserId})
 
 	clear(user.Character.PlayerDamage)
 
-	rooms.MoveToRoom(user.UserId, int(configs.GetSpecialRoomsConfig().DeathRecoveryRoom))
+	rooms.MoveToRoom(user.UserId, deathRoomId)
 
 	if config.Death.CorpsesEnabled {
 		room.AddCorpse(rooms.Corpse{

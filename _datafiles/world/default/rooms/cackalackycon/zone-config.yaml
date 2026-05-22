@@ -1,5 +1,6 @@
 name: CackalackyCon
 roomid: 2000
+deathrecoveryroom: 2002
 autoscale:
   minimum: 1
   maximum: 5

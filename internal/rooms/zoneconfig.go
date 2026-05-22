@@ -6,8 +6,9 @@ import (
 )
 
 type ZoneConfig struct {
-	Name         string `yaml:"name,omitempty"`
-	RoomId       int    `yaml:"roomid,omitempty"`
+	Name              string `yaml:"name,omitempty"`
+	RoomId            int    `yaml:"roomid,omitempty"`
+	DeathRecoveryRoom int    `yaml:"deathrecoveryroom,omitempty"` // If set, players who die in this zone respawn here instead of the global death room
 	MobAutoScale struct {
 		Minimum int `yaml:"minimum,omitempty"` // level scaling minimum
 		Maximum int `yaml:"maximum,omitempty"` // level scaling maximum
