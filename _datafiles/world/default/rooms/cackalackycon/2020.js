@@ -11,11 +11,13 @@ const BOOTH_EXIT_REWARD_SUFFIX = "_entered_reward_room";
 
 // Booth reward tracking
 const BOOTHS = [
-    { key: "lockpick_booth_2060", gold: 5, name: "Clear Lock", exit: "booth1" },
-    { key: "lockpick_booth_2061", gold: 15, name: "Brass Padlock", exit: "booth2" },
-    { key: "lockpick_booth_2062", gold: 30, name: "Master Lock", exit: "booth3" },
-    { key: "lockpick_booth_2063", gold: 100, name: "Challenge Booth", exit: "challenge" }
+    { key: "lockpick_booth_2060", gold: 5,   name: "Clear Lock",     exit: "booth1",    roomId: 2060 },
+    { key: "lockpick_booth_2061", gold: 15,  name: "Brass Padlock",  exit: "booth2",    roomId: 2061 },
+    { key: "lockpick_booth_2062", gold: 30,  name: "Master Lock",    exit: "booth3",    roomId: 2062 },
+    { key: "lockpick_booth_2063", gold: 100, name: "Challenge Booth", exit: "challenge", roomId: 2063 }
 ];
+
+const BOOTH_UNLOCKED_SUFFIX = "_unlocked";
 
 function onEnter(user, room) {
     if (!user.GetMiscCharacterData(LOCKPICK_KIT_GIVEN)) {
@@ -30,7 +32,7 @@ function onEnter(user, room) {
     // Check if they just escaped from a booth
     for (var i = 0; i < BOOTHS.length; i++) {
         var booth = BOOTHS[i];
-        
+
         // Reward on first entry after successfully unlocking from the village.
         if (user.GetTempData(booth.key + BOOTH_EXIT_REWARD_SUFFIX)) {
             user.SetTempData(booth.key + BOOTH_EXIT_REWARD_SUFFIX, false);
@@ -61,23 +63,33 @@ function onEnter(user, room) {
 function onCommand(cmd, rest, user, room) {
     var destination = (rest || "").toLowerCase().trim();
 
-    if (cmd == "go") {
-        for (var i = 0; i < BOOTHS.length; i++) {
-            var booth = BOOTHS[i];
-            if (destination == booth.exit) {
-                user.SetTempData(booth.key + BOOTH_EXIT_REWARD_SUFFIX, true);
-                return false;
-            }
-        }
-    }
+    // Handle both "go booth1" and the direct shorthand "booth1".
+    var boothTarget = (cmd == "go") ? destination : cmd.toLowerCase();
 
-    if (cmd == "picklock") {
-        for (var i = 0; i < BOOTHS.length; i++) {
-            var booth = BOOTHS[i];
-            if (destination == booth.exit && !user.GetMiscCharacterData(booth.key + "_completed")) {
+    for (var i = 0; i < BOOTHS.length; i++) {
+        var booth = BOOTHS[i];
+        if (boothTarget == booth.exit) {
+
+            // Permanently unlocked for this user — let them straight in.
+            if (user.GetMiscCharacterData(booth.key + BOOTH_UNLOCKED_SUFFIX)) {
                 user.SetTempData(booth.key + BOOTH_EXIT_REWARD_SUFFIX, true);
-                return false;
+                user.MoveRoom(booth.roomId);
+                return true;
             }
+
+            // Entry lock is currently open (they just picked it).
+            if (!room.IsLocked(booth.exit)) {
+                user.SetTempData(booth.key + BOOTH_EXIT_REWARD_SUFFIX, true);
+                user.MoveRoom(booth.roomId);
+                return true;
+            }
+
+            // Booth is locked — tell the player to pick it.
+            user.SendText("");
+            user.SendText('<ansi fg="red">The ' + booth.name + ' booth door is locked.</ansi>');
+            user.SendText('<ansi fg="yellow">Use <ansi fg="command">PICKLOCK ' + booth.exit.toUpperCase() + '</ansi> to open it first.</ansi>');
+            user.SendText("");
+            return true;
         }
     }
 
@@ -86,13 +98,13 @@ function onCommand(cmd, rest, user, room) {
 
 function onIdle(room) {
     round = UtilGetRoundNumber();
-    
+
     if (round % CHECK_INTERVAL_ROUNDS == 0) {
         if (doFbiRaidCheck(room)) {
             return true;
         }
     }
-    
+
     // Ambient lockpicking sounds
     if (round % 7 == 0) {
         sounds = [
@@ -108,7 +120,7 @@ function onIdle(room) {
             return true;
         }
     }
-    
+
     return false;
 }
 
@@ -117,11 +129,11 @@ function doFbiRaidCheck(room) {
     if (players.length == 0) {
         return false;
     }
-    
+
     if (UtilDiceRoll(1, 100) > RAID_CHANCE_PERCENT) {
         return false;
     }
-    
+
     var target = null;
     for (var i = 0; i < players.length; i++) {
         var player = players[i];
@@ -131,11 +143,11 @@ function doFbiRaidCheck(room) {
         target = player;
         break;
     }
-    
+
     if (target == null) {
         return false;
     }
-    
+
     SendRoomMessage(room.RoomId(), "");
     SendRoomMessage(room.RoomId(), "<ansi fg=\"red-bold\">═══════════════════════════════════════════</ansi>");
     SendRoomMessage(room.RoomId(), "<ansi fg=\"red-bold\">           🚨 FBI RAID! 🚨</ansi>");
@@ -145,23 +157,23 @@ function doFbiRaidCheck(room) {
     SendRoomMessage(room.RoomId(), "<ansi fg=\"cyan\">Federal agents pour in from every entrance!</ansi>");
     SendRoomMessage(room.RoomId(), "<ansi fg=\"red\">\"POSSESSION OF BURGLARY TOOLS! HANDS UP!\"</ansi>");
     SendRoomMessage(room.RoomId(), "");
-    
+
     target.SendText("<ansi fg=\"red\">\"DROP THE PICKS! NOW!\"</ansi>");
     target.SendText("<ansi fg=\"yellow\">An agent slaps the tension wrench out of your hand!</ansi>");
     target.SendText("<ansi fg=\"cyan\">\"Funny how you're so good at locks but couldn't see us coming.\"</ansi>");
     target.SendText("");
-    
+
     SendRoomMessage(room.RoomId(), "<ansi fg=\"username\">" + target.GetCharacterName(false) + "</ansi> gets caught with picks in hand!");
     SendRoomMessage(room.RoomId(), "<ansi fg=\"cyan\">Agents drag them away in cuffs... ironic.</ansi>");
     SendRoomMessage(room.RoomId(), "");
-    
+
     target.MoveRoom(REG_DESK_ROOM);
-    
+
     target.SendText("");
     target.SendText("<ansi fg=\"yellow\">You're dumped at registration, still flexing your wrists.</ansi>");
     target.SendText("<ansi fg=\"cyan\">\"Those picks are evidence now. Good luck at the village.\"</ansi>");
     target.SendText("<ansi fg=\"yellow\">The agents disappear, leaving you pick-less.</ansi>");
     target.SendText("");
-    
+
     return true;
 }

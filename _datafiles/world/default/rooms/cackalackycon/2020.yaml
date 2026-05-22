@@ -13,12 +13,24 @@ exits:
     roomid: 2004
   booth1:
     roomid: 2060
+    lock:
+      difficulty: 2
+      relockinterval: 5 real minutes
   booth2:
     roomid: 2061
+    lock:
+      difficulty: 3
+      relockinterval: 5 real minutes
   booth3:
     roomid: 2062
+    lock:
+      difficulty: 4
+      relockinterval: 5 real minutes
   challenge:
     roomid: 2063
+    lock:
+      difficulty: 5
+      relockinterval: 5 real minutes
 spawninfo:
 - mobid: 103
   message: Unregistered examines a lock.

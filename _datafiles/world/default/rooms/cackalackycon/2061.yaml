@@ -2,21 +2,14 @@ roomid: 2061
 zone: CackalackyCon
 title: Practice Booth - Brass Padlock
 description: A weathered brass padlock hangs from a chain. Security pins make this
-  one a little trickier. From Lockpick Village, use PICKLOCK BOOTH2 to open it.
-  A small table inside holds 15 gold and a fresh lockpick kit.
+  one a little trickier. Pick the lock from Lockpick Village with PICKLOCK BOOTH2.
+  Your reward waits when you exit.
 mapsymbol: "2"
 maplegend: Booth 2
 biome: indoor
-containers:
-  table:
-    gold: 15
-    items:
-    - itemid: 8
 exits:
   out:
     roomid: 2020
-    lock:
-      difficulty: 3
 idlemessages:
 - The brass padlock swings gently.
 - Decades of use have worn the brass smooth.
@@ -24,6 +17,5 @@ idlemessages:
 nouns:
   lock: An old brass padlock with a satisfying weight to it. Three pins and a touch more resistance.
   padlock: :lock
-  sign: "Difficulty: Medium - Step outside to Lockpick Village so the booth can lock, then PICKLOCK BOOTH2. After it opens, GET GOLD FROM TABLE and GET LOCKPICKS FROM TABLE."
+  sign: "Difficulty: Medium - From Lockpick Village, PICKLOCK BOOTH2 to open the door. Your gold and lockpick reward is waiting back in the village when you exit."
   chain: A sturdy chain holds the practice lock in place.
-  table: A small folding table with the booth prize on it.
