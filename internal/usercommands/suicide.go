@@ -138,6 +138,9 @@ func Suicide(rest string, user *users.UserRecord, room *rooms.Room, flags events
 		if config.Death.EquipmentDropChance >= 0 {
 			chanceInt := int(config.Death.EquipmentDropChance * 100)
 			for _, itm := range user.Character.GetAllWornItems() {
+				if itm.GetSpec().KeepOnDeath {
+					continue
+				}
 				if util.Rand(100) < chanceInt {
 
 					Remove(itm.Name(), user, room, flags)
@@ -161,6 +164,9 @@ func Suicide(rest string, user *users.UserRecord, room *rooms.Room, flags events
 		} else if config.Death.EquipmentDropChance >= 0 {
 			chanceInt := int(config.Death.EquipmentDropChance * 100)
 			for _, itm := range user.Character.GetAllBackpackItems() {
+				if itm.GetSpec().KeepOnDeath {
+					continue
+				}
 				if util.Rand(100) < chanceInt {
 					Drop(itm.Name(), user, room, flags)
 					user.EventLog.Add(`death`, fmt.Sprintf(`Dropped your <ansi fg="itemname">%s</ansi> on death`, itm.Name()))

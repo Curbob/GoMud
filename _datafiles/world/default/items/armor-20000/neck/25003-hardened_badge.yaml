@@ -10,6 +10,7 @@ description: >-
 type: neck
 subtype: wearable
 value: 150
+keepondeath: true
 damagereduction: 4
 statmods:
   perception: 2
